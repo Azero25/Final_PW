@@ -52,17 +52,19 @@ Project ini dibangun menggunakan:
 ---
 
 ## 📂 Struktur Folder (Sederhana)
+```
 ├── app/
 ├── database/
 ├── public/
 ├── resources/
-│ ├── views/
-│ ├── css/
-│ └── js/
+│   ├── views/
+│   ├── css/
+│   └── js/
 ├── routes/
-│ ├── web.php
-│ └── api.php
-└──
+│   ├── web.php
+│   └── api.php
+└── ...
+```
 
 
 ---
