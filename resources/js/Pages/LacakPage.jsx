@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
+import Footer from '../Components/Footer';
 
 /**
  * Komponen Halaman Lacak Tiket
@@ -264,15 +265,7 @@ export default function LacakPage() {
             )}
 
             {/* Footer */}
-            <footer className="bg-slate-800 text-white py-8 mt-auto">
-                <div className="max-w-7xl mx-auto px-6 text-center">
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                        <span className="material-symbols-outlined text-2xl text-blue-400" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
-                        <span className="font-bold text-lg">Sistem Pengaduan Warga</span>
-                    </div>
-                    <p className="text-slate-400 text-sm">© 2024 LaporWarga – Pemerintah Kota Yogyakarta. Seluruh hak cipta dilindungi.</p>
-                </div>
-            </footer>
+            <Footer/>
         </div>
     );
 }

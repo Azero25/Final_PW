@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
+import Footer from '../Components/Footer';
 
 /**
  * Komponen Halaman Utama (Landing Page)
@@ -13,7 +14,7 @@ export default function LandingPage() {
 
     return (
         <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col">
-            
+
             {/* Navbar Bersama */}
             <Navbar />
 
@@ -112,7 +113,7 @@ export default function LandingPage() {
                 <section className="py-20 lg:py-32 relative overflow-hidden">
                     {/* Background decorations */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary-container/5 rounded-full blur-[100px] pointer-events-none"></div>
-                    
+
                     <div className="text-center mb-20 relative z-10">
                         <span className="inline-block py-1 px-3 rounded-full bg-primary-container/10 text-primary font-label-bold text-sm tracking-widest uppercase mb-4 border border-primary/20">Prosedur</span>
                         <h2 className="font-h2 text-on-background text-4xl md:text-5xl font-bold tracking-tight">Cara Kerja <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">Sistem</span></h2>
@@ -122,7 +123,7 @@ export default function LandingPage() {
                     <div className="relative max-w-6xl mx-auto z-10">
                         {/* Connecting Line */}
                         <div className="hidden md:block absolute top-[4.5rem] left-[15%] right-[15%] h-1 bg-gradient-to-r from-transparent via-primary-container/40 to-transparent -translate-y-1/2 z-0"></div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
                             {/* Step 1 */}
                             <div className="flex flex-col items-center text-center group">
@@ -166,7 +167,7 @@ export default function LandingPage() {
                                 <p className="font-body-md text-on-surface-variant px-6 leading-relaxed">Terima notifikasi penyelesaian dan berikan penilaian terhadap kinerja layanan kami untuk evaluasi.</p>
                             </div>
                         </div>
-                        
+
                         {/* Call to action within how it works */}
                         <div className="mt-20 text-center">
                             <Link to="/cara-kerja" className="group relative inline-flex px-8 py-4 bg-surface border border-primary/20 text-primary font-bold rounded-full overflow-hidden shadow-sm hover:shadow-md hover:border-primary transition-all duration-300">
@@ -182,15 +183,7 @@ export default function LandingPage() {
             </main>
 
             {/* Bagian Footer (Catatan Kaki) */}
-            <footer className="bg-slate-900 dark:bg-black text-blue-400 font-public-sans text-xs text-slate-400 w-full border-t border-slate-800 mt-auto">
-                <div className="w-full py-12 px-6 flex flex-col justify-center items-center max-w-7xl mx-auto gap-2">
-                    <span className="text-white font-bold text-lg flex items-center gap-2">
-                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
-                        LaporWarga
-                    </span>
-                    <p className="text-center">© 2024 Pemerintah Daerah. Terintegrasi Smart City Indonesia.</p>
-                </div>
-            </footer>
+            <Footer/>
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
+import Footer from '../Components/Footer';
 
 export default function BuatPengaduanPage() {
     useEffect(() => {
@@ -22,13 +23,13 @@ export default function BuatPengaduanPage() {
 
                 {/* Form Card */}
                 <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,102,204,0.05)] p-8 md:p-10 border border-surface-container-low relative overflow-hidden">
-                  
-                    
+
+
                     <form className="space-y-8 relative z-10">
                         {/* Identitas Section */}
                         <div className="space-y-4">
                             <h2 className="font-h3 text-2xl font-semibold text-on-surface border-b border-surface-variant pb-2">Identitas Pelapor</h2>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2 flex flex-col justify-end">
                                     <label className="font-label-bold text-sm font-semibold text-on-surface-variant" htmlFor="nama">Nama Lengkap</label>
@@ -39,7 +40,7 @@ export default function BuatPengaduanPage() {
                                     <input className="w-full bg-[#F1F5F9] border border-outline-variant focus:border-primary-container rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 transition-colors outline-none" id="nohp" placeholder="08xxxxxxxxxx" type="tel" />
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-3 pt-2">
                                 <input className="w-5 h-5 rounded border-outline-variant text-primary-container focus:ring-primary-container cursor-pointer" id="anonim" type="checkbox" />
                                 <label className="font-body-md text-on-surface-variant cursor-pointer select-none" htmlFor="anonim">Lapor sebagai Anonim (Identitas dirahasiakan)</label>
@@ -49,12 +50,12 @@ export default function BuatPengaduanPage() {
                         {/* Detail Laporan Section */}
                         <div className="space-y-4 pt-4">
                             <h2 className="font-h3 text-2xl font-semibold text-on-surface border-b border-surface-variant pb-2">Detail Laporan</h2>
-                            
+
                             <div className="space-y-2">
                                 <label className="font-label-bold text-sm font-semibold text-on-surface-variant" htmlFor="judul">Judul Laporan</label>
                                 <input className="w-full bg-[#F1F5F9] border border-outline-variant focus:border-primary-container rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 transition-colors outline-none" id="judul" placeholder="Singkat, padat, dan jelas (Maks. 50 karakter)" type="text" />
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="font-label-bold text-sm font-semibold text-on-surface-variant" htmlFor="kategori">Kategori Pengaduan</label>
@@ -88,7 +89,7 @@ export default function BuatPengaduanPage() {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <label className="font-label-bold text-sm font-semibold text-on-surface-variant" htmlFor="lokasi">Lokasi Kejadian</label>
                                 <div className="flex gap-2">
@@ -98,7 +99,7 @@ export default function BuatPengaduanPage() {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <label className="font-label-bold text-sm font-semibold text-on-surface-variant" htmlFor="deskripsi">Deskripsi Lengkap</label>
                                 <textarea className="w-full bg-[#F1F5F9] border border-outline-variant focus:border-primary-container rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 transition-colors resize-y outline-none" id="deskripsi" placeholder="Ceritakan kronologi atau detail masalah secara jelas..." rows="5"></textarea>
@@ -130,15 +131,7 @@ export default function BuatPengaduanPage() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-slate-900 dark:bg-black text-blue-400 font-public-sans text-xs text-slate-400 w-full border-t border-slate-800 mt-auto">
-                <div className="w-full py-12 px-6 flex flex-col justify-center items-center max-w-7xl mx-auto gap-2">
-                    <span className="text-white font-bold text-lg flex items-center gap-2">
-                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
-                        LaporWarga
-                    </span>
-                    <p className="text-center">© 2024 Pemerintah Daerah. Terintegrasi Smart City Indonesia.</p>
-                </div>
-            </footer>
+            <Footer/>
         </div>
     );
 }
