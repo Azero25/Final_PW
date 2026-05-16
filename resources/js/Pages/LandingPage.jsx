@@ -18,36 +18,36 @@ export default function LandingPage() {
             <Navbar />
 
             {/* Konten Utama Halaman */}
-            <main className="flex-grow pt-24 px-6 max-w-7xl mx-auto w-full">
+            <main className="flex-grow pt-16 sm:pt-24 px-4 sm:px-6 max-w-7xl mx-auto w-full">
                 {/* Bagian Hero (Sambutan Utama) */}
-                <section className="flex flex-col lg:flex-row items-center justify-between gap-12 py-12 lg:py-24">
-                    <div className="flex-1 space-y-8">
-                        <h1 className="font-h1 text-on-background text-5xl lg:text-6xl leading-tight">
+                <section className="flex flex-col lg:flex-row items-center justify-between gap-8 py-8 lg:py-24">
+                    <div className="flex-1 space-y-5">
+                        <h1 className="font-h1 text-on-background text-3xl sm:text-4xl lg:text-6xl leading-tight">
                             Sampaikan Keluhan Warga dengan <span className="text-primary-container">Mudah dan Cepat</span>
                         </h1>
-                        <p className="font-body-lg text-on-surface-variant max-w-2xl">
+                        <p className="font-body-lg text-on-surface-variant text-sm sm:text-base max-w-2xl">
                             Platform resmi pemerintah daerah untuk menerima, memproses, dan menyelesaikan laporan masyarakat. Transparan, terukur, dan terintegrasi untuk mewujudkan Smart City.
                         </p>
-                        <div className="flex flex-wrap gap-4 pt-4">
-                            <Link to="/buat-pengaduan" className="px-8 py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2">
+                        <div className="flex flex-wrap gap-3 pt-2">
+                            <Link to="/buat-pengaduan" className="px-5 sm:px-8 py-3 sm:py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2">
                                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
                                 Buat Pengaduan
                             </Link>
-                            <button className="px-8 py-4 bg-surface text-primary border-2 border-primary-container rounded-xl font-label-bold text-lg hover:bg-primary-fixed-dim transition-all flex items-center gap-2">
+                            <Link to="/lacak" className="px-5 sm:px-8 py-3 sm:py-4 bg-surface text-primary border-2 border-primary-container rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary-fixed-dim transition-all flex items-center gap-2">
                                 <span className="material-symbols-outlined">search</span>
                                 Lacak Tiket
-                            </button>
+                            </Link>
                         </div>
                     </div>
                     <div className="flex-1 w-full relative">
                         <div className="absolute inset-0 bg-primary-container/5 rounded-3xl blur-3xl"></div>
-                        <img alt="Modern city landmark illustration" className="w-full h-auto object-cover rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.15)] relative z-10" src="/img/modern-city.jpg" />
+                        <img alt="Modern city landmark illustration" className="w-full h-auto object-cover rounded-2xl sm:rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.15)] relative z-10" src="/img/modern-city.jpg" />
                     </div>
                 </section>
 
                 {/* Bagian Statistik Layanan (Desain Kotak Grid) */}
-                <section className="py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <section className="py-8 sm:py-12">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                         <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-[0px_4px_20px_rgba(0,102,204,0.05)] border border-outline-variant/30 flex flex-col justify-between h-40">
                             <div className="flex justify-between items-start">
                                 <span className="font-label-bold text-on-surface-variant uppercase tracking-wider">Total Laporan</span>
@@ -57,7 +57,7 @@ export default function LandingPage() {
                             </div>
                             <div className="mt-4 flex items-baseline gap-2">
                                 <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">12,450</span>
-                                <span className="text-sm text-secondary block">+12% bulan ini</span>
+                                   <span className="text-sm text-secondary hidden sm:block">+12% bulan ini</span>
                             </div>
                         </div>
 

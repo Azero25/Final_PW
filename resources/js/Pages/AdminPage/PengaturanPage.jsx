@@ -72,7 +72,7 @@ export default function PengaturanPage() {
     );
 
     const Field = ({ label, hint, children }) => (
-        <div className="flex items-start justify-between gap-6 py-4 border-b border-slate-100 last:border-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-6 py-4 border-b border-slate-100 last:border-0">
             <div className="flex-1">
                 <p className="text-sm font-semibold text-slate-800">{label}</p>
                 {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
@@ -83,12 +83,12 @@ export default function PengaturanPage() {
 
     const InputText = ({ value, onChange, type = 'text', placeholder = '' }) => (
         <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-            className="w-56 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors" />
+            className="w-full sm:w-56 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors" />
     );
 
     const Select = ({ value, onChange, options }) => (
         <select value={value} onChange={e => onChange(e.target.value)}
-            className="w-44 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400">
+            className="w-full sm:w-44 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400">
             {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
         </select>
     );
@@ -96,14 +96,16 @@ export default function PengaturanPage() {
     return (
         <AdminLayout pageTitle="Pengaturan" pageSubtitle="Konfigurasi sistem LaporWarga">
 
-            <div className="flex gap-6">
-                {/* Sidebar Tab */}
-                <div className="w-52 flex-shrink-0">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 space-y-1">
+            {/* Mobile: Tab horizontal scroll / Desktop: Sidebar tab */}
+            <div className="flex flex-col gap-6 w-full">
+
+                {/* Tab chips (mobile: scroll horizontal, desktop: sidebar vertikal) */}
+                <div className="sm:hidden">
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                         {tabs.map(t => (
                             <button key={t.id} onClick={() => setActiveTab(t.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
-                                    ${activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-shrink-0 transition-all
+                                    ${activeTab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
                                 <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: activeTab === t.id ? "'FILL' 1" : "'FILL' 0" }}>{t.icon}</span>
                                 {t.label}
                             </button>
@@ -111,25 +113,41 @@ export default function PengaturanPage() {
                     </div>
                 </div>
 
-                {/* Konten Tab */}
-                <div className="flex-1 min-w-0">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-
-                        {/* Header */}
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-                            <div>
-                                <h2 className="font-bold text-slate-800">{tabs.find(t => t.id === activeTab)?.label}</h2>
-                                <p className="text-xs text-slate-400 mt-0.5">Perubahan disimpan secara lokal</p>
-                            </div>
-                            <button onClick={handleSave}
-                                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all
-                                    ${saved ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                                <span className="material-symbols-outlined text-base">{saved ? 'check_circle' : 'save'}</span>
-                                {saved ? 'Tersimpan!' : 'Simpan Perubahan'}
-                            </button>
+                <div className="flex gap-6">
+                    {/* Sidebar tab (desktop only) */}
+                    <div className="hidden sm:block w-52 flex-shrink-0">
+                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 space-y-1">
+                            {tabs.map(t => (
+                                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+                                        ${activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>
+                                    <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: activeTab === t.id ? "'FILL' 1" : "'FILL' 0" }}>{t.icon}</span>
+                                    {t.label}
+                                </button>
+                            ))}
                         </div>
+                    </div>
 
-                        <div className="px-6 py-2">
+                    {/* Konten Tab */}
+                    <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+                            {/* Header */}
+                            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <h2 className="font-bold text-slate-800 truncate">{tabs.find(t => t.id === activeTab)?.label}</h2>
+                                    <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">Perubahan disimpan secara lokal</p>
+                                </div>
+                                <button onClick={handleSave}
+                                    className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl text-sm font-semibold transition-all flex-shrink-0
+                                        ${saved ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                                    <span className="material-symbols-outlined text-base">{saved ? 'check_circle' : 'save'}</span>
+                                    <span className="hidden sm:inline">{saved ? 'Tersimpan!' : 'Simpan Perubahan'}</span>
+                                    <span className="sm:hidden">{saved ? 'OK' : 'Simpan'}</span>
+                                </button>
+                            </div>
+
+                            <div className="px-4 sm:px-6 py-2">
 
                             {/* ===== TAB UMUM ===== */}
                             {activeTab === 'umum' && (
@@ -369,7 +387,9 @@ export default function PengaturanPage() {
                         </div>
                     </div>
                 </div>
-            </div>
+
+                </div> {/* end flex gap-6 */}
+            </div> {/* end flex flex-col */}
 
         </AdminLayout>
     );
