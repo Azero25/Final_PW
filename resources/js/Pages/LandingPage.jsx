@@ -1,40 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Navbar from '../Components/Navbar';
 
 /**
  * Komponen Halaman Utama (Landing Page)
  * Halaman pertama yang dilihat oleh publik (Citizen View).
  */
 export default function LandingPage() {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col">
-            {/* Bagian Navigasi Atas (Navbar) */}
-            <nav className="bg-white text-blue-700 font-public-sans antialiased fixed top-0 left-0 w-full z-50 border-b border-slate-200 shadow-sm">
-                <div className="flex justify-between items-center px-6 lg:px-12 py-3 max-w-screen-2xl mx-auto w-full">
-                    {/* Kiri: Logo & Menu */}
-                    <div className="flex items-center gap-10">
-                        {/* Logo */}
-                        <div className="flex items-center gap-4">
-                            <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-                            <span className="text-xl font-bold tracking-tight text-blue-700 dark:text-blue-400">Sistem Pengaduan</span>
-                        </div>
-                        {/* Menu */}
-                        <div className="hidden md:flex items-center gap-6">
-                            <a className="text-blue-700 dark:text-blue-400 font-semibold border-b-2 border-blue-700 pb-1 transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 active:opacity-80 active:scale-95 transition-all" href="#">Beranda</a>
-                            <a className="text-slate-600 dark:text-slate-400 hover:text-blue-600 pb-1 transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 active:opacity-80 active:scale-95 transition-all" href="#">Cara Kerja</a>
-                            <a className="text-slate-600 dark:text-slate-400 hover:text-blue-600 pb-1 transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 active:opacity-80 active:scale-95 transition-all" href="#">Statistik</a>
-                            <a className="text-slate-600 dark:text-slate-400 hover:text-blue-600 pb-1 transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 active:opacity-80 active:scale-95 transition-all" href="#">Lacak</a>
-                            <a className="text-slate-600 dark:text-slate-400 hover:text-blue-600 pb-1 transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 active:opacity-80 active:scale-95 transition-all" href="#">Bantuan</a>
-                        </div>
-                    </div>
-
-                    {/* Kanan: Tombol Login & Register */}
-                    <div className="flex items-center gap-4">
-                        <Link to="/login" className="hidden md:inline-block px-6 py-2 text-primary border border-primary rounded-lg font-label-bold hover:bg-primary-fixed-dim transition-colors">Login</Link>
-                        <Link to="/register" className="px-6 py-2 bg-primary-container text-on-primary rounded-lg font-label-bold hover:bg-primary transition-colors shadow-[0px_4px_20px_rgba(0,102,204,0.15)]">Register</Link>
-                    </div>
-                </div>
-            </nav>
+            
+            {/* Navbar Bersama */}
+            <Navbar />
 
             {/* Konten Utama Halaman */}
             <main className="flex-grow pt-24 px-6 max-w-7xl mx-auto w-full">
@@ -48,10 +29,10 @@ export default function LandingPage() {
                             Platform resmi pemerintah daerah untuk menerima, memproses, dan menyelesaikan laporan masyarakat. Transparan, terukur, dan terintegrasi untuk mewujudkan Smart City.
                         </p>
                         <div className="flex flex-wrap gap-4 pt-4">
-                            <button className="px-8 py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2">
+                            <Link to="/buat-pengaduan" className="px-8 py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2">
                                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
                                 Buat Pengaduan
-                            </button>
+                            </Link>
                             <button className="px-8 py-4 bg-surface text-primary border-2 border-primary-container rounded-xl font-label-bold text-lg hover:bg-primary-fixed-dim transition-all flex items-center gap-2">
                                 <span className="material-symbols-outlined">search</span>
                                 Lacak Tiket
@@ -60,7 +41,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex-1 w-full relative">
                         <div className="absolute inset-0 bg-primary-container/5 rounded-3xl blur-3xl"></div>
-                        <img alt="Modern city landmark illustration" className="w-full h-auto object-cover rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.15)] relative z-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuEgNITxVgHTsDVY6_Fq6I_JVFOCguptriqzLC811G95NwPFWfuQkbEf2_4eq4M6xlbRqsVXerxosuauh2BYQJ3Bpi0Zffzm5HlgHN-704nxlgwNhqKu6-NA0cg8KMnygHeM5W2VE58TwfKhiZ53sWiwJJ3A8UgvydXkv2jzni2tUHsHAOfieS-_X5YlJjsbzkUk0_qxx4Rm0GZ6Bluv3YVsrjzQDSdYYMY_pcw0l4eAZu8Y39vzE_irRfZkB-btPW2LU2sbT5ITs" />
+                        <img alt="Modern city landmark illustration" className="w-full h-auto object-cover rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.15)] relative z-10" src="/img/modern-city.jpg" />
                     </div>
                 </section>
 
@@ -128,37 +109,73 @@ export default function LandingPage() {
                 </section>
 
                 {/* Bagian Cara Kerja Layanan */}
-                <section className="py-16 lg:py-24">
-                    <div className="text-center mb-16">
-                        <h2 className="font-h2 text-on-background">Cara Kerja</h2>
-                        <p className="font-body-lg text-on-surface-variant mt-4 max-w-2xl mx-auto">Proses pelaporan dirancang agar sederhana, transparan, dan mudah dipantau oleh masyarakat.</p>
+                <section className="py-20 lg:py-32 relative overflow-hidden">
+                    {/* Background decorations */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary-container/5 rounded-full blur-[100px] pointer-events-none"></div>
+                    
+                    <div className="text-center mb-20 relative z-10">
+                        <span className="inline-block py-1 px-3 rounded-full bg-primary-container/10 text-primary font-label-bold text-sm tracking-widest uppercase mb-4 border border-primary/20">Prosedur</span>
+                        <h2 className="font-h2 text-on-background text-4xl md:text-5xl font-bold tracking-tight">Cara Kerja <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">Sistem</span></h2>
+                        <p className="font-body-lg text-on-surface-variant mt-6 max-w-2xl mx-auto">Proses pelaporan dirancang agar sederhana, transparan, dan mudah dipantau oleh masyarakat. Hanya butuh 3 langkah mudah.</p>
                     </div>
-                    <div className="relative">
-                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-outline-variant/30 -translate-y-1/2 z-0"></div>
+
+                    <div className="relative max-w-6xl mx-auto z-10">
+                        {/* Connecting Line */}
+                        <div className="hidden md:block absolute top-[4.5rem] left-[15%] right-[15%] h-1 bg-gradient-to-r from-transparent via-primary-container/40 to-transparent -translate-y-1/2 z-0"></div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
+                            {/* Step 1 */}
                             <div className="flex flex-col items-center text-center group">
-                                <div className="w-24 h-24 bg-surface-container-lowest rounded-full shadow-[0px_10px_30px_rgba(0,102,204,0.1)] flex items-center justify-center mb-6 border-4 border-surface group-hover:border-primary-fixed transition-colors duration-300">
-                                    <span className="material-symbols-outlined text-4xl text-primary-container">edit_document</span>
+                                <div className="w-36 h-36 relative mb-8 flex justify-center items-center">
+                                    <div className="absolute inset-0 bg-primary-container/20 rounded-full scale-0 group-hover:scale-110 transition-transform duration-500 ease-out"></div>
+                                    <div className="absolute inset-4 bg-surface rounded-full shadow-[0px_10px_30px_rgba(0,102,204,0.15)] flex items-center justify-center border border-primary-container/20 group-hover:border-primary transition-colors duration-300 z-10 overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <span className="material-symbols-outlined text-5xl text-primary transform group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">edit_document</span>
+                                    </div>
+                                    <div className="absolute top-0 right-0 w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg z-20 border-4 border-background">1</div>
                                 </div>
-                                <h3 className="font-h3 text-on-background mb-3">1. Tulis Laporan</h3>
-                                <p className="font-body-md text-on-surface-variant px-4">Deskripsikan masalah, lokasi, dan lampirkan foto bukti kejadian melalui form yang tersedia.</p>
+                                <h3 className="text-2xl font-bold text-on-background mb-4 group-hover:text-primary transition-colors duration-300">Tulis Laporan</h3>
+                                <p className="font-body-md text-on-surface-variant px-6 leading-relaxed">Deskripsikan masalah, lokasi, dan lampirkan foto bukti kejadian melalui form yang tersedia dengan jelas.</p>
                             </div>
 
+                            {/* Step 2 */}
                             <div className="flex flex-col items-center text-center group">
-                                <div className="w-24 h-24 bg-surface-container-lowest rounded-full shadow-[0px_10px_30px_rgba(0,102,204,0.1)] flex items-center justify-center mb-6 border-4 border-surface group-hover:border-primary-fixed transition-colors duration-300">
-                                    <span className="material-symbols-outlined text-4xl text-amber-600">published_with_changes</span>
+                                <div className="w-36 h-36 relative mb-8 flex justify-center items-center">
+                                    <div className="absolute inset-0 bg-amber-500/10 rounded-full scale-0 group-hover:scale-110 transition-transform duration-500 ease-out delay-75"></div>
+                                    <div className="absolute inset-4 bg-surface rounded-full shadow-[0px_10px_30px_rgba(245,158,11,0.15)] flex items-center justify-center border border-amber-500/20 group-hover:border-amber-500 transition-colors duration-300 z-10 overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <span className="material-symbols-outlined text-5xl text-amber-500 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">published_with_changes</span>
+                                    </div>
+                                    <div className="absolute top-0 right-0 w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg z-20 border-4 border-background">2</div>
                                 </div>
-                                <h3 className="font-h3 text-on-background mb-3">2. Proses Tindak Lanjut</h3>
-                                <p className="font-body-md text-on-surface-variant px-4">Laporan Anda diverifikasi dan diteruskan ke instansi terkait untuk segera ditangani.</p>
+                                <h3 className="text-2xl font-bold text-on-background mb-4 group-hover:text-amber-600 transition-colors duration-300">Proses Tindak Lanjut</h3>
+                                <p className="font-body-md text-on-surface-variant px-6 leading-relaxed">Laporan Anda diverifikasi dan diteruskan ke instansi terkait untuk segera ditangani secara profesional.</p>
                             </div>
 
+                            {/* Step 3 */}
                             <div className="flex flex-col items-center text-center group">
-                                <div className="w-24 h-24 bg-surface-container-lowest rounded-full shadow-[0px_10px_30px_rgba(0,102,204,0.1)] flex items-center justify-center mb-6 border-4 border-surface group-hover:border-primary-fixed transition-colors duration-300">
-                                    <span className="material-symbols-outlined text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                                <div className="w-36 h-36 relative mb-8 flex justify-center items-center">
+                                    <div className="absolute inset-0 bg-emerald-500/10 rounded-full scale-0 group-hover:scale-110 transition-transform duration-500 ease-out delay-150"></div>
+                                    <div className="absolute inset-4 bg-surface rounded-full shadow-[0px_10px_30px_rgba(16,185,129,0.15)] flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500 transition-colors duration-300 z-10 overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <span className="material-symbols-outlined text-5xl text-emerald-500 transform group-hover:scale-110 transition-transform duration-300" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                                    </div>
+                                    <div className="absolute top-0 right-0 w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg z-20 border-4 border-background">3</div>
                                 </div>
-                                <h3 className="font-h3 text-on-background mb-3">3. Selesai &amp; Evaluasi</h3>
-                                <p className="font-body-md text-on-surface-variant px-4">Terima notifikasi penyelesaian dan berikan penilaian terhadap kinerja layanan kami.</p>
+                                <h3 className="text-2xl font-bold text-on-background mb-4 group-hover:text-emerald-600 transition-colors duration-300">Selesai &amp; Evaluasi</h3>
+                                <p className="font-body-md text-on-surface-variant px-6 leading-relaxed">Terima notifikasi penyelesaian dan berikan penilaian terhadap kinerja layanan kami untuk evaluasi.</p>
                             </div>
+                        </div>
+                        
+                        {/* Call to action within how it works */}
+                        <div className="mt-20 text-center">
+                            <Link to="/cara-kerja" className="group relative inline-flex px-8 py-4 bg-surface border border-primary/20 text-primary font-bold rounded-full overflow-hidden shadow-sm hover:shadow-md hover:border-primary transition-all duration-300">
+                                <div className="absolute inset-0 w-0 bg-primary/10 transition-all duration-[250ms] ease-out group-hover:w-full"></div>
+                                <span className="relative flex items-center justify-center gap-2">
+                                    Lihat Panduan Lengkap
+                                    <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                </span>
+                            </Link>
                         </div>
                     </div>
                 </section>
@@ -166,20 +183,12 @@ export default function LandingPage() {
 
             {/* Bagian Footer (Catatan Kaki) */}
             <footer className="bg-slate-900 dark:bg-black text-blue-400 font-public-sans text-xs text-slate-400 w-full border-t border-slate-800 mt-auto">
-                <div className="w-full py-12 px-6 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto gap-8 md:gap-0">
-                    <div className="flex flex-col items-center md:items-start gap-2">
-                        <span className="text-white font-bold text-lg flex items-center gap-2">
-                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-                            Sistem Pengaduan
-                        </span>
-                        <p>© 2024 Pemerintah Daerah. Terintegrasi Smart City Indonesia.</p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-6">
-                        <a className="text-slate-500 hover:text-slate-300 hover:text-blue-400 transition-colors" href="#">Kontak Layanan</a>
-                        <a className="text-slate-500 hover:text-slate-300 hover:text-blue-400 transition-colors" href="#">Daftar Instansi</a>
-                        <a className="text-slate-500 hover:text-slate-300 hover:text-blue-400 transition-colors" href="#">Kebijakan Privasi</a>
-                        <a className="text-slate-500 hover:text-slate-300 hover:text-blue-400 transition-colors" href="#">Media Sosial</a>
-                    </div>
+                <div className="w-full py-12 px-6 flex flex-col justify-center items-center max-w-7xl mx-auto gap-2">
+                    <span className="text-white font-bold text-lg flex items-center gap-2">
+                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
+                        LaporWarga
+                    </span>
+                    <p className="text-center">© 2024 Pemerintah Daerah. Terintegrasi Smart City Indonesia.</p>
                 </div>
             </footer>
         </div>

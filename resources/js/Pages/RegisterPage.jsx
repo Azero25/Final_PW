@@ -22,7 +22,7 @@ export default function RegisterPage() {
                 
                 {/* Judul dan Logo */}
                 <div className="flex flex-col items-center mb-8">
-                    <span className="material-symbols-outlined text-5xl text-primary-container mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+                    <span className="material-symbols-outlined text-5xl text-primary-container mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
                     <h1 className="font-h2 text-3xl text-on-background">Buat Akun Baru</h1>
                     <p className="text-on-surface-variant mt-2 text-center">Daftar sekarang untuk mulai berpartisipasi mewujudkan kota yang lebih baik</p>
                 </div>

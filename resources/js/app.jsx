@@ -5,13 +5,35 @@ import "../css/app.css";
 import LandingPage from "./Pages/LandingPage";
 import LoginPage from "./Pages/LoginPage";
 import RegisterPage from "./Pages/RegisterPage";
+import CaraKerjaPage from "./Pages/CaraKerjaPage";
+import BuatPengaduanPage from "./Pages/BuatPengaduanPage";
+import StatistikPage from "./Pages/StatistikPage";
+import LacakPage from "./Pages/LacakPage";
+import AdminDashboardPage from "./Pages/AdminPage/AdminDashboardPage";
+import ManajemenLaporanPage from "./Pages/AdminPage/ManajemenLaporanPage";
+import PenggunaPage from "./Pages/AdminPage/PenggunaPage";
+import PetugasDinasPage from "./Pages/AdminPage/PetugasDinasPage";
+import KategoriPage from "./Pages/AdminPage/KategoriPage";
+import NotifikasiPage from "./Pages/AdminPage/NotifikasiPage";
+import PengaturanPage from "./Pages/AdminPage/PengaturanPage";
 
 ReactDOM.createRoot(document.getElementById("app")).render(
     <BrowserRouter>
         <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/cara-kerja" element={<CaraKerjaPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/buat-pengaduan" element={<BuatPengaduanPage />} />
+            <Route path="/statistik" element={<StatistikPage />} />
+            <Route path="/lacak" element={<LacakPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/laporan" element={<ManajemenLaporanPage />} />
+            <Route path="/admin/pengguna" element={<PenggunaPage />} />
+            <Route path="/admin/petugas" element={<PetugasDinasPage />} />
+            <Route path="/admin/kategori" element={<KategoriPage />} />
+            <Route path="/admin/notifikasi" element={<NotifikasiPage />} />
+            <Route path="/admin/pengaturan" element={<PengaturanPage />} />
         </Routes>
     </BrowserRouter>
 );

@@ -1,0 +1,336 @@
+import React, { useEffect, useState } from 'react';
+import AdminLayout from '../../Components/AdminLayout';
+
+// Data dummy pengguna
+const DUMMY_PENGGUNA = [
+    { id: 'USR-001', nama: 'Budi Santoso',    email: 'budi@email.com',    telp: '081234567890', kecamatan: 'Gondokusuman', totalLaporan: 12, status: 'Aktif',    bergabung: '10 Jan 2024', avatar: 'B' },
+    { id: 'USR-002', nama: 'Siti Rahayu',     email: 'siti@email.com',    telp: '082345678901', kecamatan: 'Umbulharjo',   totalLaporan: 8,  status: 'Aktif',    bergabung: '14 Feb 2024', avatar: 'S' },
+    { id: 'USR-003', nama: 'Agus Wijaya',     email: 'agus@email.com',    telp: '083456789012', kecamatan: 'Kraton',        totalLaporan: 5,  status: 'Aktif',    bergabung: '02 Mar 2024', avatar: 'A' },
+    { id: 'USR-004', nama: 'Dewi Kusuma',     email: 'dewi@email.com',    telp: '084567890123', kecamatan: 'Mergangsan',   totalLaporan: 20, status: 'Aktif',    bergabung: '20 Mar 2024', avatar: 'D' },
+    { id: 'USR-005', nama: 'Hendra Putra',    email: 'hendra@email.com',  telp: '085678901234', kecamatan: 'Gondomanan',   totalLaporan: 3,  status: 'Nonaktif', bergabung: '05 Apr 2024', avatar: 'H' },
+    { id: 'USR-006', nama: 'Rina Marlina',    email: 'rina@email.com',    telp: '086789012345', kecamatan: 'Jetis',         totalLaporan: 15, status: 'Aktif',    bergabung: '11 Apr 2024', avatar: 'R' },
+    { id: 'USR-007', nama: 'Doni Pratama',    email: 'doni@email.com',    telp: '087890123456', kecamatan: 'Danurejan',    totalLaporan: 7,  status: 'Aktif',    bergabung: '18 Apr 2024', avatar: 'D' },
+    { id: 'USR-008', nama: 'Yulia Sari',      email: 'yulia@email.com',   telp: '088901234567', kecamatan: 'Wirobrajan',   totalLaporan: 1,  status: 'Nonaktif', bergabung: '25 Apr 2024', avatar: 'Y' },
+    { id: 'USR-009', nama: 'Bambang Eko',     email: 'bambang@email.com', telp: '089012345678', kecamatan: 'Kotagede',     totalLaporan: 9,  status: 'Aktif',    bergabung: '01 Mei 2024', avatar: 'B' },
+    { id: 'USR-010', nama: 'Sri Mulyati',     email: 'sri@email.com',     telp: '081122334455', kecamatan: 'Pakualaman',   totalLaporan: 4,  status: 'Diblokir', bergabung: '08 Mei 2024', avatar: 'S' },
+];
+
+const WARNA_AVATAR = [
+    'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500',
+    'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500',
+];
+
+const StatusBadge = ({ status }) => {
+    const config = {
+        'Aktif':    'bg-green-100 text-green-700 border border-green-200',
+        'Nonaktif': 'bg-slate-100 text-slate-500 border border-slate-200',
+        'Diblokir': 'bg-red-100 text-red-600 border border-red-200',
+    };
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config[status] || 'bg-slate-100 text-slate-500'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+            {status}
+        </span>
+    );
+};
+
+export default function PenggunaPage() {
+    useEffect(() => { window.scrollTo(0, 0); }, []);
+
+    const [search, setSearch]               = useState('');
+    const [filterStatus, setFilterStatus]   = useState('Semua');
+    const [selectedIds, setSelectedIds]     = useState([]);
+    const [modalUser, setModalUser]         = useState(null);
+    const [modalMode, setModalMode]         = useState('detail'); // 'detail' | 'edit' | 'tambah'
+    const [editData, setEditData]           = useState({});
+
+    const statusList = ['Semua', 'Aktif', 'Nonaktif', 'Diblokir'];
+
+    // Filter & pencarian
+    const filtered = DUMMY_PENGGUNA.filter((u) => {
+        const q = search.toLowerCase();
+        const matchSearch  = u.nama.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
+        const matchStatus  = filterStatus === 'Semua' || u.status === filterStatus;
+        return matchSearch && matchStatus;
+    });
+
+    const toggleAll = () => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(u => u.id));
+    const toggleOne = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
+    const openModal = (user, mode = 'detail') => {
+        setModalUser(user);
+        setModalMode(mode);
+        setEditData({ ...user });
+    };
+
+    const openTambah = () => {
+        setModalUser({});
+        setModalMode('tambah');
+        setEditData({ nama: '', email: '', telp: '', kecamatan: '', status: 'Aktif' });
+    };
+
+    // Ringkasan
+    const ringkasan = [
+        { label: 'Total Pengguna',  value: DUMMY_PENGGUNA.length, color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-100',  icon: 'group' },
+        { label: 'Aktif',           value: DUMMY_PENGGUNA.filter(u => u.status === 'Aktif').length,    color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', icon: 'check_circle' },
+        { label: 'Nonaktif',        value: DUMMY_PENGGUNA.filter(u => u.status === 'Nonaktif').length, color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200', icon: 'person_off' },
+        { label: 'Diblokir',        value: DUMMY_PENGGUNA.filter(u => u.status === 'Diblokir').length, color: 'text-red-600',   bg: 'bg-red-50',   border: 'border-red-100',   icon: 'block' },
+    ];
+
+    return (
+        <AdminLayout pageTitle="Manajemen Pengguna" pageSubtitle="Kelola akun warga yang terdaftar di sistem">
+
+            {/* Kartu Ringkasan */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                {ringkasan.map((r) => (
+                    <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                            <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-800">{r.value}</p>
+                            <p className="text-xs text-slate-500">{r.label}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Tabel Utama */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+                {/* Toolbar */}
+                <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+                    {/* Search */}
+                    <div className="relative flex-1 min-w-[180px]">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
+                        <input
+                            type="text"
+                            placeholder="Cari nama, email, atau ID..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors"
+                        />
+                    </div>
+
+                    {/* Filter Status */}
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 focus:outline-none focus:border-blue-400 bg-white"
+                    >
+                        {statusList.map(s => <option key={s}>{s}</option>)}
+                    </select>
+
+                    {/* Tombol Tambah */}
+                    <button
+                        onClick={openTambah}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors ml-auto"
+                    >
+                        <span className="material-symbols-outlined text-base">person_add</span>
+                        Tambah Pengguna
+                    </button>
+                </div>
+
+                {/* Bulk action bar */}
+                {selectedIds.length > 0 && (
+                    <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4">
+                        <span className="text-sm font-semibold text-blue-700">{selectedIds.length} pengguna dipilih</span>
+                        <button className="text-xs text-red-500 hover:underline font-semibold">Blokir Terpilih</button>
+                        <button className="text-xs text-green-600 hover:underline font-semibold">Aktifkan Terpilih</button>
+                        <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
+                    </div>
+                )}
+
+                {/* Tabel */}
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-slate-50 text-left">
+                                <th className="px-4 py-3">
+                                    <input type="checkbox" checked={selectedIds.length === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded" />
+                                </th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pengguna</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kontak</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kecamatan</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Total Laporan</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Bergabung</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="text-center py-16 text-slate-400">
+                                        <span className="material-symbols-outlined text-4xl block mb-2">person_search</span>
+                                        Tidak ada pengguna ditemukan
+                                    </td>
+                                </tr>
+                            ) : filtered.map((u, idx) => (
+                                <tr key={u.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(u.id) ? 'bg-blue-50/40' : ''}`}>
+                                    <td className="px-4 py-3">
+                                        <input type="checkbox" checked={selectedIds.includes(u.id)} onChange={() => toggleOne(u.id)} className="rounded" />
+                                    </td>
+                                    {/* Pengguna: Avatar + Nama + ID */}
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center flex-shrink-0`}>
+                                                <span className="text-white text-sm font-bold">{u.avatar}</span>
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-slate-800 text-sm">{u.nama}</p>
+                                                <p className="text-xs text-slate-400 font-mono">{u.id}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {/* Kontak */}
+                                    <td className="px-4 py-3">
+                                        <p className="text-slate-700 text-xs">{u.email}</p>
+                                        <p className="text-slate-400 text-xs mt-0.5">{u.telp}</p>
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 text-xs">{u.kecamatan}</td>
+                                    {/* Total Laporan */}
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-800 font-bold text-sm">{u.totalLaporan}</span>
+                                            <span className="text-slate-400 text-xs">laporan</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{u.bergabung}</td>
+                                    <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={() => openModal(u, 'detail')} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Lihat Detail">
+                                                <span className="material-symbols-outlined text-base">visibility</span>
+                                            </button>
+                                            <button onClick={() => openModal(u, 'edit')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Edit Pengguna">
+                                                <span className="material-symbols-outlined text-base">edit</span>
+                                            </button>
+                                            <button className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Blokir / Hapus">
+                                                <span className="material-symbols-outlined text-base">block</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
+                    <p className="text-xs text-slate-500">Menampilkan {filtered.length} dari {DUMMY_PENGGUNA.length} pengguna</p>
+                    <div className="flex gap-1">
+                        <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Sebelumnya</button>
+                        {[1, 2, 3].map((n) => (
+                            <button key={n} className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${n === 1 ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>{n}</button>
+                        ))}
+                        <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Berikutnya</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ======== MODAL ======== */}
+            {modalUser !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setModalUser(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                            <h2 className="font-bold text-slate-800 text-lg">
+                                {modalMode === 'detail' ? 'Detail Pengguna'
+                                    : modalMode === 'edit' ? 'Edit Pengguna'
+                                    : 'Tambah Pengguna Baru'}
+                            </h2>
+                            <button onClick={() => setModalUser(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="px-6 py-5 space-y-4">
+                            {/* Avatar besar (detail/edit) */}
+                            {modalMode !== 'tambah' && (
+                                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                                    <div className={`w-14 h-14 ${WARNA_AVATAR[DUMMY_PENGGUNA.findIndex(u => u.id === modalUser.id) % WARNA_AVATAR.length] || 'bg-blue-500'} rounded-2xl flex items-center justify-center`}>
+                                        <span className="text-white text-xl font-bold">{modalUser.avatar}</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-800">{modalUser.nama}</p>
+                                        <p className="text-xs text-slate-400 font-mono">{modalUser.id}</p>
+                                        <StatusBadge status={modalUser.status} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Form fields */}
+                            {['nama', 'email', 'telp', 'kecamatan'].map((field) => (
+                                <div key={field}>
+                                    <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field === 'telp' ? 'No. Telepon' : field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                                    {modalMode === 'detail' ? (
+                                        <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{modalUser[field] || '-'}</p>
+                                    ) : (
+                                        <input
+                                            type={field === 'email' ? 'email' : 'text'}
+                                            value={editData[field] || ''}
+                                            onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
+                                            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors"
+                                        />
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Status (khusus edit/tambah) */}
+                            {modalMode !== 'detail' && (
+                                <div>
+                                    <label className="text-xs text-slate-500 font-semibold block mb-1.5">Status Akun</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['Aktif', 'Nonaktif', 'Diblokir'].map((s) => (
+                                            <button
+                                                key={s}
+                                                onClick={() => setEditData({ ...editData, status: s })}
+                                                className={`py-2 rounded-xl text-xs font-semibold border-2 transition-all
+                                                    ${editData.status === s
+                                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                        : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Info tambahan (detail) */}
+                            {modalMode === 'detail' && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-blue-50 rounded-xl text-center">
+                                        <p className="text-2xl font-bold text-blue-700">{modalUser.totalLaporan}</p>
+                                        <p className="text-xs text-blue-500 mt-0.5">Total Laporan</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-xl text-center">
+                                        <p className="text-sm font-bold text-slate-700">{modalUser.bergabung}</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">Tanggal Bergabung</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+                            <button onClick={() => setModalUser(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors font-semibold">
+                                {modalMode === 'detail' ? 'Tutup' : 'Batal'}
+                            </button>
+                            {modalMode !== 'detail' && (
+                                <button onClick={() => setModalUser(null)} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold">
+                                    {modalMode === 'tambah' ? 'Tambahkan' : 'Simpan Perubahan'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </AdminLayout>
+    );
+}
