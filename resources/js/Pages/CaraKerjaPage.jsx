@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
+import Footer from '../Components/Footer';
 
 export default function CaraKerjaPage() {
     useEffect(() => {
@@ -94,15 +95,7 @@ export default function CaraKerjaPage() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-slate-900 dark:bg-black text-blue-400 font-public-sans text-xs text-slate-400 w-full border-t border-slate-800 mt-auto">
-                <div className="w-full py-12 px-6 flex flex-col justify-center items-center max-w-7xl mx-auto gap-2">
-                    <span className="text-white font-bold text-lg flex items-center gap-2">
-                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
-                        LaporWarga
-                    </span>
-                    <p className="text-center">© 2024 Pemerintah Daerah. Terintegrasi Smart City Indonesia.</p>
-                </div>
-            </footer>
+            <Footer/>
         </div>
     );
 }
