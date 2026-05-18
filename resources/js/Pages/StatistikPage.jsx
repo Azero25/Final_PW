@@ -75,12 +75,12 @@ export default function StatistikPage() {
                             </div>
                         </div>
                         <div className="flex-grow bg-slate-50 rounded-lg relative overflow-hidden group">
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126492.65158652427!2d110.3013898687786!3d-7.80324846462788!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a5787bd5b6bc5%3A0x21723fd4d3684f71!2sYogyakarta%2C%20Yogyakarta%20City%2C%20Special%20Region%20of%20Yogyakarta!5e0!3m2!1sen!2sid!4v1715872856000!5m2!1sen!2sid"
-                                className="w-full border-0 pointer-events-none"
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126492.65158652427!2d110.3013898687786!3d-7.80324846462788!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a5787bd5b6bc5%3A0x21723fd4d3684f71!2sYogyakarta%2C%20Yogyakarta%20City%2C%20Special%20Region%20of%20Yogyakarta!5e0!3m2!1sen!2sid!4v1715872856000!5m2!1sen!2sid" 
+                                className="w-full border-0 pointer-events-none" 
                                 style={{ height: 'calc(100% + 100px)', marginTop: '-100px' }}
-                                allowFullScreen=""
-                                loading="lazy"
+                                allowFullScreen="" 
+                                loading="lazy" 
                                 referrerPolicy="no-referrer-when-downgrade">
                             </iframe>
                             <div className="absolute inset-0 p-8 flex flex-col justify-end pointer-events-none">
@@ -97,7 +97,7 @@ export default function StatistikPage() {
                             <div className="absolute top-[55%] left-[48%] w-4 h-4 bg-tertiary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.5s' }}></div>
                             <div className="absolute top-[60%] left-[58%] w-4 h-4 bg-primary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.8s' }}></div>
                             <div className="absolute top-[48%] left-[62%] w-4 h-4 bg-secondary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '1.1s' }}></div>
-
+                           
                         </div>
                     </div>
                     {/* Categories Card */}
@@ -281,7 +281,7 @@ export default function StatistikPage() {
             </main>
 
             {/* Footer */}
-            <Footer/>
+            <Footer />
         </div>
     );
 }

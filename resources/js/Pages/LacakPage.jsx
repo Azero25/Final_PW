@@ -265,7 +265,7 @@ export default function LacakPage() {
             )}
 
             {/* Footer */}
-            <Footer/>
+            <Footer />
         </div>
     );
 }
