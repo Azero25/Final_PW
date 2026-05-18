@@ -1,15 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
+import axios from 'axios';
 
 /**
  * Komponen Halaman Utama (Landing Page)
  * Halaman pertama yang dilihat oleh publik (Citizen View).
  */
 export default function LandingPage() {
+    const [stats, setStats] = useState({
+        total: 0,
+        diproses: 0,
+        selesai: 0,
+        diprosesPct: 0,
+        selesaiPct: 0
+    });
+
     useEffect(() => {
         window.scrollTo(0, 0);
+        
+        // Fetch real stats
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get('/api/pengaduans');
+                const data = response.data;
+                const total = data.length;
+                const diproses = data.filter(i => i.status === 'Laporan Diterima' || i.status === 'Verifikasi' || i.status === 'Sedang Diproses').length;
+                const selesai = data.filter(i => i.status === 'Selesai').length;
+                
+                setStats({
+                    total,
+                    diproses,
+                    selesai,
+                    diprosesPct: total > 0 ? Math.round((diproses / total) * 100) : 0,
+                    selesaiPct: total > 0 ? Math.round((selesai / total) * 100) : 0,
+                });
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+            }
+        };
+
+        fetchStats();
     }, []);
 
     return (
@@ -57,8 +89,8 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-4 flex items-baseline gap-2">
-                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">12,450</span>
-                                   <span className="text-sm text-secondary hidden sm:block">+12% bulan ini</span>
+                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">{stats.total}</span>
+                                   <span className="text-sm text-secondary hidden sm:block">Laporan Real-time</span>
                             </div>
                         </div>
 
@@ -71,9 +103,9 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-4 relative z-10">
-                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">1,234</span>
+                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">{stats.diproses}</span>
                                 <div className="w-full bg-surface-container-high h-2 rounded-full mt-3">
-                                    <div className="bg-amber-500 h-2 rounded-full" style={{ width: "10%" }}></div>
+                                    <div className="bg-amber-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${stats.diprosesPct}%` }}></div>
                                 </div>
                             </div>
                         </div>
@@ -87,9 +119,9 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-4 relative z-10">
-                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">11,105</span>
+                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">{stats.selesai}</span>
                                 <div className="w-full bg-surface-container-high h-2 rounded-full mt-3">
-                                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: "89%" }}></div>
+                                    <div className="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${stats.selesaiPct}%` }}></div>
                                 </div>
                             </div>
                         </div>

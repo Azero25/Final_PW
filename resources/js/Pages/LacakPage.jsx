@@ -17,50 +17,8 @@ export default function LacakPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Data dummy untuk simulasi pencarian tiket
-    const dataTiketDummy = {
-        'LPW-2024-001234': {
-            nomorTiket: 'LPW-2024-001234',
-            judul: 'Jalan Berlubang di Jl. Malioboro Km. 3',
-            kategori: 'Infrastruktur',
-            kecamatan: 'Gedongtengen',
-            tanggalDibuat: '10 Mei 2024',
-            status: 'Sedang Diproses',
-            statusColor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            prioritas: 'Tinggi',
-            petugas: 'Bpk. Ahmad Fauzi',
-            dinas: 'Dinas Pekerjaan Umum Kota Yogyakarta',
-            deskripsi: 'Terdapat lubang besar di badan jalan yang membahayakan pengendara, khususnya sepeda motor. Lubang berdiameter sekitar 50cm dengan kedalaman 15cm.',
-            timeline: [
-                { tanggal: '10 Mei 2024, 09:30', status: 'Laporan Diterima', keterangan: 'Laporan Anda telah berhasil diterima dan sedang menunggu verifikasi.', icon: 'check_circle', color: 'text-green-500' },
-                { tanggal: '11 Mei 2024, 14:00', status: 'Verifikasi', keterangan: 'Laporan telah diverifikasi oleh tim admin dan diteruskan ke dinas terkait.', icon: 'verified', color: 'text-blue-500' },
-                { tanggal: '13 Mei 2024, 08:00', status: 'Sedang Diproses', keterangan: 'Petugas lapangan telah ditugaskan dan sedang dalam proses penanganan.', icon: 'engineering', color: 'text-yellow-500' },
-                { tanggal: '-', status: 'Selesai', keterangan: 'Menunggu penyelesaian pekerjaan di lapangan.', icon: 'task_alt', color: 'text-slate-300', pending: true },
-            ],
-        },
-        'LPW-2024-005678': {
-            nomorTiket: 'LPW-2024-005678',
-            judul: 'Lampu PJU Mati di Jl. Kaliurang',
-            kategori: 'Penerangan',
-            kecamatan: 'Depok',
-            tanggalDibuat: '5 Mei 2024',
-            status: 'Selesai',
-            statusColor: 'bg-green-100 text-green-800 border-green-200',
-            prioritas: 'Sedang',
-            petugas: 'Ibu Sari Dewi',
-            dinas: 'Dinas Perhubungan Kota Yogyakarta',
-            deskripsi: 'Lampu penerangan jalan umum di depan nomor 45 Jl. Kaliurang tidak menyala selama 3 hari terakhir, sehingga kawasan tersebut gelap pada malam hari.',
-            timeline: [
-                { tanggal: '5 Mei 2024, 10:15', status: 'Laporan Diterima', keterangan: 'Laporan Anda telah berhasil diterima dan sedang menunggu verifikasi.', icon: 'check_circle', color: 'text-green-500' },
-                { tanggal: '6 Mei 2024, 09:00', status: 'Verifikasi', keterangan: 'Laporan telah diverifikasi dan diteruskan ke Dinas Perhubungan.', icon: 'verified', color: 'text-blue-500' },
-                { tanggal: '7 Mei 2024, 11:30', status: 'Sedang Diproses', keterangan: 'Teknisi sedang melakukan penggantian lampu PJU.', icon: 'engineering', color: 'text-yellow-500' },
-                { tanggal: '8 Mei 2024, 16:00', status: 'Selesai', keterangan: 'Penggantian lampu PJU telah berhasil diselesaikan. Terima kasih atas laporan Anda!', icon: 'task_alt', color: 'text-green-500' },
-            ],
-        },
-    };
-
     // Fungsi untuk menangani pencarian tiket
-    const handleLacak = (e) => {
+    const handleLacak = async (e) => {
         e.preventDefault();
         setError('');
         setHasilLacak(null);
@@ -71,16 +29,40 @@ export default function LacakPage() {
         }
 
         setIsLoading(true);
-        // Simulasi delay jaringan
-        setTimeout(() => {
-            const tiket = dataTiketDummy[nomorTiket.trim().toUpperCase()];
-            if (tiket) {
-                setHasilLacak(tiket);
-            } else {
-                setError('Nomor tiket tidak ditemukan. Pastikan nomor tiket yang Anda masukkan sudah benar.');
+        try {
+            const response = await fetch(`/api/pengaduans/${nomorTiket.trim().toUpperCase()}`);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Nomor tiket tidak ditemukan. Pastikan nomor tiket yang Anda masukkan sudah benar.');
+                }
+                throw new Error('Terjadi kesalahan pada server.');
             }
+
+            const data = await response.json();
+            
+            // pastikan timeline valid
+            if (!data.timeline || !Array.isArray(data.timeline)) {
+                data.timeline = [];
+            }
+            // tambahkan fallback pending step jika sudah tidak Selesai
+            if (data.status !== 'Selesai' && data.timeline.length > 0) {
+                data.timeline.push({ 
+                    tanggal: '-', 
+                    status: 'Selesai', 
+                    keterangan: 'Menunggu penyelesaian pekerjaan di lapangan.', 
+                    icon: 'task_alt', 
+                    color: 'text-slate-300', 
+                    pending: true 
+                });
+            }
+
+            setHasilLacak(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
             setIsLoading(false);
-        }, 1200);
+        }
     };
 
     return (
