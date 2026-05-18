@@ -37,6 +37,22 @@ const StatusBadge = ({ status }) => {
 export default function PenggunaPage() {
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
+    const [penggunaList, setPenggunaList] = useState(() => {
+        const stored = localStorage.getItem('admin_pengguna');
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        return DUMMY_PENGGUNA;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('admin_pengguna', JSON.stringify(penggunaList));
+    }, [penggunaList]);
+
     const [search, setSearch]               = useState('');
     const [filterStatus, setFilterStatus]   = useState('Semua');
     const [selectedIds, setSelectedIds]     = useState([]);
@@ -47,7 +63,7 @@ export default function PenggunaPage() {
     const statusList = ['Semua', 'Aktif', 'Nonaktif', 'Diblokir'];
 
     // Filter & pencarian
-    const filtered = DUMMY_PENGGUNA.filter((u) => {
+    const filtered = penggunaList.filter((u) => {
         const q = search.toLowerCase();
         const matchSearch  = u.nama.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
         const matchStatus  = filterStatus === 'Semua' || u.status === filterStatus;
@@ -69,12 +85,55 @@ export default function PenggunaPage() {
         setEditData({ nama: '', email: '', telp: '', kecamatan: '', status: 'Aktif' });
     };
 
+    const handleSave = () => {
+        if (modalMode === 'tambah') {
+            const nextNum = penggunaList.length > 0 
+                ? Math.max(...penggunaList.map(u => parseInt(u.id.split('-')[1]) || 0)) + 1 
+                : 1;
+            const newId = `USR-${String(nextNum).padStart(3, '0')}`;
+            const newUser = {
+                id: newId,
+                nama: editData.nama || 'Pengguna Baru',
+                email: editData.email || 'baru@email.com',
+                telp: editData.telp || '-',
+                kecamatan: editData.kecamatan || '-',
+                totalLaporan: 0,
+                status: editData.status || 'Aktif',
+                bergabung: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                avatar: (editData.nama || 'P').charAt(0).toUpperCase()
+            };
+            setPenggunaList(prev => [...prev, newUser]);
+        } else if (modalMode === 'edit') {
+            setPenggunaList(prev => prev.map(u => u.id === editData.id ? { ...u, ...editData, avatar: (editData.nama || u.nama || 'P').charAt(0).toUpperCase() } : u));
+        }
+        setModalUser(null);
+    };
+
+    const handleDeleteOne = (id) => {
+        if (window.confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
+            setPenggunaList(prev => prev.filter(u => u.id !== id));
+            setSelectedIds(prev => prev.filter(i => i !== id));
+        }
+    };
+
+    const handleBulkStatus = (status) => {
+        setPenggunaList(prev => prev.map(u => selectedIds.includes(u.id) ? { ...u, status } : u));
+        setSelectedIds([]);
+    };
+
+    const handleBulkDelete = () => {
+        if (window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} pengguna terpilih?`)) {
+            setPenggunaList(prev => prev.filter(u => !selectedIds.includes(u.id)));
+            setSelectedIds([]);
+        }
+    };
+
     // Ringkasan
     const ringkasan = [
-        { label: 'Total Pengguna',  value: DUMMY_PENGGUNA.length, color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-100',  icon: 'group' },
-        { label: 'Aktif',           value: DUMMY_PENGGUNA.filter(u => u.status === 'Aktif').length,    color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', icon: 'check_circle' },
-        { label: 'Nonaktif',        value: DUMMY_PENGGUNA.filter(u => u.status === 'Nonaktif').length, color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200', icon: 'person_off' },
-        { label: 'Diblokir',        value: DUMMY_PENGGUNA.filter(u => u.status === 'Diblokir').length, color: 'text-red-600',   bg: 'bg-red-50',   border: 'border-red-100',   icon: 'block' },
+        { label: 'Total Pengguna',  value: penggunaList.length, color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-100',  icon: 'group' },
+        { label: 'Aktif',           value: penggunaList.filter(u => u.status === 'Aktif').length,    color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', icon: 'check_circle' },
+        { label: 'Nonaktif',        value: penggunaList.filter(u => u.status === 'Nonaktif').length, color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200', icon: 'person_off' },
+        { label: 'Diblokir',        value: penggunaList.filter(u => u.status === 'Diblokir').length, color: 'text-red-600',   bg: 'bg-red-50',   border: 'border-red-100',   icon: 'block' },
     ];
 
     return (
@@ -133,10 +192,20 @@ export default function PenggunaPage() {
 
                 {/* Bulk action bar */}
                 {selectedIds.length > 0 && (
-                    <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4">
+                    <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
                         <span className="text-sm font-semibold text-blue-700">{selectedIds.length} pengguna dipilih</span>
-                        <button className="text-xs text-red-500 hover:underline font-semibold">Blokir Terpilih</button>
-                        <button className="text-xs text-green-600 hover:underline font-semibold">Aktifkan Terpilih</button>
+                        <button onClick={() => handleBulkStatus('Diblokir')} className="text-xs text-amber-600 hover:underline font-semibold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">block</span>
+                            Blokir Terpilih
+                        </button>
+                        <button onClick={() => handleBulkStatus('Aktif')} className="text-xs text-green-600 hover:underline font-semibold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                            Aktifkan Terpilih
+                        </button>
+                        <button onClick={handleBulkDelete} className="text-xs text-red-600 hover:underline font-semibold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">delete</span>
+                            Hapus Terpilih
+                        </button>
                         <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
                     </div>
                 )}
@@ -206,8 +275,8 @@ export default function PenggunaPage() {
                                             <button onClick={() => openModal(u, 'edit')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Edit Pengguna">
                                                 <span className="material-symbols-outlined text-base">edit</span>
                                             </button>
-                                            <button className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Blokir / Hapus">
-                                                <span className="material-symbols-outlined text-base">block</span>
+                                            <button onClick={() => handleDeleteOne(u.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus Pengguna">
+                                                <span className="material-symbols-outlined text-base">delete</span>
                                             </button>
                                         </div>
                                     </td>
@@ -219,7 +288,7 @@ export default function PenggunaPage() {
 
                 {/* Pagination */}
                 <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                    <p className="text-xs text-slate-500">Menampilkan {filtered.length} dari {DUMMY_PENGGUNA.length} pengguna</p>
+                    <p className="text-xs text-slate-500">Menampilkan {filtered.length} dari {penggunaList.length} pengguna</p>
                     <div className="flex gap-1">
                         <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Sebelumnya</button>
                         {[1, 2, 3].map((n) => (
@@ -252,7 +321,7 @@ export default function PenggunaPage() {
                             {/* Avatar besar (detail/edit) */}
                             {modalMode !== 'tambah' && (
                                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                                    <div className={`w-14 h-14 ${WARNA_AVATAR[DUMMY_PENGGUNA.findIndex(u => u.id === modalUser.id) % WARNA_AVATAR.length] || 'bg-blue-500'} rounded-2xl flex items-center justify-center`}>
+                                    <div className={`w-14 h-14 ${WARNA_AVATAR[penggunaList.findIndex(u => u.id === modalUser.id) % WARNA_AVATAR.length] || 'bg-blue-500'} rounded-2xl flex items-center justify-center`}>
                                         <span className="text-white text-xl font-bold">{modalUser.avatar}</span>
                                     </div>
                                     <div>
@@ -322,7 +391,7 @@ export default function PenggunaPage() {
                                 {modalMode === 'detail' ? 'Tutup' : 'Batal'}
                             </button>
                             {modalMode !== 'detail' && (
-                                <button onClick={() => setModalUser(null)} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold">
+                                <button onClick={handleSave} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold">
                                     {modalMode === 'tambah' ? 'Tambahkan' : 'Simpan Perubahan'}
                                 </button>
                             )}

@@ -13,6 +13,25 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
     const [isDesktop, setIsDesktop] = useState(false);
     const [user, setUser] = useState(null);
 
+    // Dropdown & Profile Modal State
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [adminProfile, setAdminProfile] = useState({
+        nama: '',
+        email: '',
+        telepon: '',
+        alamat: '',
+        desa: '',
+        kelurahan: '',
+        kecamatan: '',
+        kabupaten: '',
+        provinsi: '',
+        nik: ''
+    });
+    const [profileErrors, setProfileErrors] = useState({});
+    const [saving, setSaving] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+
     // Deteksi ukuran layar
     useEffect(() => {
         const check = () => {
@@ -50,6 +69,84 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
     const handleLogout = () => {
         sessionStorage.removeItem('user');
         navigate('/');
+    };
+
+    const openProfileModal = () => {
+        const email = user?.email || 'admin@lapor.go.id';
+        const stored = localStorage.getItem(`profile_${email}`);
+        if (stored) {
+            setAdminProfile(JSON.parse(stored));
+        } else {
+            setAdminProfile({
+                nama: user?.nama || 'Admin Utama',
+                email: email,
+                telepon: '089876543210',
+                alamat: 'Kantor Balaikota Yogyakarta, Jl. Kenari No. 56',
+                desa: 'Muja Muju',
+                kelurahan: 'Muja Muju',
+                kecamatan: 'Umbulharjo',
+                kabupaten: 'Kota Yogyakarta',
+                provinsi: 'DI Yogyakarta',
+                nik: '3471010101010001'
+            });
+        }
+        setProfileErrors({});
+        setProfileModalOpen(true);
+    };
+
+    const validateProfile = () => {
+        const errors = {};
+        if (!adminProfile.nama?.trim()) errors.nama = 'Nama wajib diisi';
+        if (!adminProfile.email?.trim()) errors.email = 'Email wajib diisi';
+        if (!adminProfile.telepon?.trim()) errors.telepon = 'No. Telepon wajib diisi';
+        if (!adminProfile.alamat?.trim()) errors.alamat = 'Alamat Lengkap wajib diisi';
+        if (!adminProfile.desa?.trim()) errors.desa = 'Desa/Kelurahan wajib diisi';
+        if (!adminProfile.kecamatan?.trim()) errors.kecamatan = 'Kecamatan wajib diisi';
+        if (!adminProfile.kabupaten?.trim()) errors.kabupaten = 'Kabupaten wajib diisi';
+        if (!adminProfile.provinsi?.trim()) errors.provinsi = 'Provinsi wajib diisi';
+        
+        if (!adminProfile.nik?.trim()) {
+            errors.nik = 'NIK wajib diisi';
+        } else if (!/^\d+$/.test(adminProfile.nik)) {
+            errors.nik = 'NIK harus berupa angka';
+        } else if (adminProfile.nik.length !== 16) {
+            errors.nik = 'NIK harus berjumlah 16 digit';
+        }
+
+        setProfileErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleSaveProfile = (e) => {
+        e.preventDefault();
+        if (!validateProfile()) return;
+
+        setSaving(true);
+        setTimeout(() => {
+            const updatedUser = { 
+                ...user, 
+                nama: adminProfile.nama, 
+                email: adminProfile.email 
+            };
+            sessionStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+
+            const profileKey = `profile_${adminProfile.email}`;
+            localStorage.setItem(profileKey, JSON.stringify({
+                ...adminProfile,
+                role: 'admin',
+                tglDaftar: '01 Desember 2023',
+                status: 'Terverifikasi'
+            }));
+
+            // Dispatch an event so other pages get notified of changes
+            window.dispatchEvent(new Event('profileUpdated'));
+
+            setSaving(false);
+            setProfileModalOpen(false);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        }, 1000);
     };
 
     // Sidebar collapsed hanya berlaku di desktop
@@ -125,10 +222,19 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                             <span className="text-white font-bold text-sm">{user?.nama?.charAt(0) || 'A'}</span>
                         </div>
                         {(!collapsed || !isDesktop) && (
-                            <div className="overflow-hidden">
+                            <div className="overflow-hidden flex-grow">
                                 <p className="text-sm font-semibold leading-tight">{user?.nama || 'Admin Utama'}</p>
                                 <p className="text-slate-400 text-xs truncate">{user?.email || 'admin@lapor.go.id'}</p>
                             </div>
+                        )}
+                        {(!collapsed || !isDesktop) && (
+                            <button 
+                                onClick={openProfileModal}
+                                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors flex-shrink-0"
+                                title="Edit Profil Admin"
+                            >
+                                <span className="material-symbols-outlined text-sm">edit</span>
+                            </button>
                         )}
                     </div>
                     {(!collapsed || !isDesktop) && (
@@ -140,10 +246,10 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                     )}
                 </div>
             </aside>
-
+ 
             {/* ====== MAIN CONTENT ====== */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-
+ 
                 {/* Topbar */}
                 <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -164,17 +270,216 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                             <span className="material-symbols-outlined">notifications</span>
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center cursor-pointer">
-                            <span className="text-white font-bold text-sm">{user?.nama?.charAt(0) || 'A'}</span>
+                        
+                        <div className="relative">
+                            <button 
+                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center cursor-pointer focus:outline-none hover:ring-2 hover:ring-blue-500/30 transition-all"
+                            >
+                                <span className="text-white font-bold text-sm">{user?.nama?.charAt(0) || 'A'}</span>
+                            </button>
+                            
+                            {dropdownOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                                    <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+                                        <div className="px-4 py-2 border-b border-slate-100">
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LOGGED IN AS</p>
+                                            <p className="text-sm font-bold text-slate-800 truncate">{user?.nama || 'Admin Utama'}</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                setDropdownOpen(false);
+                                                openProfileModal();
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors font-semibold"
+                                        >
+                                            <span className="material-symbols-outlined text-lg text-slate-400">person</span>
+                                            Edit Profil
+                                        </button>
+                                        <button 
+                                            onClick={handleLogout}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors font-semibold border-t border-slate-100"
+                                        >
+                                            <span className="material-symbols-outlined text-lg text-red-500">logout</span>
+                                            Logout Admin
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </header>
-
+ 
                 {/* Konten Scrollable */}
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6">
                     {children}
                 </main>
             </div>
+
+            {/* ====== EDIT PROFILE ADMIN MODAL ====== */}
+            {profileModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setProfileModalOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                            <div>
+                                <h2 className="font-bold text-slate-800 text-lg">Edit Profil Administrator</h2>
+                                <p className="text-xs text-slate-400 mt-0.5">Perbarui data profil dan demografi admin</p>
+                            </div>
+                            <button onClick={() => setProfileModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Form Body */}
+                        <form onSubmit={handleSaveProfile}>
+                            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Nama */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Nama Lengkap</label>
+                                        <input
+                                            type="text"
+                                            value={adminProfile.nama}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, nama: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.nama ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.nama && <p className="text-xs text-red-500 mt-1">{profileErrors.nama}</p>}
+                                    </div>
+
+                                    {/* Email */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Email</label>
+                                        <input
+                                            type="email"
+                                            value={adminProfile.email}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, email: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.email ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.email && <p className="text-xs text-red-500 mt-1">{profileErrors.email}</p>}
+                                    </div>
+
+                                    {/* NIK */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">NIK (16 Digit)</label>
+                                        <input
+                                            type="text"
+                                            maxLength={16}
+                                            value={adminProfile.nik}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, nik: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.nik ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.nik && <p className="text-xs text-red-500 mt-1">{profileErrors.nik}</p>}
+                                    </div>
+
+                                    {/* Telepon */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">No. Telepon</label>
+                                        <input
+                                            type="text"
+                                            value={adminProfile.telepon}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, telepon: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.telepon ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.telepon && <p className="text-xs text-red-500 mt-1">{profileErrors.telepon}</p>}
+                                    </div>
+
+                                    {/* Alamat Lengkap */}
+                                    <div className="md:col-span-2">
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Alamat Lengkap</label>
+                                        <textarea
+                                            rows={2}
+                                            value={adminProfile.alamat}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, alamat: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors resize-none ${profileErrors.alamat ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.alamat && <p className="text-xs text-red-500 mt-1">{profileErrors.alamat}</p>}
+                                    </div>
+
+                                    {/* Desa / Kelurahan */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Desa / Kelurahan</label>
+                                        <input
+                                            type="text"
+                                            value={adminProfile.desa}
+                                            onChange={(e) => {
+                                                setAdminProfile({
+                                                    ...adminProfile,
+                                                    desa: e.target.value,
+                                                    kelurahan: e.target.value
+                                                });
+                                            }}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.desa ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.desa && <p className="text-xs text-red-500 mt-1">{profileErrors.desa}</p>}
+                                    </div>
+
+                                    {/* Kecamatan */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Kecamatan</label>
+                                        <input
+                                            type="text"
+                                            value={adminProfile.kecamatan}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, kecamatan: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.kecamatan ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.kecamatan && <p className="text-xs text-red-500 mt-1">{profileErrors.kecamatan}</p>}
+                                    </div>
+
+                                    {/* Kabupaten */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Kabupaten</label>
+                                        <input
+                                            type="text"
+                                            value={adminProfile.kabupaten}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, kabupaten: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.kabupaten ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.kabupaten && <p className="text-xs text-red-500 mt-1">{profileErrors.kabupaten}</p>}
+                                    </div>
+
+                                    {/* Provinsi */}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Provinsi</label>
+                                        <input
+                                            type="text"
+                                            value={adminProfile.provinsi}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, provinsi: e.target.value })}
+                                            className={`w-full px-3.5 py-2 text-sm border rounded-xl focus:outline-none focus:border-blue-400 transition-colors ${profileErrors.provinsi ? 'border-red-400 bg-red-50/20' : 'border-slate-200'}`}
+                                        />
+                                        {profileErrors.provinsi && <p className="text-xs text-red-500 mt-1">{profileErrors.provinsi}</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                                <button type="button" onClick={() => setProfileModalOpen(false)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors font-semibold">
+                                    Batal
+                                </button>
+                                <button type="submit" disabled={saving} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold flex items-center gap-2 disabled:opacity-50">
+                                    {saving && (
+                                        <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                    )}
+                                    {saving ? 'Menyimpan...' : 'Simpan Profil'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ====== SUCCESS TOAST ====== */}
+            {showToast && (
+                <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl bg-emerald-50 border border-emerald-200 text-emerald-800 animate-in fade-in slide-in-from-top-3 duration-300">
+                    <span className="material-symbols-outlined text-2xl flex-shrink-0 text-emerald-600">check_circle</span>
+                    <p className="text-sm font-semibold">Profil Admin berhasil diperbarui!</p>
+                </div>
+            )}
         </div>
     );
 }
