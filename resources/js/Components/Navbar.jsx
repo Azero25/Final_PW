@@ -10,20 +10,50 @@ export default function Navbar() {
     const location = useLocation();
     const [user, setUser] = useState(null);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const menuRef = useRef(null);
 
-    useEffect(() => {
+    // Fungsi memuat data user terbaru dari sessionStorage & localStorage
+    const loadUser = () => {
         const sesi = sessionStorage.getItem('user');
-        if (sesi) setUser(JSON.parse(sesi));
-        else setUser(null);
-        setMenuOpen(false); // tutup menu saat pindah halaman
+        if (sesi) {
+            const parsedUser = JSON.parse(sesi);
+            // Muat profile tambahan dari localStorage jika ada (seperti nama baru dan avatar)
+            const localData = localStorage.getItem(`profile_${parsedUser.email}`);
+            if (localData) {
+                const profile = JSON.parse(localData);
+                setUser({
+                    ...parsedUser,
+                    nama: profile.nama || parsedUser.nama,
+                    avatar: profile.avatar || null
+                });
+            } else {
+                setUser(parsedUser);
+            }
+        } else {
+            setUser(null);
+        }
+    };
+
+    // Muat user saat pindah halaman
+    useEffect(() => {
+        loadUser();
+        setMenuOpen(false);
+        setDropdownOpen(false);
     }, [location.pathname]);
 
-    // Tutup menu saat klik di luar
+    // Listener event agar Navbar langsung update saat profil diubah
+    useEffect(() => {
+        window.addEventListener('profileUpdated', loadUser);
+        return () => window.removeEventListener('profileUpdated', loadUser);
+    }, []);
+
+    // Tutup menu & dropdown saat klik di luar
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
                 setMenuOpen(false);
+                setDropdownOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -76,31 +106,60 @@ export default function Navbar() {
 
                     {/* Auth section (desktop) */}
                     {user ? (
-                        <div className="hidden md:flex items-center gap-2">
-                            {user.role === 'admin' ? (
-                                <Link to="/admin/dashboard"
-                                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg border border-slate-700 transition-colors">
-                                    <div className="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white text-xs font-bold">{user.nama?.charAt(0)}</span>
+                        <div className="hidden md:flex items-center gap-4 relative">
+                            {/* User Avatar + Dropdown Trigger */}
+                            <button 
+                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/20"
+                            >
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden border border-blue-500/10">
+                                    {user.avatar ? (
+                                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-white text-sm font-bold">{user.nama?.charAt(0).toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-col items-start max-w-[120px]">
+                                    <span className="text-slate-800 text-sm font-bold leading-tight truncate w-full text-left">{user.nama}</span>
+                                    <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider">{user.role === 'admin' ? 'Admin' : 'Warga'}</span>
+                                </div>
+                                <span className="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {dropdownOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl border border-slate-100 shadow-[0px_10px_35px_rgba(15,23,42,0.08)] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-1.5 border-b border-slate-50">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aktivitas</p>
                                     </div>
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-white text-xs font-bold leading-tight">{user.nama}</span>
-                                        <span className="text-blue-400 text-[10px] font-semibold uppercase tracking-wider">Admin Panel →</span>
-                                    </div>
-                                </Link>
-                            ) : (
-                                <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100">
-                                    <div className="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white text-xs font-bold">{user.nama?.charAt(0)}</span>
-                                    </div>
-                                    <span className="text-sm font-semibold text-blue-700">{user.nama}</span>
+                                    <Link 
+                                        to="/profile" 
+                                        onClick={() => setDropdownOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+                                    >
+                                        <span className="material-symbols-outlined text-lg text-slate-400">manage_accounts</span>
+                                        Edit Profil
+                                    </Link>
+                                    {user.role === 'admin' && (
+                                        <Link 
+                                            to="/admin/dashboard" 
+                                            onClick={() => setDropdownOpen(false)}
+                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+                                        >
+                                            <span className="material-symbols-outlined text-lg text-slate-400">dashboard</span>
+                                            Admin Dashboard
+                                        </Link>
+                                    )}
+                                    <div className="border-t border-slate-100 my-1"></div>
+                                    <button 
+                                        onClick={() => { setDropdownOpen(false); handleLogout(); }}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium cursor-pointer"
+                                    >
+                                        <span className="material-symbols-outlined text-lg text-red-500">logout</span>
+                                        Keluar
+                                    </button>
                                 </div>
                             )}
-                            <button onClick={handleLogout}
-                                className="flex items-center gap-1 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors font-semibold">
-                                <span className="material-symbols-outlined text-base">logout</span>
-                                <span className="hidden lg:inline">Keluar</span>
-                            </button>
                         </div>
                     ) : (
                         <div className="hidden md:flex items-center gap-2">
@@ -149,15 +208,26 @@ export default function Navbar() {
                     {user ? (
                         <div className="space-y-1">
                             {/* Info user */}
-                            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${user.role === 'admin' ? 'bg-slate-800' : 'bg-blue-50'}`}>
-                                <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <span className="text-white text-sm font-bold">{user.nama?.charAt(0)}</span>
+                            <Link to="/profile" className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-100 ${user.role === 'admin' ? 'bg-slate-800 text-white hover:bg-slate-750' : 'bg-blue-50 hover:bg-blue-100/50'}`}>
+                                <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden border border-blue-600/10">
+                                    {user.avatar ? (
+                                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-white text-sm font-bold">{user.nama?.charAt(0).toUpperCase()}</span>
+                                    )}
                                 </div>
-                                <div>
-                                    <p className={`text-sm font-bold ${user.role === 'admin' ? 'text-white' : 'text-blue-700'}`}>{user.nama}</p>
-                                    <p className={`text-xs ${user.role === 'admin' ? 'text-blue-400' : 'text-blue-500'}`}>{user.email}</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-bold truncate ${user.role === 'admin' ? 'text-white' : 'text-blue-700'}`}>{user.nama}</p>
+                                    <p className={`text-xs truncate ${user.role === 'admin' ? 'text-blue-400' : 'text-blue-500'}`}>{user.email}</p>
                                 </div>
-                            </div>
+                                <span className="material-symbols-outlined text-xs opacity-60">arrow_forward_ios</span>
+                            </Link>
+                            {/* Edit Profil link */}
+                            <Link to="/profile"
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700">
+                                <span className="material-symbols-outlined text-base">manage_accounts</span>
+                                Edit Profil Saya
+                            </Link>
                             {/* Admin panel link */}
                             {user.role === 'admin' && (
                                 <Link to="/admin/dashboard"
@@ -168,7 +238,7 @@ export default function Navbar() {
                             )}
                             {/* Logout */}
                             <button onClick={handleLogout}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors">
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer">
                                 <span className="material-symbols-outlined text-base">logout</span>
                                 Keluar
                             </button>

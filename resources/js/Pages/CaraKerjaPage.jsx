@@ -95,7 +95,7 @@ export default function CaraKerjaPage() {
             </main>
 
             {/* Footer */}
-            <Footer/>
+            <Footer />
         </div>
     );
 }
