@@ -16,7 +16,7 @@ class AuthController extends Controller
         ]);
 
         $user = \App\Models\User::create([
-            'name' => $request->name,
+            'nama_lengkap' => $request->name,
             'email' => $request->email,
             'password' => \Illuminate\Support\Facades\Hash::make($request->password),
             'role' => 'warga',

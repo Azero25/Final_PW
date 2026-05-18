@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 
@@ -8,29 +8,24 @@ import Footer from '../Components/Footer';
  * Memungkinkan warga melacak status pengaduan mereka berdasarkan nomor tiket.
  */
 export default function LacakPage() {
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
-
+    const location = useLocation();
     const [nomorTiket, setNomorTiket] = useState('');
     const [hasilLacak, setHasilLacak] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Fungsi untuk menangani pencarian tiket
-    const handleLacak = async (e) => {
-        e.preventDefault();
+    const performSearch = async (tiket) => {
         setError('');
         setHasilLacak(null);
 
-        if (!nomorTiket.trim()) {
+        if (!tiket || !tiket.trim()) {
             setError('Nomor tiket tidak boleh kosong.');
             return;
         }
 
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/pengaduans/${nomorTiket.trim().toUpperCase()}`);
+            const response = await fetch(`/api/pengaduans/${tiket.trim().toUpperCase()}`);
             
             if (!response.ok) {
                 if (response.status === 404) {
@@ -41,11 +36,9 @@ export default function LacakPage() {
 
             const data = await response.json();
             
-            // pastikan timeline valid
             if (!data.timeline || !Array.isArray(data.timeline)) {
                 data.timeline = [];
             }
-            // tambahkan fallback pending step jika sudah tidak Selesai
             if (data.status !== 'Selesai' && data.timeline.length > 0) {
                 data.timeline.push({ 
                     tanggal: '-', 
@@ -63,6 +56,22 @@ export default function LacakPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        // Cek query string ?tiket=...
+        const searchParams = new URLSearchParams(location.search);
+        const tiketFromQuery = searchParams.get('tiket');
+        if (tiketFromQuery) {
+            setNomorTiket(tiketFromQuery);
+            performSearch(tiketFromQuery);
+        }
+    }, [location.search]);
+
+    const handleLacak = async (e) => {
+        e.preventDefault();
+        performSearch(nomorTiket);
     };
 
     return (

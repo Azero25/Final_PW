@@ -6,26 +6,32 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Kelurahan;
 
 class UserController extends Controller
 {
     public function index()
     {
         $users = User::all()->map(function ($user) {
-            $totalLaporan = \App\Models\Pengaduan::where('nama', $user->name)->count();
+            $totalLaporan = \App\Models\Laporan::where('id_user', $user->id_user)->count();
             
+            $kelurahanName = '-';
+            if ($user->id_kelurahan) {
+                $kelurahanName = Kelurahan::find($user->id_kelurahan)?->nama_kelurahan ?? '-';
+            }
+
             return [
-                'id' => 'USR-' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
-                'nama' => $user->name,
+                'id' => 'USR-' . str_pad($user->id_user, 3, '0', STR_PAD_LEFT),
+                'nama' => $user->nama_lengkap,
                 'email' => $user->email,
-                'telp' => $user->telp ?? '-', 
-                'kecamatan' => $user->kecamatan ?? '-', 
+                'telp' => $user->no_hp ?? '-', 
+                'kecamatan' => $kelurahanName, 
                 'totalLaporan' => $totalLaporan, 
                 'status' => $user->status ?? 'Aktif',
-                'bergabung' => $user->created_at ? $user->created_at->format('d M Y') : '-',
-                'avatar' => strtoupper(substr($user->name, 0, 1)),
+                'bergabung' => $user->tanggal_bergabung ? \Carbon\Carbon::parse($user->tanggal_bergabung)->format('d M Y') : '-',
+                'avatar' => strtoupper(substr($user->nama_lengkap, 0, 1)),
                 'role' => $user->role,
-                'original_id' => $user->id,
+                'original_id' => $user->id_user,
             ];
         });
 
@@ -42,16 +48,30 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'telp' => 'nullable|string|max:20',
             'kecamatan' => 'nullable|string|max:255',
-            'status' => 'required|string|in:Aktif,Nonaktif,Diblokir',
+            'status' => 'nullable|string',
         ]);
 
+        $kelurahanId = null;
+        if ($request->kecamatan) {
+            $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+            $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+                ['nama_kecamatan' => 'Kecamatan Default'],
+                ['id_provinsi' => $provinsi->id_provinsi]
+            );
+            $kelurahan = Kelurahan::firstOrCreate(
+                ['nama_kelurahan' => $request->kecamatan],
+                ['id_kecamatan' => $kecamatanDb->id_kecamatan]
+            );
+            $kelurahanId = $kelurahan->id_kelurahan;
+        }
+
         $user = User::create([
-            'name' => $request->nama,
+            'nama_lengkap' => $request->nama,
             'email' => $request->email,
-            'telp' => $request->telp,
-            'kecamatan' => $request->kecamatan,
-            'status' => $request->status,
-            'password' => Hash::make('password123'), // default password
+            'no_hp' => $request->telp,
+            'id_kelurahan' => $kelurahanId,
+            'status' => $request->status ?? 'Aktif',
+            'password' => Hash::make('password123'),
             'role' => 'warga',
         ]);
 
@@ -68,18 +88,32 @@ class UserController extends Controller
 
         $request->validate([
             'nama' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id_user . ',id_user',
             'telp' => 'nullable|string|max:20',
             'kecamatan' => 'nullable|string|max:255',
-            'status' => 'required|string|in:Aktif,Nonaktif,Diblokir',
+            'status' => 'nullable|string',
         ]);
 
+        $kelurahanId = null;
+        if ($request->kecamatan) {
+            $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+            $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+                ['nama_kecamatan' => 'Kecamatan Default'],
+                ['id_provinsi' => $provinsi->id_provinsi]
+            );
+            $kelurahan = Kelurahan::firstOrCreate(
+                ['nama_kelurahan' => $request->kecamatan],
+                ['id_kecamatan' => $kecamatanDb->id_kecamatan]
+            );
+            $kelurahanId = $kelurahan->id_kelurahan;
+        }
+
         $user->update([
-            'name' => $request->nama,
+            'nama_lengkap' => $request->nama,
             'email' => $request->email,
-            'telp' => $request->telp,
-            'kecamatan' => $request->kecamatan,
-            'status' => $request->status,
+            'no_hp' => $request->telp,
+            'id_kelurahan' => $kelurahanId,
+            'status' => $request->status ?? $user->status,
         ]);
 
         return response()->json([
@@ -97,9 +131,7 @@ class UserController extends Controller
             'status' => 'required|string|in:Aktif,Nonaktif,Diblokir',
         ]);
 
-        $user->update([
-            'status' => $request->status,
-        ]);
+        $user->update(['status' => $request->status]);
 
         return response()->json([
             'status' => 'success',

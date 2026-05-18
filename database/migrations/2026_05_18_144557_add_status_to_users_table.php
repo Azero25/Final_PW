@@ -6,25 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('status')->default('Aktif')->after('role');
-            $table->string('telp')->nullable()->after('email');
-            $table->string('kecamatan')->nullable()->after('telp');
+            $table->string('status')->default('Aktif')->after('role'); // Aktif | Nonaktif | Diblokir
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['status', 'telp', 'kecamatan']);
+            $table->dropColumn('status');
         });
     }
 };

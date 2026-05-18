@@ -34,7 +34,7 @@ export default function RegisterPage() {
 
             // Simpan sesi
             const user = response.data.user;
-            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.name, role: user.role }));
+            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.nama_lengkap, role: user.role }));
 
             navigate('/'); // Arahkan ke beranda setelah sukses daftar
         } catch (err) {
