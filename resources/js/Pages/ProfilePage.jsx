@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 
@@ -313,8 +313,8 @@ export default function ProfilePage() {
             <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">
                     
-                    {/* Left Panel: Profile Overview Card */}
-                    <div className="w-full lg:w-1/3 flex-shrink-0">
+                    {/* Left Panel: Profile Overview Card & Navigation */}
+                    <div className="w-full lg:w-1/3 flex-shrink-0 space-y-6">
                         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-6 shadow-[0px_10px_40px_rgba(15,23,42,0.04)] text-center relative overflow-hidden">
                             {/* Decorative elements */}
                             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
@@ -390,6 +390,27 @@ export default function ProfilePage() {
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Navigation Sidebar Card */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-2">
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-3 mb-2">Akun Saya</p>
+                            
+                            <Link 
+                                to="/profile" 
+                                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold bg-blue-600 text-white shadow-md shadow-blue-500/10 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-lg text-white" style={{ fontVariationSettings: "'FILL' 1" }}>manage_accounts</span>
+                                Edit Profil
+                            </Link>
+
+                            <Link 
+                                to="/profile/riwayat" 
+                                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-lg text-slate-400">history</span>
+                                Riwayat Laporan
+                            </Link>
                         </div>
                     </div>
 

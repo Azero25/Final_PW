@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 
@@ -8,79 +8,91 @@ import Footer from '../Components/Footer';
  * Memungkinkan warga melacak status pengaduan mereka berdasarkan nomor tiket.
  */
 export default function LacakPage() {
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
-
+    const location = useLocation();
     const [nomorTiket, setNomorTiket] = useState('');
+    const [searchBy, setSearchBy] = useState('tiket'); // 'tiket' atau 'judul'
+    const [hasilList, setHasilList] = useState(null); // daftar laporan jika cari berdasarkan judul
     const [hasilLacak, setHasilLacak] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [lightboxImg, setLightboxImg] = useState(null); // URL gambar fullscreen
 
-    // Data dummy untuk simulasi pencarian tiket
-    const dataTiketDummy = {
-        'LPW-2024-001234': {
-            nomorTiket: 'LPW-2024-001234',
-            judul: 'Jalan Berlubang di Jl. Malioboro Km. 3',
-            kategori: 'Infrastruktur',
-            kecamatan: 'Gedongtengen',
-            tanggalDibuat: '10 Mei 2024',
-            status: 'Sedang Diproses',
-            statusColor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            prioritas: 'Tinggi',
-            petugas: 'Bpk. Ahmad Fauzi',
-            dinas: 'Dinas Pekerjaan Umum Kota Yogyakarta',
-            deskripsi: 'Terdapat lubang besar di badan jalan yang membahayakan pengendara, khususnya sepeda motor. Lubang berdiameter sekitar 50cm dengan kedalaman 15cm.',
-            timeline: [
-                { tanggal: '10 Mei 2024, 09:30', status: 'Laporan Diterima', keterangan: 'Laporan Anda telah berhasil diterima dan sedang menunggu verifikasi.', icon: 'check_circle', color: 'text-green-500' },
-                { tanggal: '11 Mei 2024, 14:00', status: 'Verifikasi', keterangan: 'Laporan telah diverifikasi oleh tim admin dan diteruskan ke dinas terkait.', icon: 'verified', color: 'text-blue-500' },
-                { tanggal: '13 Mei 2024, 08:00', status: 'Sedang Diproses', keterangan: 'Petugas lapangan telah ditugaskan dan sedang dalam proses penanganan.', icon: 'engineering', color: 'text-yellow-500' },
-                { tanggal: '-', status: 'Selesai', keterangan: 'Menunggu penyelesaian pekerjaan di lapangan.', icon: 'task_alt', color: 'text-slate-300', pending: true },
-            ],
-        },
-        'LPW-2024-005678': {
-            nomorTiket: 'LPW-2024-005678',
-            judul: 'Lampu PJU Mati di Jl. Kaliurang',
-            kategori: 'Penerangan',
-            kecamatan: 'Depok',
-            tanggalDibuat: '5 Mei 2024',
-            status: 'Selesai',
-            statusColor: 'bg-green-100 text-green-800 border-green-200',
-            prioritas: 'Sedang',
-            petugas: 'Ibu Sari Dewi',
-            dinas: 'Dinas Perhubungan Kota Yogyakarta',
-            deskripsi: 'Lampu penerangan jalan umum di depan nomor 45 Jl. Kaliurang tidak menyala selama 3 hari terakhir, sehingga kawasan tersebut gelap pada malam hari.',
-            timeline: [
-                { tanggal: '5 Mei 2024, 10:15', status: 'Laporan Diterima', keterangan: 'Laporan Anda telah berhasil diterima dan sedang menunggu verifikasi.', icon: 'check_circle', color: 'text-green-500' },
-                { tanggal: '6 Mei 2024, 09:00', status: 'Verifikasi', keterangan: 'Laporan telah diverifikasi dan diteruskan ke Dinas Perhubungan.', icon: 'verified', color: 'text-blue-500' },
-                { tanggal: '7 Mei 2024, 11:30', status: 'Sedang Diproses', keterangan: 'Teknisi sedang melakukan penggantian lampu PJU.', icon: 'engineering', color: 'text-yellow-500' },
-                { tanggal: '8 Mei 2024, 16:00', status: 'Selesai', keterangan: 'Penggantian lampu PJU telah berhasil diselesaikan. Terima kasih atas laporan Anda!', icon: 'task_alt', color: 'text-green-500' },
-            ],
-        },
+    const processLaporanData = (data) => {
+        if (!data.timeline || !Array.isArray(data.timeline)) {
+            data.timeline = [];
+        }
+        if (data.status !== 'Selesai' && data.timeline.length > 0) {
+            data.timeline.push({ 
+                tanggal: '-', 
+                status: 'Selesai', 
+                keterangan: 'Menunggu penyelesaian pekerjaan di lapangan.', 
+                icon: 'task_alt', 
+                color: 'text-slate-300', 
+                pending: true 
+            });
+        }
+        setHasilLacak(data);
     };
 
-    // Fungsi untuk menangani pencarian tiket
-    const handleLacak = (e) => {
-        e.preventDefault();
+    const performSearch = async (query, by = searchBy) => {
         setError('');
         setHasilLacak(null);
+        setHasilList(null);
 
-        if (!nomorTiket.trim()) {
-            setError('Nomor tiket tidak boleh kosong.');
+        if (!query || !query.trim()) {
+            setError(by === 'tiket' ? 'Nomor tiket tidak boleh kosong.' : 'Judul laporan tidak boleh kosong.');
             return;
         }
 
         setIsLoading(true);
-        // Simulasi delay jaringan
-        setTimeout(() => {
-            const tiket = dataTiketDummy[nomorTiket.trim().toUpperCase()];
-            if (tiket) {
-                setHasilLacak(tiket);
+        try {
+            if (by === 'tiket') {
+                const response = await fetch(`/api/pengaduans/${query.trim().toUpperCase()}`);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Nomor tiket tidak ditemukan. Pastikan nomor tiket yang Anda masukkan sudah benar.');
+                    }
+                    throw new Error('Terjadi kesalahan pada server.');
+                }
+                const data = await response.json();
+                processLaporanData(data);
             } else {
-                setError('Nomor tiket tidak ditemukan. Pastikan nomor tiket yang Anda masukkan sudah benar.');
+                // Pencarian berdasarkan Judul
+                const response = await fetch(`/api/pengaduans?judul=${encodeURIComponent(query.trim())}`);
+                if (!response.ok) throw new Error('Terjadi kesalahan pada server.');
+                
+                const data = await response.json();
+                if (data.length === 0) {
+                    throw new Error('Tidak ada laporan ditemukan dengan judul tersebut.');
+                } else if (data.length === 1) {
+                    processLaporanData(data[0]);
+                } else {
+                    setHasilList(data);
+                }
             }
+        } catch (err) {
+            setError(err.message);
+        } finally {
             setIsLoading(false);
-        }, 1200);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        // Cek query string ?tiket=...
+        const searchParams = new URLSearchParams(location.search);
+        const tiketFromQuery = searchParams.get('tiket');
+        if (tiketFromQuery) {
+            setSearchBy('tiket');
+            setNomorTiket(tiketFromQuery);
+            performSearch(tiketFromQuery, 'tiket');
+        }
+    }, [location.search]);
+
+    const handleLacak = async (e) => {
+        e.preventDefault();
+        performSearch(nomorTiket);
     };
 
     return (
@@ -104,15 +116,32 @@ export default function LacakPage() {
 
                     {/* Form Pencarian Tiket */}
                     <form onSubmit={handleLacak} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-                        <div className="relative flex-grow">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">confirmation_number</span>
-                            <input
-                                type="text"
-                                value={nomorTiket}
-                                onChange={(e) => setNomorTiket(e.target.value)}
-                                placeholder="Contoh: LPW-2024-001234"
-                                className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-primary transition-colors text-base bg-white shadow-sm"
-                            />
+                        <div className="relative flex-grow flex shadow-sm rounded-xl overflow-hidden border-2 border-slate-200 focus-within:border-primary transition-colors bg-white">
+                            <div className="relative flex-shrink-0">
+                                <select
+                                    value={searchBy}
+                                    onChange={(e) => setSearchBy(e.target.value)}
+                                    className="appearance-none bg-slate-50 border-r border-slate-200 text-slate-600 pl-4 pr-10 py-4 focus:outline-none font-medium cursor-pointer h-full"
+                                >
+                                    <option value="tiket">Nomor Tiket</option>
+                                    <option value="judul">Judul Laporan</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">
+                                    expand_more
+                                </span>
+                            </div>
+                            <div className="relative flex-grow">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                    {searchBy === 'tiket' ? 'confirmation_number' : 'text_fields'}
+                                </span>
+                                <input
+                                    type="text"
+                                    value={nomorTiket}
+                                    onChange={(e) => setNomorTiket(e.target.value)}
+                                    placeholder={searchBy === 'tiket' ? "Contoh: LPW-2024-001234" : "Contoh: Jalan Berlubang"}
+                                    className="w-full pl-12 pr-4 py-4 text-slate-700 placeholder:text-slate-400 focus:outline-none text-base bg-transparent"
+                                />
+                            </div>
                         </div>
                         <button
                             type="submit"
@@ -176,6 +205,63 @@ export default function LacakPage() {
                         <div className="p-6">
                             <h3 className="text-xl font-bold text-slate-800 mb-4">{hasilLacak.judul}</h3>
                             <p className="text-slate-500 text-sm mb-6 leading-relaxed">{hasilLacak.deskripsi}</p>
+
+{/* ===== Bukti Lampiran Foto (gallery multi-gambar) ===== */}
+                            {(() => {
+                                // Normalisasi: gabungkan bukti_foto & gambar array dan hapus duplikat menggunakan Set
+                                const imgs = Array.from(new Set([
+                                    ...(hasilLacak.gambar && Array.isArray(hasilLacak.gambar) ? hasilLacak.gambar : []),
+                                    ...(hasilLacak.bukti_foto ? [hasilLacak.bukti_foto] : [])
+                                ])).filter(Boolean);
+
+                                if (imgs.length === 0) return null;
+
+                                return (
+                                    <div className="mb-6">
+                                        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-sm">photo_library</span>
+                                            Bukti Lampiran Foto
+                                            <span className="ml-1 bg-blue-100 text-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{imgs.length} foto</span>
+                                        </p>
+
+                                        {imgs.length === 1 ? (
+                                            /* ---- Tampilan 1 gambar ---- */
+                                            <div
+                                                className="relative rounded-2xl overflow-hidden border border-slate-100 max-w-md shadow-sm group cursor-zoom-in"
+                                                onClick={() => setLightboxImg(imgs[0])}
+                                            >
+                                                <img src={imgs[0]} alt="Bukti Lampiran" className="w-full object-cover max-h-72 group-hover:scale-105 transition-transform duration-300" />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-white text-3xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
+                                                </div>
+                                                <div className="absolute top-2 left-2 bg-blue-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow tracking-wide">WebP</div>
+                                            </div>
+                                        ) : (
+                                            /* ---- Grid multi-gambar ---- */
+                                            <div className={`grid gap-2 ${
+                                                imgs.length === 2 ? 'grid-cols-2' :
+                                                imgs.length === 3 ? 'grid-cols-3' :
+                                                'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+                                            }`}>
+                                                {imgs.map((src, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="relative group rounded-xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in aspect-square"
+                                                        onClick={() => setLightboxImg(src)}
+                                                    >
+                                                        <img src={src} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                            <span className="material-symbols-outlined text-white text-2xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
+                                                        </div>
+                                                        <div className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow tracking-wide">WebP</div>
+                                                        <div className="absolute bottom-1.5 right-1.5 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">{idx + 1}/{imgs.length}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[
@@ -262,6 +348,31 @@ export default function LacakPage() {
                         ))}
                     </div>
                 </section>
+            )}
+
+            {/* Lightbox Modal */}
+            {lightboxImg && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+                    onClick={() => setLightboxImg(null)}
+                >
+                    <div className="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                        <img
+                            src={lightboxImg}
+                            alt="Bukti Lampiran"
+                            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+                        />
+                        <button
+                            onClick={() => setLightboxImg(null)}
+                            className="absolute top-3 right-3 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-sm"
+                        >
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium">
+                            Klik di luar untuk menutup
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Footer */}

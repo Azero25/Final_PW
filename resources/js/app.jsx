@@ -17,6 +17,7 @@ import KategoriPage from "./Pages/AdminPage/KategoriPage";
 import NotifikasiPage from "./Pages/AdminPage/NotifikasiPage";
 import PengaturanPage from "./Pages/AdminPage/PengaturanPage";
 import ProfilePage from "./Pages/ProfilePage";
+import RiwayatLaporanPage from "./Pages/RiwayatLaporanPage";
 
 ReactDOM.createRoot(document.getElementById("app")).render(
     <BrowserRouter>
@@ -29,6 +30,7 @@ ReactDOM.createRoot(document.getElementById("app")).render(
             <Route path="/statistik" element={<StatistikPage />} />
             <Route path="/lacak" element={<LacakPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/riwayat" element={<RiwayatLaporanPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/laporan" element={<ManajemenLaporanPage />} />
             <Route path="/admin/pengguna" element={<PenggunaPage />} />

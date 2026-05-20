@@ -29,7 +29,24 @@ const TIPE_CONFIG = {
 export default function NotifikasiPage() {
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    const [notifs, setNotifs] = useState(DUMMY_NOTIF);
+    const [notifs, setNotifs] = useState(() => {
+        const stored = localStorage.getItem('admin_notifications');
+        return stored ? JSON.parse(stored) : DUMMY_NOTIF;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('admin_notifications', JSON.stringify(notifs));
+        window.dispatchEvent(new Event('notificationsUpdated'));
+    }, [notifs]);
+
+    useEffect(() => {
+        const syncNotifs = () => {
+            const stored = localStorage.getItem('admin_notifications');
+            if (stored) setNotifs(JSON.parse(stored));
+        };
+        window.addEventListener('notificationsUpdated', syncNotifs);
+        return () => window.removeEventListener('notificationsUpdated', syncNotifs);
+    }, []);
     const [filterTipe, setFilterTipe] = useState('Semua');
     const [filterBaca, setFilterBaca] = useState('Semua'); // 'Semua' | 'Belum Dibaca' | 'Sudah Dibaca'
     const [search, setSearch] = useState('');
