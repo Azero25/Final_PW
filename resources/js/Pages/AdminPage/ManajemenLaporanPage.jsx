@@ -40,10 +40,11 @@ export default function ManajemenLaporanPage() {
     const [filterStatus, setFilterStatus] = useState('Semua');
     const [filterKategori, setFilterKategori] = useState('Semua');
     const [selectedIds, setSelectedIds] = useState([]);
-    const [modalLaporan, setModalLaporan] = useState(null); // laporan yang dibuka detail/edit/delete
-    const [modalMode, setModalMode] = useState('detail');   // 'detail' | 'edit' | 'delete'
+    const [modalLaporan, setModalLaporan] = useState(null);
+    const [modalMode, setModalMode] = useState('detail');
     const [editStatus, setEditStatus] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [lightboxImg, setLightboxImg] = useState(null); // URL gambar fullscreen
 
     const statusList  = ['Semua', 'Laporan Diterima', 'Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak'];
     const kategoriList = ['Semua', 'Infrastruktur', 'Kebersihan', 'Penerangan', 'Sanitasi', 'Ketertiban', 'Lingkungan', 'Fasilitas Umum', 'Lainnya'];
@@ -63,7 +64,10 @@ export default function ManajemenLaporanPage() {
                 pelapor: item.anonim ? 'Anonim' : (item.nama || 'Warga'),
                 tanggal: new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
                 status: item.status,
-                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah')
+                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah'),
+                bukti_foto: item.bukti_foto,
+                gambar: Array.isArray(item.gambar) ? item.gambar : (item.gambar ? [item.gambar] : []),
+                deskripsi: item.deskripsi || ''
             }));
             setLaporan(formattedData);
         } catch (error) {
@@ -95,6 +99,11 @@ export default function ManajemenLaporanPage() {
         setModalLaporan(laporanItem);
         setModalMode(mode);
         setEditStatus(laporanItem.status);
+    };
+
+    const openBulkDeleteModal = () => {
+        setModalLaporan({ id: 'BULK', judul: `${selectedIds.length} Laporan Terpilih` });
+        setModalMode('bulkDelete');
     };
 
     // Aksi Modal
@@ -134,16 +143,52 @@ export default function ManajemenLaporanPage() {
         }
     };
 
+    const handleBulkStatus = async (status) => {
+        setIsSaving(true);
+        try {
+            for (const id of selectedIds) {
+                await api.put(`/api/pengaduans/${id}`, { status });
+            }
+            await fetchData();
+            setSelectedIds([]);
+            alert(`Status ${selectedIds.length} laporan terpilih berhasil diperbarui!`);
+        } catch (error) {
+            console.error('Error bulk updating status:', error);
+            alert('Gagal memperbarui status beberapa laporan.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleBulkDeleteConfirm = async () => {
+        setIsSaving(true);
+        try {
+            for (const id of selectedIds) {
+                await api.delete(`/api/pengaduans/${id}`);
+            }
+            await fetchData();
+            setSelectedIds([]);
+            setModalLaporan(null);
+            alert(`Sebanyak ${selectedIds.length} laporan terpilih berhasil dihapus!`);
+        } catch (error) {
+            console.error('Error bulk deleting reports:', error);
+            alert('Gagal menghapus beberapa laporan terpilih.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     // Ringkasan per status
     const ringkasan = [
-        { label: 'Total', value: laporan.length, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: 'assignment' },
+        { label: 'Total Laporan', value: laporan.length, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: 'assignment' },
         { label: 'Menunggu / Verifikasi', value: laporan.filter(l => l.status === 'Laporan Diterima' || l.status === 'Verifikasi').length, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100', icon: 'pending_actions' },
         { label: 'Diproses', value: laporan.filter(l => l.status === 'Sedang Diproses').length, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', icon: 'engineering' },
         { label: 'Selesai', value: laporan.filter(l => l.status === 'Selesai').length, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', icon: 'task_alt' },
     ];
 
     return (
-        <AdminLayout pageTitle="Manajemen Laporan" pageSubtitle="Kelola seluruh laporan pengaduan warga">
+        <>
+            <AdminLayout pageTitle="Manajemen Laporan" pageSubtitle="Kelola seluruh laporan pengaduan warga">
 
             {/* Kartu Ringkasan */}
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
@@ -204,11 +249,36 @@ export default function ManajemenLaporanPage() {
 
                 {/* Bulk action bar */}
                 {selectedIds.length > 0 && (
-                    <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4">
-                        <span className="text-sm font-semibold text-blue-700">{selectedIds.length} laporan dipilih</span>
-                        <button className="text-xs text-orange-600 hover:underline font-semibold">Tandai Diproses</button>
-                        <button className="text-xs text-green-600 hover:underline font-semibold">Tandai Selesai</button>
-                        <button className="text-xs text-red-500 hover:underline font-semibold">Hapus Terpilih</button>
+                    <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
+                        <span className="text-sm font-semibold text-blue-700">{selectedIds.length} laporan terpilih</span>
+                        
+                        <button 
+                            disabled={isSaving}
+                            onClick={() => handleBulkStatus('Sedang Diproses')}
+                            className="text-xs text-orange-600 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                        >
+                            <span className="material-symbols-outlined text-sm">engineering</span>
+                            Tandai Diproses
+                        </button>
+                        
+                        <button 
+                            disabled={isSaving}
+                            onClick={() => handleBulkStatus('Selesai')}
+                            className="text-xs text-green-600 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                        >
+                            <span className="material-symbols-outlined text-sm">task_alt</span>
+                            Tandai Selesai
+                        </button>
+                        
+                        <button 
+                            disabled={isSaving}
+                            onClick={openBulkDeleteModal}
+                            className="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                        >
+                            <span className="material-symbols-outlined text-sm">delete</span>
+                            Hapus Terpilih
+                        </button>
+                        
                         <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
                     </div>
                 )}
@@ -236,7 +306,13 @@ export default function ManajemenLaporanPage() {
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={10} className="text-center py-16 text-slate-400">
-                                        Memuat data...
+                                        <div className="flex items-center justify-center gap-2">
+                                            <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Memuat data laporan...</span>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
@@ -296,15 +372,23 @@ export default function ManajemenLaporanPage() {
             {/* ======== MODAL DETAIL / EDIT / DELETE ======== */}
             {modalLaporan && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setModalLaporan(null)}>
-                    <div className={`bg-white rounded-2xl shadow-2xl w-full ${modalMode === 'delete' ? 'max-w-md' : 'max-w-lg'}`} onClick={(e) => e.stopPropagation()}>
+                    <div className={`bg-white rounded-2xl shadow-2xl w-full ${modalMode === 'delete' || modalMode === 'bulkDelete' ? 'max-w-md' : 'max-w-lg'} animate-in fade-in zoom-in-95 duration-200`} onClick={(e) => e.stopPropagation()}>
 
                         {/* Header Modal */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                             <div>
-                                <h2 className={`font-bold text-lg ${modalMode === 'delete' ? 'text-red-600' : 'text-slate-800'}`}>
-                                    {modalMode === 'detail' ? 'Detail Laporan' : modalMode === 'edit' ? 'Update Status Laporan' : 'Konfirmasi Hapus Laporan'}
+                                <h2 className={`font-bold text-lg ${modalMode === 'delete' || modalMode === 'bulkDelete' ? 'text-red-600' : 'text-slate-800'}`}>
+                                    {modalMode === 'detail' ? 'Detail Laporan'
+                                        : modalMode === 'edit' ? 'Update Status Laporan'
+                                        : modalMode === 'bulkDelete' ? 'Konfirmasi Hapus Massal'
+                                        : 'Konfirmasi Hapus Laporan'}
                                 </h2>
-                                <p className="text-xs text-slate-400 font-mono mt-0.5">{modalLaporan.id}</p>
+                                {modalMode !== 'bulkDelete' && modalLaporan.id && (
+                                    <p className="text-xs text-slate-400 font-mono mt-0.5">{modalLaporan.id}</p>
+                                )}
+                                {modalMode === 'bulkDelete' && (
+                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">{selectedIds.length} Laporan Terpilih</p>
+                                )}
                             </div>
                             <button onClick={() => setModalLaporan(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500">
                                 <span className="material-symbols-outlined">close</span>
@@ -320,6 +404,26 @@ export default function ManajemenLaporanPage() {
                                     </div>
                                     <p className="text-slate-700">Apakah Anda yakin ingin menghapus laporan <strong>{modalLaporan.judul}</strong>?</p>
                                     <p className="text-sm text-slate-500 mt-2">Tindakan ini tidak dapat dibatalkan dan semua data terkait laporan ini akan hilang selamanya.</p>
+                                </div>
+                            ) : modalMode === 'bulkDelete' ? (
+                                <div className="text-center space-y-3">
+                                    <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <span className="material-symbols-outlined text-3xl">warning</span>
+                                    </div>
+                                    <p className="text-slate-700">Apakah Anda yakin ingin menghapus <strong>{selectedIds.length} laporan terpilih</strong>?</p>
+                                    
+                                    <div className="max-h-28 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 text-left">
+                                        {selectedIds.map(id => {
+                                            const l = laporan.find(x => x.id === id);
+                                            return l ? (
+                                                <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                                                    {l.judul}
+                                                </span>
+                                            ) : null;
+                                        })}
+                                    </div>
+                                    
+                                    <p className="text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan dan seluruh pengaduan terpilih akan terhapus selamanya dari sistem.</p>
                                 </div>
                             ) : (
                                 <>
@@ -345,7 +449,7 @@ export default function ManajemenLaporanPage() {
                                             <PrioritasBadge prioritas={modalLaporan.prioritas} />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-slate-400 mb-1">Tanggal Masuk</p>
+                            <p className="text-xs text-slate-400 mb-1">Tanggal Masuk</p>
                                             <p className="text-slate-700">{modalLaporan.tanggal}</p>
                                         </div>
                                     </div>
@@ -362,6 +466,62 @@ export default function ManajemenLaporanPage() {
                                             </Link>
                                         )}
                                     </div>
+
+                                    {/* Bukti Lampiran Foto - Gallery Multi-Gambar */}
+                                    {modalMode === 'detail' && (() => {
+                                        const imgs = Array.from(new Set([
+                                            ...(modalLaporan.gambar && Array.isArray(modalLaporan.gambar) ? modalLaporan.gambar : []),
+                                            ...(modalLaporan.bukti_foto ? [modalLaporan.bukti_foto] : [])
+                                        ])).filter(Boolean);
+
+                                        if (imgs.length === 0) return null;
+
+                                        return (
+                                            <div className="pt-2">
+                                                <p className="text-xs text-slate-400 mb-2 flex items-center gap-1.5 font-semibold uppercase tracking-wide">
+                                                    <span className="material-symbols-outlined text-sm">photo_library</span>
+                                                    Bukti Lampiran Foto
+                                                    <span className="ml-1 bg-blue-100 text-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{imgs.length} foto</span>
+                                                </p>
+
+                                                {imgs.length === 1 ? (
+                                                    /* 1 gambar */
+                                                    <div
+                                                        className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in group max-h-52"
+                                                        onClick={() => setLightboxImg(imgs[0])}
+                                                    >
+                                                        <img src={imgs[0]} alt="Bukti" className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                                                            <span className="material-symbols-outlined text-white text-3xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
+                                                        </div>
+                                                        <div className="absolute top-2 left-2 bg-blue-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow">WebP</div>
+                                                    </div>
+                                                ) : (
+                                                    /* Multi gambar - grid */
+                                                    <div className={`grid gap-2 ${
+                                                        imgs.length === 2 ? 'grid-cols-2' :
+                                                        imgs.length === 3 ? 'grid-cols-3' :
+                                                        'grid-cols-3'
+                                                    }`}>
+                                                        {imgs.map((src, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="relative group rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in aspect-square"
+                                                                onClick={() => setLightboxImg(src)}
+                                                            >
+                                                                <img src={src} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                                                    <span className="material-symbols-outlined text-white text-xl opacity-0 group-hover:opacity-100 drop-shadow transition-opacity">zoom_in</span>
+                                                                </div>
+                                                                <div className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] font-extrabold px-1 py-0.5 rounded shadow">WebP</div>
+                                                                <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] px-1 py-0.5 rounded">{idx + 1}/{imgs.length}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Edit Mode: Ubah status */}
                                     {modalMode === 'edit' && (
@@ -413,11 +573,47 @@ export default function ManajemenLaporanPage() {
                                     {isSaving ? 'Menghapus...' : 'Ya, Hapus Laporan'}
                                 </button>
                             )}
+
+                            {modalMode === 'bulkDelete' && (
+                                <button
+                                    disabled={isSaving}
+                                    onClick={handleBulkDeleteConfirm}
+                                    className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isSaving ? 'Menghapus...' : `Ya, Hapus ${selectedIds.length} Laporan`}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
 
         </AdminLayout>
+
+        {/* Lightbox Modal - di luar AdminLayout agar full-screen */}
+        {lightboxImg && (
+            <div
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
+                onClick={() => setLightboxImg(null)}
+            >
+                <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                    <img
+                        src={lightboxImg}
+                        alt="Bukti Lampiran"
+                        className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+                    />
+                    <button
+                        onClick={() => setLightboxImg(null)}
+                        className="absolute top-3 right-3 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-sm"
+                    >
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium">
+                        Klik di luar untuk menutup
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }

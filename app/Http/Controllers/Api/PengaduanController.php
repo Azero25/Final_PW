@@ -8,6 +8,7 @@ use App\Models\Laporan;
 use App\Models\Kategori;
 use App\Models\Kelurahan;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 class PengaduanController extends Controller
 {
@@ -77,6 +78,8 @@ class PengaduanController extends Controller
         $userName = User::find($laporan->id_user)?->nama_lengkap ?? 'Anonim';
         $userHp = User::find($laporan->id_user)?->no_hp ?? '-';
 
+        $decodedGambar = is_string($laporan->bukti_foto) && str_starts_with($laporan->bukti_foto, '[') ? json_decode($laporan->bukti_foto, true) : null;
+
         return [
             'id' => $laporan->no_ticket, // frontend might need id
             'nomor_tiket' => $laporan->no_ticket,
@@ -88,6 +91,8 @@ class PengaduanController extends Controller
             'urgensi' => strtolower($laporan->prioritas),
             'lokasi' => $kelurahanName,
             'deskripsi' => $laporan->isi_laporan,
+            'bukti_foto' => $decodedGambar ? ($decodedGambar[0] ?? null) : $laporan->bukti_foto,
+            'gambar' => $decodedGambar ? $decodedGambar : ($laporan->bukti_foto ? [$laporan->bukti_foto] : []),
             'status' => $laporan->status_laporan,
             'timeline' => $this->generateTimeline($laporan),
             'created_at' => $laporan->created_at,
@@ -99,9 +104,15 @@ class PengaduanController extends Controller
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $laporans = Laporan::latest()->get();
+        $query = Laporan::latest();
+        
+        if ($request->has('judul')) {
+            $query->where('judul_laporan', 'LIKE', '%' . $request->judul . '%');
+        }
+
+        $laporans = $query->get();
         $mapped = $laporans->map(function($laporan) {
             return $this->mapToFrontend($laporan);
         });
@@ -119,6 +130,9 @@ class PengaduanController extends Controller
             'urgensi' => 'required|string',
             'lokasi' => 'required|string|max:255',
             'deskripsi' => 'required|string',
+            'bukti_foto' => 'nullable|string', // Accept base64 string
+            'gambar' => 'nullable|array|max:5',
+            'gambar.*' => 'file|max:10240',
         ]);
 
         $nomorTiket = 'LPW-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
@@ -166,6 +180,40 @@ class PengaduanController extends Controller
 
         $initialLog = [$this->buildLogEntry('Laporan Diterima')];
 
+        // Decode base64 image and save as .webp in storage folder
+        $savedImages = [];
+
+        if ($request->bukti_foto) {
+            if (preg_match('/^data:image\/(\w+);base64,/', $request->bukti_foto, $type)) {
+                $data = substr($request->bukti_foto, strpos($request->bukti_foto, ',') + 1);
+                $data = base64_decode($data);
+                if ($data !== false) {
+                    $fileName = 'bukti_' . time() . '_' . mt_rand(1000, 9999) . '.webp';
+                    Storage::disk('public')->put('uploads/bukti/' . $fileName, $data);
+                    $savedImages[] = '/storage/uploads/bukti/' . $fileName;
+                }
+            }
+        }
+
+        // Process uploaded files from multipart form data and save to storage folder
+        if ($request->hasFile('gambar')) {
+            foreach ($request->file('gambar') as $file) {
+                $ext = $file->getClientOriginalExtension() ?: 'webp';
+                $fileName = 'bukti_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
+                $file->storeAs('uploads/bukti', $fileName, 'public');
+                $savedImages[] = '/storage/uploads/bukti/' . $fileName;
+            }
+        }
+
+        $finalBukti = null;
+        if (count($savedImages) > 0) {
+            if (count($savedImages) === 1) {
+                $finalBukti = $savedImages[0];
+            } else {
+                $finalBukti = json_encode(array_slice($savedImages, 0, 5));
+            }
+        }
+
         $laporan = Laporan::create([
             'no_ticket'     => $nomorTiket,
             'judul_laporan' => $request->judul,
@@ -175,6 +223,7 @@ class PengaduanController extends Controller
             'prioritas'     => $prioritas,
             'status_laporan'=> 'Laporan Diterima',
             'isi_laporan'   => $request->deskripsi,
+            'bukti_foto'    => $finalBukti, // Save WebP image paths
             'tanggal_laporan' => now(),
             'timeline_log'  => $initialLog,
         ]);
