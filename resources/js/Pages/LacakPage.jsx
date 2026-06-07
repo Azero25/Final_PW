@@ -115,16 +115,33 @@ export default function LacakPage() {
                     </p>
 
                     {/* Form Pencarian Tiket */}
-                    <form onSubmit={handleLacak} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-                        <div className="relative grow">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">confirmation_number</span>
-                            <input
-                                type="text"
-                                value={nomorTiket}
-                                onChange={(e) => setNomorTiket(e.target.value)}
-                                placeholder="Contoh: LPW-2024-001234"
-                                className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-primary transition-colors text-base bg-white shadow-sm"
-                            />
+                    <form onSubmit={handleLacak} className="flex flex-col sm:flex-row gap-3 max-w-4xl mx-auto">
+                        <div className="relative grow flex shadow-sm rounded-xl overflow-hidden border-2 border-slate-200 focus-within:border-primary transition-colors bg-white">
+                            <div className='relative'>
+                                <select
+                                    value={searchBy}
+                                    onChange={(e) => setSearchBy(e.target.value)}
+                                    className="appearance-none bg-slate-50 border-r border-slate-200 text-slate-600 px-4 pr-10 py-4 focus:outline-none font-medium cursor-pointer"
+                                >
+                                    <option value="tiket">Nomor Tiket</option>
+                                    <option value="judul">Judul Laporan</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    keyboard_arrow_down
+                                </span>
+                            </div>
+                            <div className="relative grow">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                    {searchBy === 'tiket' ? 'confirmation_number' : 'text_fields'}
+                                </span>
+                                <input
+                                    type="text"
+                                    value={nomorTiket}
+                                    onChange={(e) => setNomorTiket(e.target.value)}
+                                    placeholder={searchBy === 'tiket' ? "Contoh: LPW-2024-001234" : "Contoh: Jalan Berlubang"}
+                                    className="w-full pl-12 pr-4 py-4 text-slate-700 placeholder:text-slate-400 focus:outline-none text-base bg-transparent"
+                                />
+                            </div>
                         </div>
                         <button
                             type="submit"
