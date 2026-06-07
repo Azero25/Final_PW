@@ -7,31 +7,175 @@ import api from '../../axios';
  * Panel kontrol utama untuk administrator sistem pengaduan.
  */
 export default function AdminDashboardPage() {
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    const [laporanTerbaru, setLaporanTerbaru] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_dashboard_laporan');
+        return stored ? JSON.parse(stored) : [];
+    });
+    const [statsData, setStatsData] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_dashboard_stats');
+        return stored ? JSON.parse(stored) : [
+            { label: 'Total Laporan', value: '0', change: '0%', icon: 'assignment', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
+            { label: 'Menunggu Verifikasi', value: '0', change: '0', icon: 'pending_actions', color: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-100' },
+            { label: 'Sedang Diproses', value: '0', change: '0', icon: 'engineering', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
+            { label: 'Selesai', value: '0', change: '0%', icon: 'task_alt', color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
+        ];
+    });
+    const [chartBulanan, setChartBulanan] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_dashboard_chart_bulanan');
+        return stored ? JSON.parse(stored) : [];
+    });
+    const [chartKategori, setChartKategori] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_dashboard_chart_kategori');
+        return stored ? JSON.parse(stored) : [];
+    });
+    const [isLoading, setIsLoading] = useState(() => {
+        const storedLaporan = localStorage.getItem('laporwarga_cache_dashboard_laporan');
+        return !storedLaporan;
+    });
 
-    const [activeMenu, setActiveMenu] = useState('dashboard');
+    const [modalLaporan, setModalLaporan] = useState(null);
+    const [modalMode, setModalMode] = useState('detail');
+    const [editStatus, setEditStatus] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Data dummy statistik ringkasan
-    const statsData = [
-        { label: 'Total Laporan', value: '1.284', change: '+12%', icon: 'assignment', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
-        { label: 'Menunggu Verifikasi', value: '48', change: '+5', icon: 'pending_actions', color: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-100' },
-        { label: 'Sedang Diproses', value: '127', change: '-3', icon: 'engineering', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
-        { label: 'Selesai Bulan Ini', value: '312', change: '+28%', icon: 'task_alt', color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
-    ];
+    const fetchData = async () => {
+        const hasCache = !!localStorage.getItem('laporwarga_cache_dashboard_laporan');
+        if (!hasCache) setIsLoading(true);
+        try {
+            const response = await api.get('/api/pengaduans');
+            const data = response.data;
 
-    // Data dummy laporan terbaru
-    const laporanTerbaru = [
-        { id: 'LPW-2024-001284', judul: 'Jalan Rusak di Jl. Solo', kategori: 'Infrastruktur', kecamatan: 'Gondokusuman', tanggal: '16 Mei 2024', status: 'Menunggu', prioritas: 'Tinggi' },
-        { id: 'LPW-2024-001283', judul: 'Sampah Menumpuk TPS Demangan', kategori: 'Kebersihan', kecamatan: 'Gondokusuman', tanggal: '16 Mei 2024', status: 'Diproses', prioritas: 'Sedang' },
-        { id: 'LPW-2024-001282', judul: 'Lampu Jalan Mati di Jl. Veteran', kategori: 'Penerangan', kecamatan: 'Kraton', tanggal: '15 Mei 2024', status: 'Selesai', prioritas: 'Rendah' },
-        { id: 'LPW-2024-001281', judul: 'Saluran Air Tersumbat', kategori: 'Sanitasi', kecamatan: 'Umbulharjo', tanggal: '15 Mei 2024', status: 'Diproses', prioritas: 'Tinggi' },
-        { id: 'LPW-2024-001280', judul: 'PKL Berdagang di Trotoar', kategori: 'Ketertiban', kecamatan: 'Gondomanan', tanggal: '14 Mei 2024', status: 'Menunggu', prioritas: 'Sedang' },
-        { id: 'LPW-2024-001279', judul: 'Pohon Tumbang Menghalangi Jalan', kategori: 'Lingkungan', kecamatan: 'Jetis', tanggal: '14 Mei 2024', status: 'Selesai', prioritas: 'Tinggi' },
-        { id: 'LPW-2024-001278', judul: 'Fasilitas Taman Rusak', kategori: 'Fasilitas Umum', kecamatan: 'Danurejan', tanggal: '13 Mei 2024', status: 'Diproses', prioritas: 'Rendah' },
-    ];
+            // Format data untuk tabel
+            const formattedData = data.map(item => ({
+                id: item.nomor_tiket,
+                judul: item.judul,
+                kategori: item.kategori,
+                kecamatan: item.kecamatan || item.lokasi,
+                pelapor: item.anonim ? 'Anonim' : (item.nama || 'Warga'),
+                tanggal: new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                status: item.status,
+                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah')
+            }));
+            setLaporanTerbaru(formattedData);
+            localStorage.setItem('laporwarga_cache_dashboard_laporan', JSON.stringify(formattedData));
 
-    // Konfigurasi menu sidebar
-    const menuItems = [];
+            // Hitung statistik
+            const total = data.length;
+            const menunggu = data.filter(i => i.status === 'Laporan Diterima' || i.status === 'Verifikasi').length;
+            const diproses = data.filter(i => i.status === 'Sedang Diproses').length;
+            const selesai = data.filter(i => i.status === 'Selesai').length;
+
+            const newStats = [
+                { label: 'Total Laporan', value: total.toString(), change: '+0%', icon: 'assignment', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
+                { label: 'Menunggu Verifikasi', value: menunggu.toString(), change: '0', icon: 'pending_actions', color: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-100' },
+                { label: 'Sedang Diproses', value: diproses.toString(), change: '0', icon: 'engineering', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
+                { label: 'Selesai', value: selesai.toString(), change: '+0%', icon: 'task_alt', color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
+            ];
+            setStatsData(newStats);
+            localStorage.setItem('laporwarga_cache_dashboard_stats', JSON.stringify(newStats));
+
+            // Hitung Data Grafik Tren Bulanan (6 bulan terakhir)
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            let monthlyCounts = {};
+            for (let i = 5; i >= 0; i--) {
+                let d = new Date(currentYear, currentMonth - i, 1);
+                monthlyCounts[`${monthNames[d.getMonth()]}`] = 0;
+            }
+
+            data.forEach(item => {
+                const date = new Date(item.created_at);
+                const monthStr = monthNames[date.getMonth()];
+                if (monthlyCounts[monthStr] !== undefined) {
+                    monthlyCounts[monthStr]++;
+                }
+            });
+
+            const bulananArr = Object.keys(monthlyCounts).map(month => ({
+                bulan: month,
+                val: monthlyCounts[month],
+                active: month === monthNames[currentMonth]
+            }));
+            setChartBulanan(bulananArr);
+            localStorage.setItem('laporwarga_cache_dashboard_chart_bulanan', JSON.stringify(bulananArr));
+
+            // Hitung Data Grafik Kategori
+            const kategoriCounts = {};
+            data.forEach(item => {
+                const k = item.kategori || 'Lainnya';
+                // Kapitalisasi huruf pertama
+                const label = k.charAt(0).toUpperCase() + k.slice(1);
+                kategoriCounts[label] = (kategoriCounts[label] || 0) + 1;
+            });
+
+            const sortedKategori = Object.keys(kategoriCounts)
+                .map(key => ({ label: key, count: kategoriCounts[key] }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5); // Ambil Top 5
+
+            const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-400', 'bg-orange-400', 'bg-slate-300'];
+            const kategoriArr = sortedKategori.map((item, idx) => ({
+                label: item.label,
+                val: total > 0 ? Math.round((item.count / total) * 100) : 0,
+                color: colors[idx % colors.length]
+            }));
+            setChartKategori(kategoriArr);
+            localStorage.setItem('laporwarga_cache_dashboard_chart_kategori', JSON.stringify(kategoriArr));
+
+        } catch (error) {
+            console.error("Error fetching pengaduans", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        fetchData();
+    }, []);
+
+    const openModal = (laporanItem, mode = 'detail') => {
+        setModalLaporan(laporanItem);
+        setModalMode(mode);
+        setEditStatus(laporanItem.status);
+    };
+
+    const handleSaveStatus = async () => {
+        if (!modalLaporan || editStatus === modalLaporan.status) {
+            setModalLaporan(null);
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await api.put(`/api/pengaduans/${modalLaporan.id}`, { status: editStatus });
+            fetchData();
+            setModalLaporan(null);
+        } catch (error) {
+            alert('Gagal mengupdate status laporan.');
+            console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!modalLaporan) return;
+
+        setIsSaving(true);
+        try {
+            await api.delete(`/api/pengaduans/${modalLaporan.id}`);
+            fetchData();
+            setModalLaporan(null);
+        } catch (error) {
+            alert('Gagal menghapus laporan.');
+            console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Helper badge status
     const StatusBadge = ({ status }) => {
@@ -188,7 +332,7 @@ export default function AdminDashboardPage() {
                                         <tr key={laporan.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-4 font-mono text-xs text-blue-600 font-semibold">{laporan.id}</td>
                                             <td className="px-6 py-4">
-                                                <p className="font-medium text-slate-800 max-w-[200px] truncate">{laporan.judul}</p>
+                                                <p className="font-medium text-slate-800 max-w-50 truncate">{laporan.judul}</p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">{laporan.kategori}</span>

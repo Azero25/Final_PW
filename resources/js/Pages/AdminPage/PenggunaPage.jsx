@@ -24,21 +24,8 @@ const StatusBadge = ({ status }) => {
 export default function PenggunaPage() {
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    const [penggunaList, setPenggunaList] = useState(() => {
-        const stored = localStorage.getItem('admin_pengguna');
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        return DUMMY_PENGGUNA;
-    });
-
-    useEffect(() => {
-        localStorage.setItem('admin_pengguna', JSON.stringify(penggunaList));
-    }, [penggunaList]);
+    const [penggunaList, setPenggunaList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const [search, setSearch]               = useState('');
     const [filterStatus, setFilterStatus]   = useState('Semua');
@@ -50,6 +37,25 @@ export default function PenggunaPage() {
     const [bulkTargetStatus, setBulkTargetStatus] = useState('Aktif');
 
     const statusList = ['Semua', 'Aktif', 'Nonaktif', 'Diblokir'];
+
+    // Load users from backend API
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/api/users');
+            if (response.data && response.data.status === 'success') {
+                setPenggunaList(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
     // Filter & pencarian
     const filtered = penggunaList.filter((u) => {
@@ -205,7 +211,7 @@ export default function PenggunaPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map((r) => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div>
@@ -222,7 +228,7 @@ export default function PenggunaPage() {
                 {/* Toolbar */}
                 <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-45">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                         <input
                             type="text"
@@ -316,7 +322,7 @@ export default function PenggunaPage() {
                                     {/* Pengguna: Avatar + Nama + ID */}
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center flex-shrink-0`}>
+                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center shrink-0`}>
                                                 <span className="text-white text-sm font-bold">{u.avatar}</span>
                                             </div>
                                             <div>
@@ -433,7 +439,7 @@ export default function PenggunaPage() {
                             ) : modalMode === 'bulkStatus' ? (
                                 <div className="space-y-4">
                                     <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100/50 flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                                             <span className="material-symbols-outlined text-xl">group</span>
                                         </div>
                                         <div>

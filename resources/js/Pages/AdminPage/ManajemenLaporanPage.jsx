@@ -33,7 +33,14 @@ const PrioritasBadge = ({ prioritas }) => {
 };
 
 export default function ManajemenLaporanPage() {
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    const [laporan, setLaporan] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_laporan');
+        return stored ? JSON.parse(stored) : [];
+    });
+    const [isLoading, setIsLoading] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_laporan');
+        return !stored;
+    });
 
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('Semua');
@@ -42,9 +49,46 @@ export default function ManajemenLaporanPage() {
     const [modalLaporan, setModalLaporan] = useState(null);
     const [modalMode, setModalMode] = useState('detail');
     const [editStatus, setEditStatus] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [lightboxImg, setLightboxImg] = useState(null); // URL gambar fullscreen
 
-    const statusList  = ['Semua', 'Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
-    const kategoriList = ['Semua', 'Infrastruktur', 'Kebersihan', 'Penerangan', 'Sanitasi', 'Ketertiban', 'Lingkungan', 'Fasilitas Umum'];
+    const statusList  = ['Semua', 'Laporan Diterima', 'Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak'];
+    const kategoriList = ['Semua', 'Infrastruktur', 'Kebersihan', 'Penerangan', 'Sanitasi', 'Ketertiban', 'Lingkungan', 'Fasilitas Umum', 'Lainnya'];
+
+    const fetchData = async () => {
+        const hasCache = !!localStorage.getItem('laporwarga_cache_laporan');
+        if (!hasCache) setIsLoading(true);
+        try {
+            const response = await api.get('/api/pengaduans');
+            const data = response.data;
+
+            // Format data
+            const formattedData = data.map(item => ({
+                id: item.nomor_tiket,
+                judul: item.judul,
+                kategori: item.kategori,
+                kecamatan: item.kecamatan || item.lokasi,
+                pelapor: item.anonim ? 'Anonim' : (item.nama || 'Warga'),
+                tanggal: new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                status: item.status,
+                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah'),
+                bukti_foto: item.bukti_foto,
+                gambar: Array.isArray(item.gambar) ? item.gambar : (item.gambar ? [item.gambar] : []),
+                deskripsi: item.deskripsi || ''
+            }));
+            setLaporan(formattedData);
+            localStorage.setItem('laporwarga_cache_laporan', JSON.stringify(formattedData));
+        } catch (error) {
+            console.error("Error fetching pengaduans", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        fetchData();
+    }, []);
 
     // Filter & pencarian
     const filtered = laporan.filter((l) => {
@@ -158,7 +202,7 @@ export default function ManajemenLaporanPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map((r) => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div>
@@ -175,7 +219,7 @@ export default function ManajemenLaporanPage() {
                 {/* Toolbar */}
                 <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-45">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                         <input
                             type="text"
@@ -293,7 +337,7 @@ export default function ManajemenLaporanPage() {
                                     </td>
                                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-semibold whitespace-nowrap">{laporanItem.id}</td>
                                     <td className="px-4 py-3">
-                                        <p className="font-medium text-slate-800 max-w-[180px] truncate">{laporanItem.judul}</p>
+                                        <p className="font-medium text-slate-800 max-w-45 truncate">{laporanItem.judul}</p>
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium whitespace-nowrap">{laporanItem.kategori}</span>
@@ -557,7 +601,7 @@ export default function ManajemenLaporanPage() {
         {/* Lightbox Modal - di luar AdminLayout agar full-screen */}
         {lightboxImg && (
             <div
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
+                className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
                 onClick={() => setLightboxImg(null)}
             >
                 <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center" onClick={e => e.stopPropagation()}>

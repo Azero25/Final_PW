@@ -46,7 +46,7 @@ export default function KategoriPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map(r => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div><p className="text-2xl font-bold text-slate-800">{r.value}</p><p className="text-xs text-slate-500">{r.label}</p></div>
@@ -57,7 +57,7 @@ export default function KategoriPage() {
             {/* Toolbar */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-45">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                         <input type="text" placeholder="Cari kategori atau dinas..." value={search} onChange={e => setSearch(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400" />
@@ -137,7 +137,7 @@ export default function KategoriPage() {
                                     <tr key={k.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-9 h-9 ${k.warna} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                                <div className={`w-9 h-9 ${k.warna} rounded-xl flex items-center justify-center shrink-0`}>
                                                     <span className="material-symbols-outlined text-white text-base" style={{ fontVariationSettings: "'FILL' 1" }}>{k.icon}</span>
                                                 </div>
                                                 <div>
@@ -147,7 +147,7 @@ export default function KategoriPage() {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-slate-600 text-xs">{k.dinas}</td>
-                                        <td className="px-4 py-3 text-slate-500 text-xs max-w-[220px] truncate">{k.deskripsi}</td>
+                                        <td className="px-4 py-3 text-slate-500 text-xs max-w-55 truncate">{k.deskripsi}</td>
                                         <td className="px-4 py-3">
                                             <span className="font-bold text-blue-700">{k.totalLaporan}</span>
                                             <span className="text-slate-400 text-xs ml-1">laporan</span>

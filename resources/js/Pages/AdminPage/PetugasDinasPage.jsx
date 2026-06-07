@@ -21,8 +21,39 @@ export default function PetugasDinasPage() {
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'edit' | 'tambah'
     const [editData, setEditData] = useState({});
 
-    const getDinasNama = (id) => DUMMY_DINAS.find(d => d.id === id)?.singkatan || id;
-    const getDinasColor = (id) => DUMMY_DINAS.find(d => d.id === id)?.color || 'bg-slate-500';
+    // Delete states
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const [dinasList, setDinasList] = useState([]);
+    const [petugasList, setPetugasList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Fetch dynamic data from database
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [dinasRes, petugasRes] = await Promise.all([
+                api.get('/api/dinas'),
+                api.get('/api/petugas')
+            ]);
+            setDinasList(dinasRes.data);
+            setPetugasList(petugasRes.data);
+        } catch (error) {
+            console.error("Error fetching dinas and petugas:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        fetchData();
+    }, []);
+
+    const getDinasNama = (id) => dinasList.find(d => d.id === id)?.singkatan || id;
+    const getDinasColor = (id) => dinasList.find(d => d.id === id)?.color || 'bg-slate-500';
 
     const filteredPetugas = petugasList.filter(p => {
         const q = search.toLowerCase();
@@ -149,7 +180,7 @@ export default function PetugasDinasPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map(r => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div><p className="text-2xl font-bold text-slate-800">{r.value}</p><p className="text-xs text-slate-500">{r.label}</p></div>
@@ -226,7 +257,7 @@ export default function PetugasDinasPage() {
                                     <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center shrink-0`}>
                                                     <span className="text-white text-xs font-bold">{p.nama.charAt(0)}</span>
                                                 </div>
                                                 <div>
@@ -294,7 +325,7 @@ export default function PetugasDinasPage() {
                                     <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                                <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center shrink-0`}>
                                                     <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
                                                 </div>
                                                 <div>

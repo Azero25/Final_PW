@@ -101,7 +101,7 @@ export default function LacakPage() {
             <Navbar />
 
             {/* Hero Section */}
-            <section className="pt-24 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+            <section className="pt-24 bg-linear-to-br from-blue-50 via-white to-indigo-50">
                 <div className="max-w-4xl mx-auto px-6 py-16 text-center">
                     <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
                         <span className="material-symbols-outlined text-base">manage_search</span>
@@ -116,7 +116,7 @@ export default function LacakPage() {
 
                     {/* Form Pencarian Tiket */}
                     <form onSubmit={handleLacak} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-                        <div className="relative flex-grow">
+                        <div className="relative grow">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">confirmation_number</span>
                             <input
                                 type="text"
@@ -151,7 +151,7 @@ export default function LacakPage() {
                     {/* Pesan Error */}
                     {error && (
                         <div className="mt-4 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-xl max-w-2xl mx-auto text-left">
-                            <span className="material-symbols-outlined text-red-500 flex-shrink-0">error</span>
+                            <span className="material-symbols-outlined text-red-500 shrink-0">error</span>
                             <p className="text-sm">{error}</p>
                         </div>
                     )}
@@ -171,7 +171,7 @@ export default function LacakPage() {
                 <section className="max-w-4xl mx-auto px-6 py-12 w-full">
                     {/* Header Status Tiket */}
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-md overflow-hidden mb-6">
-                        <div className="bg-gradient-to-r from-primary to-blue-600 p-6 text-white">
+                        <div className="bg-linear-to-r from-primary to-blue-600 p-6 text-white">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div>
                                     <p className="text-blue-200 text-sm font-medium mb-1">Nomor Tiket</p>
@@ -189,7 +189,7 @@ export default function LacakPage() {
                             <h3 className="text-xl font-bold text-slate-800 mb-4">{hasilLacak.judul}</h3>
                             <p className="text-slate-500 text-sm mb-6 leading-relaxed">{hasilLacak.deskripsi}</p>
 
-{/* ===== Bukti Lampiran Foto (gallery multi-gambar) ===== */}
+                            {/* ===== Bukti Lampiran Foto (gallery multi-gambar) ===== */}
                             {(() => {
                                 // Normalisasi: gabungkan bukti_foto & gambar array dan hapus duplikat menggunakan Set
                                 const imgs = Array.from(new Set([
@@ -267,7 +267,7 @@ export default function LacakPage() {
                         {/* Info Petugas */}
                         <div className="px-6 pb-6">
                             <div className="bg-blue-50 rounded-xl p-4 flex items-center gap-4 border border-blue-100">
-                                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shrink-0">
                                     <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
                                 </div>
                                 <div>
@@ -293,11 +293,11 @@ export default function LacakPage() {
                                         <div className={`absolute left-5 top-10 bottom-0 w-0.5 ${item.pending ? 'border-l-2 border-dashed border-slate-200' : 'bg-slate-200'}`}></div>
                                     )}
                                     {/* Icon */}
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${item.pending ? 'bg-slate-100' : 'bg-white border-2 border-slate-200'}`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${item.pending ? 'bg-slate-100' : 'bg-white border-2 border-slate-200'}`}>
                                         <span className={`material-symbols-outlined text-lg ${item.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{item.icon}</span>
                                     </div>
                                     {/* Konten */}
-                                    <div className={`pb-8 flex-grow ${item.pending ? 'opacity-40' : ''}`}>
+                                    <div className={`pb-8 grow ${item.pending ? 'opacity-40' : ''}`}>
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
                                             <p className="font-bold text-slate-800">{item.status}</p>
                                             <span className="hidden sm:block text-slate-300">•</span>
@@ -336,7 +336,7 @@ export default function LacakPage() {
             {/* Lightbox Modal */}
             {lightboxImg && (
                 <div
-                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-200 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
                     onClick={() => setLightboxImg(null)}
                 >
                     <div className="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center" onClick={e => e.stopPropagation()}>
