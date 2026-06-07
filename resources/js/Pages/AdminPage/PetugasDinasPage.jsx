@@ -1,26 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../Components/AdminLayout';
-
-const DUMMY_DINAS = [
-    { id: 'DNS-001', nama: 'Dinas Pekerjaan Umum', singkatan: 'DPU', kategori: 'Infrastruktur', totalPetugas: 8, totalLaporan: 145, color: 'bg-blue-500' },
-    { id: 'DNS-002', nama: 'Dinas Lingkungan Hidup', singkatan: 'DLH', kategori: 'Kebersihan & Lingkungan', totalPetugas: 6, totalLaporan: 98, color: 'bg-green-500' },
-    { id: 'DNS-003', nama: 'Dinas Perhubungan', singkatan: 'DISHUB', kategori: 'Penerangan & Lalu Lintas', totalPetugas: 5, totalLaporan: 72, color: 'bg-yellow-500' },
-    { id: 'DNS-004', nama: 'Dinas Sosial', singkatan: 'DINSOS', kategori: 'Ketertiban Sosial', totalPetugas: 4, totalLaporan: 33, color: 'bg-purple-500' },
-    { id: 'DNS-005', nama: 'Badan Penanggulangan Bencana', singkatan: 'BPBD', kategori: 'Kedaruratan', totalPetugas: 10, totalLaporan: 28, color: 'bg-red-500' },
-];
-
-const DUMMY_PETUGAS = [
-    { id: 'PTG-001', nama: 'Ir. Hadi Susanto',    nip: '19800101 200501 1 001', dinas: 'DNS-001', jabatan: 'Kepala Seksi Jalan', telp: '081111111001', status: 'Aktif',    bebanKerja: 12 },
-    { id: 'PTG-002', nama: 'Tri Wahyudi, S.T.',   nip: '19850215 201001 1 002', dinas: 'DNS-001', jabatan: 'Staf Teknis',        telp: '081111111002', status: 'Aktif',    bebanKerja: 8  },
-    { id: 'PTG-003', nama: 'Eko Nugroho',          nip: '19900320 201501 1 003', dinas: 'DNS-001', jabatan: 'Staf Lapangan',     telp: '081111111003', status: 'Aktif',    bebanKerja: 5  },
-    { id: 'PTG-004', nama: 'Retno Wulandari',      nip: '19880512 201201 2 004', dinas: 'DNS-002', jabatan: 'Kepala Bidang',     telp: '082222222001', status: 'Aktif',    bebanKerja: 15 },
-    { id: 'PTG-005', nama: 'Slamet Riyadi',        nip: '19920701 201801 1 005', dinas: 'DNS-002', jabatan: 'Staf Kebersihan',   telp: '082222222002', status: 'Aktif',    bebanKerja: 9  },
-    { id: 'PTG-006', nama: 'Nur Aini, S.E.',       nip: '19950810 202001 2 006', dinas: 'DNS-003', jabatan: 'Staf Administrasi', telp: '083333333001', status: 'Nonaktif', bebanKerja: 0  },
-    { id: 'PTG-007', nama: 'Joko Pranowo',         nip: '19870924 201301 1 007', dinas: 'DNS-003', jabatan: 'Teknisi Lampu',     telp: '083333333002', status: 'Aktif',    bebanKerja: 7  },
-    { id: 'PTG-008', nama: 'Dewi Anggraini',       nip: '19911115 201701 2 008', dinas: 'DNS-004', jabatan: 'Penyuluh Sosial',   telp: '084444444001', status: 'Aktif',    bebanKerja: 4  },
-    { id: 'PTG-009', nama: 'Budi Hartono, S.H.',   nip: '19830202 200901 1 009', dinas: 'DNS-005', jabatan: 'Koordinator Tim',   telp: '085555555001', status: 'Aktif',    bebanKerja: 20 },
-    { id: 'PTG-010', nama: 'Agung Prasetyo',       nip: '19960305 202101 1 010', dinas: 'DNS-005', jabatan: 'Staf Lapangan',     telp: '085555555002', status: 'Aktif',    bebanKerja: 11 },
-];
+import api from '../../axios';
 
 const StatusBadge = ({ status }) => {
     const cfg = { 'Aktif': 'bg-green-100 text-green-700 border border-green-200', 'Nonaktif': 'bg-slate-100 text-slate-500 border border-slate-200' };
@@ -32,20 +12,63 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function PetugasDinasPage() {
-    useEffect(() => { window.scrollTo(0, 0); }, []);
-
     const [tab, setTab] = useState('petugas'); // 'petugas' | 'dinas'
     const [search, setSearch] = useState('');
     const [filterDinas, setFilterDinas] = useState('Semua');
     const [filterStatus, setFilterStatus] = useState('Semua');
+    
     const [modal, setModal] = useState(null);
-    const [modalMode, setModalMode] = useState('detail');
+    const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'edit' | 'tambah'
     const [editData, setEditData] = useState({});
+    
+    // Delete states
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const getDinasNama = (id) => DUMMY_DINAS.find(d => d.id === id)?.singkatan || id;
-    const getDinasColor = (id) => DUMMY_DINAS.find(d => d.id === id)?.color || 'bg-slate-500';
+    const [dinasList, setDinasList] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_dinas');
+        return stored ? JSON.parse(stored) : [];
+    });
+    const [petugasList, setPetugasList] = useState(() => {
+        const stored = localStorage.getItem('laporwarga_cache_petugas');
+        return stored ? JSON.parse(stored) : [];
+    });
+    const [loading, setLoading] = useState(() => {
+        const storedDinas = localStorage.getItem('laporwarga_cache_dinas');
+        const storedPetugas = localStorage.getItem('laporwarga_cache_petugas');
+        return !(storedDinas && storedPetugas);
+    });
+    const [isSaving, setIsSaving] = useState(false);
 
-    const filteredPetugas = DUMMY_PETUGAS.filter(p => {
+    // Fetch dynamic data from database
+    const fetchData = async () => {
+        const hasCache = !!(localStorage.getItem('laporwarga_cache_dinas') && localStorage.getItem('laporwarga_cache_petugas'));
+        if (!hasCache) setLoading(true);
+        try {
+            const [dinasRes, petugasRes] = await Promise.all([
+                api.get('/api/dinas'),
+                api.get('/api/petugas')
+            ]);
+            setDinasList(dinasRes.data);
+            setPetugasList(petugasRes.data);
+            localStorage.setItem('laporwarga_cache_dinas', JSON.stringify(dinasRes.data));
+            localStorage.setItem('laporwarga_cache_petugas', JSON.stringify(petugasRes.data));
+        } catch (error) {
+            console.error("Error fetching dinas and petugas:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        fetchData();
+    }, []);
+
+    const getDinasNama = (id) => dinasList.find(d => d.id === id)?.singkatan || id;
+    const getDinasColor = (id) => dinasList.find(d => d.id === id)?.color || 'bg-slate-500';
+
+    const filteredPetugas = petugasList.filter(p => {
         const q = search.toLowerCase();
         const matchQ = p.nama.toLowerCase().includes(q) || p.nip.includes(q) || p.jabatan.toLowerCase().includes(q);
         const matchD = filterDinas === 'Semua' || p.dinas === filterDinas;
@@ -53,19 +76,114 @@ export default function PetugasDinasPage() {
         return matchQ && matchD && matchS;
     });
 
-    const filteredDinas = DUMMY_DINAS.filter(d => {
+    const filteredDinas = dinasList.filter(d => {
         const q = search.toLowerCase();
         return d.nama.toLowerCase().includes(q) || d.singkatan.toLowerCase().includes(q);
     });
 
-    const openModal = (item, mode = 'detail') => { setModal(item); setModalMode(mode); setEditData({ ...item }); };
-    const openTambah = () => { setModal({}); setModalMode('tambah'); setEditData({ nama: '', nip: '', dinas: 'DNS-001', jabatan: '', telp: '', status: 'Aktif' }); };
+    const openModal = (item, mode = 'detail') => {
+        setModal(item);
+        setModalMode(mode);
+        setEditData({ ...item });
+    };
+
+    const openTambah = () => {
+        setModal({});
+        setModalMode('tambah');
+        if (tab === 'petugas') {
+            setEditData({
+                nama: '',
+                nip: '',
+                dinas: dinasList[0]?.id || '',
+                jabatan: '',
+                telp: '',
+                status: 'Aktif'
+            });
+        } else {
+            setEditData({
+                nama: '',
+                singkatan: '',
+                kategori: ''
+            });
+        }
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            if (tab === 'petugas') {
+                if (modalMode === 'tambah') {
+                    const res = await api.post('/api/petugas', {
+                        nama: editData.nama,
+                        nip: editData.nip,
+                        dinas: editData.dinas,
+                        jabatan: editData.jabatan,
+                        telp: editData.telp,
+                    });
+                    if (res.data && res.data.status === 'success') {
+                        setModal(null);
+                        await fetchData();
+                    }
+                } else if (modalMode === 'edit') {
+                    const res = await api.put(`/api/petugas/${modal.original_id}`, {
+                        nama: editData.nama,
+                        nip: editData.nip,
+                        dinas: editData.dinas,
+                        jabatan: editData.jabatan,
+                        telp: editData.telp,
+                    });
+                    if (res.data && res.data.status === 'success') {
+                        setModal(null);
+                        await fetchData();
+                    }
+                }
+            } else {
+                if (modalMode === 'tambah') {
+                    const res = await api.post('/api/dinas', {
+                        nama: editData.nama,
+                        singkatan: editData.singkatan,
+                        kategori: editData.kategori,
+                    });
+                    if (res.data && res.data.status === 'success') {
+                        setModal(null);
+                        await fetchData();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error saving data:", error);
+            if (error.response && error.response.data && error.response.data.message) {
+                alert(`Gagal menyimpan: ${error.response.data.message}`);
+            } else {
+                alert("Terjadi kesalahan saat menyimpan data.");
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setIsDeleting(true);
+        try {
+            const res = await api.delete(`/api/petugas/${deleteTarget.original_id}`);
+            if (res.data && res.data.status === 'success') {
+                setDeleteTarget(null);
+                await fetchData();
+            }
+        } catch (error) {
+            console.error("Gagal menghapus petugas:", error);
+            alert("Gagal menghapus petugas dari database.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const ringkasan = [
-        { label: 'Total Dinas',   value: DUMMY_DINAS.length,                                         bg: 'bg-indigo-50',  color: 'text-indigo-600',  border: 'border-indigo-100', icon: 'account_balance' },
-        { label: 'Total Petugas', value: DUMMY_PETUGAS.length,                                        bg: 'bg-blue-50',    color: 'text-blue-600',    border: 'border-blue-100',   icon: 'badge' },
-        { label: 'Petugas Aktif', value: DUMMY_PETUGAS.filter(p => p.status === 'Aktif').length,      bg: 'bg-green-50',   color: 'text-green-600',   border: 'border-green-100',  icon: 'check_circle' },
-        { label: 'Sedang Bertugas',value: DUMMY_PETUGAS.filter(p => p.bebanKerja > 0).length,         bg: 'bg-orange-50',  color: 'text-orange-600',  border: 'border-orange-100', icon: 'engineering' },
+        { label: 'Total Dinas',    value: dinasList.length,                                         bg: 'bg-indigo-50',  color: 'text-indigo-600',  border: 'border-indigo-100', icon: 'account_balance' },
+        { label: 'Total Petugas',  value: petugasList.length,                                       bg: 'bg-blue-50',    color: 'text-blue-600',    border: 'border-blue-100',   icon: 'badge' },
+        { label: 'Petugas Aktif',  value: petugasList.filter(p => p.status === 'Aktif').length,      bg: 'bg-green-50',   color: 'text-green-600',   border: 'border-green-100',  icon: 'check_circle' },
+        { label: 'Sedang Bertugas', value: petugasList.filter(p => p.bebanKerja > 0).length,         bg: 'bg-orange-50',  color: 'text-orange-600',  border: 'border-orange-100', icon: 'engineering' },
     ];
 
     return (
@@ -85,7 +203,7 @@ export default function PetugasDinasPage() {
 
             {/* Tab + Toolbar */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-6 pt-4 border-b border-slate-100">
+                <div className="px-6 py-4 border-b border-slate-100">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         {/* Tabs */}
                         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
@@ -101,13 +219,13 @@ export default function PetugasDinasPage() {
                             <div className="relative">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                                 <input type="text" placeholder="Cari..." value={search} onChange={e => setSearch(e.target.value)}
-                                    className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 w-48" />
+                                    className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 w-48 bg-white" />
                             </div>
                             {tab === 'petugas' && (
                                 <>
                                     <select value={filterDinas} onChange={e => setFilterDinas(e.target.value)} className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white focus:outline-none focus:border-blue-400">
                                         <option value="Semua">Semua Dinas</option>
-                                        {DUMMY_DINAS.map(d => <option key={d.id} value={d.id}>{d.singkatan}</option>)}
+                                        {dinasList.map(d => <option key={d.id} value={d.id}>{d.singkatan}</option>)}
                                     </select>
                                     <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white focus:outline-none focus:border-blue-400">
                                         {['Semua', 'Aktif', 'Nonaktif'].map(s => <option key={s}>{s}</option>)}
@@ -134,7 +252,17 @@ export default function PetugasDinasPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredPetugas.length === 0 ? (
+                                {loading ? (
+                                    <tr><td colSpan={8} className="text-center py-16 text-slate-400">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Memuat data petugas...</span>
+                                        </div>
+                                    </td></tr>
+                                ) : filteredPetugas.length === 0 ? (
                                     <tr><td colSpan={8} className="text-center py-16 text-slate-400">
                                         <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>Tidak ada petugas ditemukan
                                     </td></tr>
@@ -161,7 +289,7 @@ export default function PetugasDinasPage() {
                                             <div className="flex items-center gap-2">
                                                 <div className="h-1.5 w-20 bg-slate-100 rounded-full overflow-hidden">
                                                     <div className={`h-full rounded-full ${p.bebanKerja > 15 ? 'bg-red-400' : p.bebanKerja > 8 ? 'bg-orange-400' : 'bg-green-400'}`}
-                                                        style={{ width: `${Math.min((p.bebanKerja / 20) * 100, 100)}%` }}></div>
+                                                         style={{ width: `${Math.min((p.bebanKerja / 20) * 100, 100)}%` }}></div>
                                                 </div>
                                                 <span className="text-xs font-semibold text-slate-600">{p.bebanKerja}</span>
                                             </div>
@@ -175,7 +303,7 @@ export default function PetugasDinasPage() {
                                                 <button onClick={() => openModal(p, 'edit')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
                                                     <span className="material-symbols-outlined text-base">edit</span>
                                                 </button>
-                                                <button className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                                                <button onClick={() => setDeleteTarget(p)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
                                                     <span className="material-symbols-outlined text-base">delete</span>
                                                 </button>
                                             </div>
@@ -189,47 +317,60 @@ export default function PetugasDinasPage() {
 
                 {/* ===== TAB: DINAS ===== */}
                 {tab === 'dinas' && (
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filteredDinas.map(d => (
-                            <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                                            <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-slate-800 text-sm leading-tight">{d.nama}</p>
-                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md text-white ${d.color} mt-1 inline-block`}>{d.singkatan}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button onClick={() => openModal(d, 'edit')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors">
-                                            <span className="material-symbols-outlined text-base">edit</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mb-4 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-sm">category</span>{d.kategori}
-                                </p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-slate-50 rounded-xl p-3 text-center">
-                                        <p className="text-xl font-bold text-slate-800">{d.totalPetugas}</p>
-                                        <p className="text-xs text-slate-400">Petugas</p>
-                                    </div>
-                                    <div className="bg-blue-50 rounded-xl p-3 text-center">
-                                        <p className="text-xl font-bold text-blue-700">{d.totalLaporan}</p>
-                                        <p className="text-xs text-blue-400">Laporan</p>
-                                    </div>
+                    <div className="p-6">
+                        {loading ? (
+                            <div className="text-center py-16 text-slate-400">
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Memuat data dinas...</span>
                                 </div>
                             </div>
-                        ))}
+                        ) : filteredDinas.length === 0 ? (
+                            <div className="text-center py-16 text-slate-400">
+                                <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>Tidak ada dinas ditemukan
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {filteredDinas.map(d => (
+                                    <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                                    <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 text-sm leading-tight">{d.nama}</p>
+                                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-md text-white ${d.color} mt-1 inline-block`}>{d.singkatan}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mb-4 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">category</span>{d.kategori}
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="bg-slate-50 rounded-xl p-3 text-center">
+                                                <p className="text-xl font-bold text-slate-800">{d.totalPetugas}</p>
+                                                <p className="text-xs text-slate-400">Petugas</p>
+                                            </div>
+                                            <div className="bg-blue-50 rounded-xl p-3 text-center">
+                                                <p className="text-xl font-bold text-blue-700">{d.totalLaporan}</p>
+                                                <p className="text-xs text-blue-400">Laporan</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {/* Pagination (hanya tab petugas) */}
+                {/* Pagination */}
                 {tab === 'petugas' && (
                     <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                        <p className="text-xs text-slate-500">Menampilkan {filteredPetugas.length} dari {DUMMY_PETUGAS.length} petugas</p>
+                        <p className="text-xs text-slate-500">Menampilkan {filteredPetugas.length} dari {petugasList.length} petugas</p>
                         <div className="flex gap-1">
                             <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Sebelumnya</button>
                             <button className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg">1</button>
@@ -239,13 +380,13 @@ export default function PetugasDinasPage() {
                 )}
             </div>
 
-            {/* ===== MODAL ===== */}
+            {/* ===== EDIT/DETAIL/ADD MODAL ===== */}
             {modal !== null && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setModal(null)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                             <h2 className="font-bold text-slate-800 text-lg">
-                                {modalMode === 'detail' ? 'Detail Petugas' : modalMode === 'edit' ? 'Edit Data' : tab === 'petugas' ? 'Tambah Petugas' : 'Tambah Dinas'}
+                                {modalMode === 'detail' ? 'Detail Petugas' : modalMode === 'edit' ? 'Edit Data Petugas' : tab === 'petugas' ? 'Tambah Petugas' : 'Tambah Dinas'}
                             </h2>
                             <button onClick={() => setModal(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400"><span className="material-symbols-outlined">close</span></button>
                         </div>
@@ -255,24 +396,24 @@ export default function PetugasDinasPage() {
                                     {['nama', 'nip', 'jabatan', 'telp'].map(field => (
                                         <div key={field}>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">
-                                                {field === 'nip' ? 'NIP' : field === 'telp' ? 'No. Telepon' : field.charAt(0).toUpperCase() + field.slice(1)}
+                                                {field === 'nip' ? 'NIP' : field === 'telp' ? 'No. Telepon' : field}
                                             </label>
                                             {modalMode === 'detail' ? (
                                                 <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{modal[field] || '-'}</p>
                                             ) : (
                                                 <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })}
-                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400" />
+                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
                                             )}
                                         </div>
                                     ))}
                                     <div>
                                         <label className="text-xs text-slate-500 font-semibold block mb-1.5">Dinas</label>
                                         {modalMode === 'detail' ? (
-                                            <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{DUMMY_DINAS.find(d => d.id === modal.dinas)?.nama || '-'}</p>
+                                            <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{modal.dinas_nama || '-'}</p>
                                         ) : (
                                             <select value={editData.dinas || ''} onChange={e => setEditData({ ...editData, dinas: e.target.value })}
                                                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white">
-                                                {DUMMY_DINAS.map(d => <option key={d.id} value={d.id}>{d.nama}</option>)}
+                                                {dinasList.map(d => <option key={d.id} value={d.id}>{d.nama}</option>)}
                                             </select>
                                         )}
                                     </div>
@@ -285,12 +426,12 @@ export default function PetugasDinasPage() {
                                             </div>
                                         </div>
                                     )}
-                                    {modalMode !== 'detail' && (
+                                    {modalMode === 'edit' && (
                                         <div>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5">Status</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {['Aktif', 'Nonaktif'].map(s => (
-                                                    <button key={s} onClick={() => setEditData({ ...editData, status: s })}
+                                                    <button key={s} type="button" onClick={() => setEditData({ ...editData, status: s })}
                                                         className={`py-2 rounded-xl text-sm font-semibold border-2 transition-all ${editData.status === s ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}>
                                                         {s}
                                                     </button>
@@ -304,23 +445,57 @@ export default function PetugasDinasPage() {
                                 <>
                                     {['nama', 'singkatan', 'kategori'].map(field => (
                                         <div key={field}>
-                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field}</label>
                                             <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })}
-                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400" />
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
                                         </div>
                                     ))}
                                 </>
                             )}
                         </div>
-                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
-                            <button onClick={() => setModal(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 font-semibold">
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-2xl">
+                            <button disabled={isSaving} onClick={() => setModal(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
                                 {modalMode === 'detail' ? 'Tutup' : 'Batal'}
                             </button>
                             {modalMode !== 'detail' && (
-                                <button onClick={() => setModal(null)} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold">
-                                    {modalMode === 'tambah' ? 'Tambahkan' : 'Simpan'}
+                                <button disabled={isSaving} onClick={handleSave} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold">
+                                    {isSaving ? 'Menyimpan...' : modalMode === 'tambah' ? 'Tambahkan' : 'Simpan'}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== PREMIUM RED KUSTOM DELETE CONFIRMATION MODAL ===== */}
+            {deleteTarget !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-red-50 bg-red-50/10">
+                            <div>
+                                <h2 className="font-bold text-red-600 text-lg">Konfirmasi Hapus Petugas</h2>
+                                <p className="text-xs text-red-500 mt-0.5">Petugas ID: {deleteTarget.id}</p>
+                            </div>
+                            <button onClick={() => setDeleteTarget(null)} className="p-2 hover:bg-red-50 rounded-xl text-red-400 hover:text-red-600"><span className="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div className="px-6 py-8 flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-500 border border-red-100">
+                                <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                            </div>
+                            <p className="text-sm font-semibold text-slate-800 mb-2 px-2">
+                                Apakah Anda yakin ingin menghapus petugas <span className="text-red-600 font-bold">{deleteTarget.nama}</span>?
+                            </p>
+                            <p className="text-xs text-slate-500 max-w-xs px-2 leading-relaxed">
+                                Tindakan ini tidak dapat dibatalkan dan seluruh penugasan kerja petugas ini di database akan dihapus secara permanen.
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+                            <button disabled={isDeleting} onClick={() => setDeleteTarget(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
+                                Batal
+                            </button>
+                            <button disabled={isDeleting} onClick={handleDelete} className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold shadow-sm shadow-red-100">
+                                {isDeleting ? 'Menghapus...' : 'Ya, Hapus Petugas'}
+                            </button>
                         </div>
                     </div>
                 </div>
