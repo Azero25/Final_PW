@@ -24,8 +24,21 @@ const StatusBadge = ({ status }) => {
 export default function PenggunaPage() {
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    const [penggunaList, setPenggunaList] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [penggunaList, setPenggunaList] = useState(() => {
+        const stored = localStorage.getItem('admin_pengguna');
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        return DUMMY_PENGGUNA;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('admin_pengguna', JSON.stringify(penggunaList));
+    }, [penggunaList]);
 
     const [search, setSearch]               = useState('');
     const [filterStatus, setFilterStatus]   = useState('Semua');
@@ -37,25 +50,6 @@ export default function PenggunaPage() {
     const [bulkTargetStatus, setBulkTargetStatus] = useState('Aktif');
 
     const statusList = ['Semua', 'Aktif', 'Nonaktif', 'Diblokir'];
-
-    // Load users from backend API
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const response = await api.get('/api/users');
-            if (response.data && response.data.status === 'success') {
-                setPenggunaList(response.data.data);
-            }
-        } catch (error) {
-            console.error('Error fetching users:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUsers();
-    }, []);
 
     // Filter & pencarian
     const filtered = penggunaList.filter((u) => {
@@ -140,7 +134,7 @@ export default function PenggunaPage() {
             const id = modalUser.id;
             const targetId = modalUser.original_id || id.replace('USR-', '');
             const response = await api.delete(`/api/users/${targetId}`);
-            
+
             if (response.data && response.data.status === 'success') {
                 setPenggunaList(prev => prev.filter(u => u.id !== id));
                 setSelectedIds(prev => prev.filter(i => i !== id));
@@ -262,17 +256,17 @@ export default function PenggunaPage() {
                 {selectedIds.length > 0 && (
                     <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
                         <span className="text-sm font-semibold text-blue-700">{selectedIds.length} pengguna terpilih</span>
-                        
+
                         <button onClick={openBulkStatusModal} className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">edit</span>
                             Ubah Status Terpilih
                         </button>
-                        
+
                         <button onClick={openBulkDeleteModal} className="text-xs text-red-600 hover:underline font-semibold flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">delete</span>
                             Hapus Terpilih
                         </button>
-                        
+
                         <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
                     </div>
                 )}
@@ -422,7 +416,7 @@ export default function PenggunaPage() {
                                         <span className="material-symbols-outlined text-3xl">warning</span>
                                     </div>
                                     <p className="text-slate-700">Apakah Anda yakin ingin menghapus <strong>{selectedIds.length} pengguna terpilih</strong>?</p>
-                                    
+
                                     <div className="max-h-28 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 text-left">
                                         {selectedIds.map(id => {
                                             const u = penggunaList.find(x => x.id === id);
@@ -433,7 +427,7 @@ export default function PenggunaPage() {
                                             ) : null;
                                         })}
                                     </div>
-                                    
+
                                     <p className="text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan dan seluruh akun terpilih akan terhapus selamanya dari sistem.</p>
                                 </div>
                             ) : modalMode === 'bulkStatus' ? (

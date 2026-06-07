@@ -16,44 +16,13 @@ export default function PetugasDinasPage() {
     const [search, setSearch] = useState('');
     const [filterDinas, setFilterDinas] = useState('Semua');
     const [filterStatus, setFilterStatus] = useState('Semua');
-    
+
     const [modal, setModal] = useState(null);
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'edit' | 'tambah'
     const [editData, setEditData] = useState({});
-    
-    // Delete states
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
-    const [dinasList, setDinasList] = useState([]);
-    const [petugasList, setPetugasList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Fetch dynamic data from database
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [dinasRes, petugasRes] = await Promise.all([
-                api.get('/api/dinas'),
-                api.get('/api/petugas')
-            ]);
-            setDinasList(dinasRes.data);
-            setPetugasList(petugasRes.data);
-        } catch (error) {
-            console.error("Error fetching dinas and petugas:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-        fetchData();
-    }, []);
-
-    const getDinasNama = (id) => dinasList.find(d => d.id === id)?.singkatan || id;
-    const getDinasColor = (id) => dinasList.find(d => d.id === id)?.color || 'bg-slate-500';
+    const getDinasNama = (id) => DUMMY_DINAS.find(d => d.id === id)?.singkatan || id;
+    const getDinasColor = (id) => DUMMY_DINAS.find(d => d.id === id)?.color || 'bg-slate-500';
 
     const filteredPetugas = petugasList.filter(p => {
         const q = search.toLowerCase();

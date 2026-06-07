@@ -22,13 +22,13 @@ export default function LacakPage() {
             data.timeline = [];
         }
         if (data.status !== 'Selesai' && data.timeline.length > 0) {
-            data.timeline.push({ 
-                tanggal: '-', 
-                status: 'Selesai', 
-                keterangan: 'Menunggu penyelesaian pekerjaan di lapangan.', 
-                icon: 'task_alt', 
-                color: 'text-slate-300', 
-                pending: true 
+            data.timeline.push({
+                tanggal: '-',
+                status: 'Selesai',
+                keterangan: 'Menunggu penyelesaian pekerjaan di lapangan.',
+                icon: 'task_alt',
+                color: 'text-slate-300',
+                pending: true
             });
         }
         setHasilLacak(data);
@@ -48,7 +48,7 @@ export default function LacakPage() {
         try {
             if (by === 'tiket') {
                 const response = await fetch(`/api/pengaduans/${query.trim().toUpperCase()}`);
-                
+
                 if (!response.ok) {
                     if (response.status === 404) {
                         throw new Error('Nomor tiket tidak ditemukan. Pastikan nomor tiket yang Anda masukkan sudah benar.');
@@ -61,7 +61,7 @@ export default function LacakPage() {
                 // Pencarian berdasarkan Judul
                 const response = await fetch(`/api/pengaduans?judul=${encodeURIComponent(query.trim())}`);
                 if (!response.ok) throw new Error('Terjadi kesalahan pada server.');
-                
+
                 const data = await response.json();
                 if (data.length === 0) {
                     throw new Error('Tidak ada laporan ditemukan dengan judul tersebut.');
@@ -116,27 +116,15 @@ export default function LacakPage() {
 
                     {/* Form Pencarian Tiket */}
                     <form onSubmit={handleLacak} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-                        <div className="relative flex-grow flex shadow-sm rounded-xl overflow-hidden border-2 border-slate-200 focus-within:border-primary transition-colors bg-white">
-                            <select
-                                value={searchBy}
-                                onChange={(e) => setSearchBy(e.target.value)}
-                                className="bg-slate-50 border-r border-slate-200 text-slate-600 px-4 py-4 focus:outline-none font-medium cursor-pointer"
-                            >
-                                <option value="tiket">Nomor Tiket</option>
-                                <option value="judul">Judul Laporan</option>
-                            </select>
-                            <div className="relative flex-grow">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                    {searchBy === 'tiket' ? 'confirmation_number' : 'text_fields'}
-                                </span>
-                                <input
-                                    type="text"
-                                    value={nomorTiket}
-                                    onChange={(e) => setNomorTiket(e.target.value)}
-                                    placeholder={searchBy === 'tiket' ? "Contoh: LPW-2024-001234" : "Contoh: Jalan Berlubang"}
-                                    className="w-full pl-12 pr-4 py-4 text-slate-700 placeholder:text-slate-400 focus:outline-none text-base bg-transparent"
-                                />
-                            </div>
+                        <div className="relative flex-grow">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">confirmation_number</span>
+                            <input
+                                type="text"
+                                value={nomorTiket}
+                                onChange={(e) => setNomorTiket(e.target.value)}
+                                placeholder="Contoh: LPW-2024-001234"
+                                className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-primary transition-colors text-base bg-white shadow-sm"
+                            />
                         </div>
                         <button
                             type="submit"

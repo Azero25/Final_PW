@@ -33,8 +33,7 @@ const PrioritasBadge = ({ prioritas }) => {
 };
 
 export default function ManajemenLaporanPage() {
-    const [laporan, setLaporan] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    useEffect(() => { window.scrollTo(0, 0); }, []);
 
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('Semua');
@@ -43,44 +42,9 @@ export default function ManajemenLaporanPage() {
     const [modalLaporan, setModalLaporan] = useState(null);
     const [modalMode, setModalMode] = useState('detail');
     const [editStatus, setEditStatus] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [lightboxImg, setLightboxImg] = useState(null); // URL gambar fullscreen
 
-    const statusList  = ['Semua', 'Laporan Diterima', 'Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak'];
-    const kategoriList = ['Semua', 'Infrastruktur', 'Kebersihan', 'Penerangan', 'Sanitasi', 'Ketertiban', 'Lingkungan', 'Fasilitas Umum', 'Lainnya'];
-
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const response = await api.get('/api/pengaduans');
-            const data = response.data;
-            
-            // Format data
-            const formattedData = data.map(item => ({
-                id: item.nomor_tiket,
-                judul: item.judul,
-                kategori: item.kategori,
-                kecamatan: item.kecamatan || item.lokasi,
-                pelapor: item.anonim ? 'Anonim' : (item.nama || 'Warga'),
-                tanggal: new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-                status: item.status,
-                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah'),
-                bukti_foto: item.bukti_foto,
-                gambar: Array.isArray(item.gambar) ? item.gambar : (item.gambar ? [item.gambar] : []),
-                deskripsi: item.deskripsi || ''
-            }));
-            setLaporan(formattedData);
-        } catch (error) {
-            console.error("Error fetching pengaduans", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => { 
-        window.scrollTo(0, 0); 
-        fetchData();
-    }, []);
+    const statusList  = ['Semua', 'Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
+    const kategoriList = ['Semua', 'Infrastruktur', 'Kebersihan', 'Penerangan', 'Sanitasi', 'Ketertiban', 'Lingkungan', 'Fasilitas Umum'];
 
     // Filter & pencarian
     const filtered = laporan.filter((l) => {
@@ -251,8 +215,8 @@ export default function ManajemenLaporanPage() {
                 {selectedIds.length > 0 && (
                     <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
                         <span className="text-sm font-semibold text-blue-700">{selectedIds.length} laporan terpilih</span>
-                        
-                        <button 
+
+                        <button
                             disabled={isSaving}
                             onClick={() => handleBulkStatus('Sedang Diproses')}
                             className="text-xs text-orange-600 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
@@ -260,8 +224,8 @@ export default function ManajemenLaporanPage() {
                             <span className="material-symbols-outlined text-sm">engineering</span>
                             Tandai Diproses
                         </button>
-                        
-                        <button 
+
+                        <button
                             disabled={isSaving}
                             onClick={() => handleBulkStatus('Selesai')}
                             className="text-xs text-green-600 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
@@ -269,8 +233,8 @@ export default function ManajemenLaporanPage() {
                             <span className="material-symbols-outlined text-sm">task_alt</span>
                             Tandai Selesai
                         </button>
-                        
-                        <button 
+
+                        <button
                             disabled={isSaving}
                             onClick={openBulkDeleteModal}
                             className="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
@@ -278,7 +242,7 @@ export default function ManajemenLaporanPage() {
                             <span className="material-symbols-outlined text-sm">delete</span>
                             Hapus Terpilih
                         </button>
-                        
+
                         <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
                     </div>
                 )}
@@ -411,7 +375,7 @@ export default function ManajemenLaporanPage() {
                                         <span className="material-symbols-outlined text-3xl">warning</span>
                                     </div>
                                     <p className="text-slate-700">Apakah Anda yakin ingin menghapus <strong>{selectedIds.length} laporan terpilih</strong>?</p>
-                                    
+
                                     <div className="max-h-28 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 text-left">
                                         {selectedIds.map(id => {
                                             const l = laporan.find(x => x.id === id);
@@ -422,7 +386,7 @@ export default function ManajemenLaporanPage() {
                                             ) : null;
                                         })}
                                     </div>
-                                    
+
                                     <p className="text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan dan seluruh pengaduan terpilih akan terhapus selamanya dari sistem.</p>
                                 </div>
                             ) : (
@@ -553,7 +517,7 @@ export default function ManajemenLaporanPage() {
                             <button disabled={isSaving} onClick={() => setModalLaporan(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
                                 {modalMode === 'detail' ? 'Tutup' : 'Batal'}
                             </button>
-                            
+
                             {modalMode === 'edit' && (
                                 <button
                                     disabled={isSaving}

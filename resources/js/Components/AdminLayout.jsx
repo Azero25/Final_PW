@@ -9,8 +9,12 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitle = '' }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const [sidebarOpen, setSidebarOpen] = useState(false);   // mobile: default tertutup
-    const [isDesktop, setIsDesktop] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        return typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
+    });   // mobile: default tertutup, desktop: terbuka
+    const [isDesktop, setIsDesktop] = useState(() => {
+        return typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
+    });
     const [user, setUser] = useState(null);
 
     // Dropdown & Profile Modal State
@@ -32,13 +36,72 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
     const [saving, setSaving] = useState(false);
     const [showToast, setShowToast] = useState(false);
 
+    // Notifications State & Sync
+    const defaultNotifs = [
+        { id: 'NTF-001', judul: 'Laporan baru masuk',           isi: 'LPW-2024-001284: Jalan Rusak di Jl. Solo telah dilaporkan oleh Budi Santoso.',         tipe: 'laporan',    waktu: '2 menit lalu',   dibaca: false },
+        { id: 'NTF-002', judul: 'Status laporan diperbarui',    isi: 'LPW-2024-001281 berhasil diubah menjadi "Selesai" oleh petugas Ir. Hadi Susanto.',       tipe: 'update',     waktu: '15 menit lalu',  dibaca: false },
+        { id: 'NTF-003', judul: 'Pengguna baru terdaftar',      isi: 'Yulia Sari (yulia@email.com) berhasil mendaftar sebagai warga di sistem LaporWarga.',    tipe: 'pengguna',   waktu: '1 jam lalu',     dibaca: false },
+        { id: 'NTF-004', judul: 'Laporan prioritas tinggi',     isi: 'LPW-2024-001277: Banjir di Gang Mawar memerlukan penanganan segera oleh BPBD.',           tipe: 'darurat',    waktu: '2 jam lalu',     dibaca: true  },
+    ];
+
+    const [notifications, setNotifications] = useState(() => {
+        const stored = localStorage.getItem('admin_notifications');
+        return stored ? JSON.parse(stored) : defaultNotifs;
+    });
+
+    const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+
+    useEffect(() => {
+        const syncNotifs = () => {
+            const stored = localStorage.getItem('admin_notifications');
+            if (stored) setNotifications(JSON.parse(stored));
+        };
+        window.addEventListener('notificationsUpdated', syncNotifs);
+        window.addEventListener('storage', syncNotifs);
+        return () => {
+            window.removeEventListener('notificationsUpdated', syncNotifs);
+            window.removeEventListener('storage', syncNotifs);
+        };
+    }, []);
+
+    const markAllAsRead = () => {
+        const updated = notifications.map(n => ({ ...n, dibaca: true }));
+        setNotifications(updated);
+        localStorage.setItem('admin_notifications', JSON.stringify(updated));
+        window.dispatchEvent(new Event('notificationsUpdated'));
+    };
+
+    const markAsRead = (id) => {
+        const updated = notifications.map(n => n.id === id ? { ...n, dibaca: true } : n);
+        setNotifications(updated);
+        localStorage.setItem('admin_notifications', JSON.stringify(updated));
+        window.dispatchEvent(new Event('notificationsUpdated'));
+    };
+
+    const unreadCount = notifications.filter(n => !n.dibaca).length;
+
+    const TIPE_CONFIG = {
+        laporan:    { icon: 'assignment',    bg: 'bg-blue-100',    color: 'text-blue-600',   label: 'Laporan Baru',   dot: 'bg-blue-500'   },
+        update:     { icon: 'update',        bg: 'bg-green-100',   color: 'text-green-600',  label: 'Update Status',  dot: 'bg-green-500'  },
+        pengguna:   { icon: 'person',        bg: 'bg-purple-100',  color: 'text-purple-600', label: 'Pengguna',       dot: 'bg-purple-500' },
+        darurat:    { icon: 'emergency',     bg: 'bg-red-100',     color: 'text-red-600',    label: 'Darurat',        dot: 'bg-red-500'    },
+        peringatan: { icon: 'warning',       bg: 'bg-yellow-100',  color: 'text-yellow-600', label: 'Peringatan',     dot: 'bg-yellow-500' },
+        petugas:    { icon: 'badge',         bg: 'bg-orange-100',  color: 'text-orange-600', label: 'Petugas',        dot: 'bg-orange-500' },
+        sistem:     { icon: 'settings',      bg: 'bg-slate-100',   color: 'text-slate-600',  label: 'Sistem',         dot: 'bg-slate-400'  },
+    };
+
     // Deteksi ukuran layar
     useEffect(() => {
         const check = () => {
             const desktop = window.innerWidth >= 1024;
             setIsDesktop(desktop);
-            if (desktop) setSidebarOpen(true); // desktop: default terbuka
+            if (desktop) {
+                setSidebarOpen(true);
+            } else {
+                setSidebarOpen(false);
+            }
         };
+        // Run check once on mount to handle dynamic edge cases safely
         check();
         window.addEventListener('resize', check);
         return () => window.removeEventListener('resize', check);
@@ -47,7 +110,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
     // Tutup sidebar mobile saat pindah halaman
     useEffect(() => {
         if (!isDesktop) setSidebarOpen(false);
-    }, [location.pathname]);
+    }, [location.pathname, isDesktop]);
 
     useEffect(() => {
         const sesi = sessionStorage.getItem('user');
@@ -150,7 +213,9 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
     };
 
     // Sidebar collapsed hanya berlaku di desktop
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(() => {
+        return typeof window !== 'undefined' ? localStorage.getItem('admin_sidebar_collapsed') === 'true' : false;
+    });
     const sidebarWidth = isDesktop ? (collapsed ? 'w-20' : 'w-64') : 'w-72';
 
     return (
@@ -255,7 +320,17 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                     <div className="flex items-center gap-3">
                         {/* Toggle sidebar */}
                         <button
-                            onClick={() => isDesktop ? setCollapsed(!collapsed) : setSidebarOpen(!sidebarOpen)}
+                            onClick={() => {
+                                if (isDesktop) {
+                                    setCollapsed(prev => {
+                                        const next = !prev;
+                                        localStorage.setItem('admin_sidebar_collapsed', String(next));
+                                        return next;
+                                    });
+                                } else {
+                                    setSidebarOpen(!sidebarOpen);
+                                }
+                            }}
                             className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 p-2 rounded-lg transition-colors"
                         >
                             <span className="material-symbols-outlined">menu</span>
@@ -266,10 +341,95 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                         </div>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <button className="relative text-slate-500 hover:text-slate-800 hover:bg-slate-100 p-2 rounded-lg transition-colors">
-                            <span className="material-symbols-outlined">notifications</span>
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
+                        <div className="relative">
+                            <button 
+                                onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+                                className="relative text-slate-500 hover:text-slate-800 hover:bg-slate-100 p-2 rounded-lg transition-colors focus:outline-none"
+                            >
+                                <span className="material-symbols-outlined">notifications</span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center animate-pulse">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+                            
+                            {notifDropdownOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setNotifDropdownOpen(false)} />
+                                    <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+                                        <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <h3 className="font-bold text-slate-800 text-sm">Notifikasi</h3>
+                                                {unreadCount > 0 && (
+                                                    <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                                        {unreadCount} Baru
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {unreadCount > 0 && (
+                                                <button 
+                                                    onClick={markAllAsRead}
+                                                    className="text-xs text-blue-600 hover:underline font-semibold"
+                                                >
+                                                    Tandai dibaca
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-50">
+                                            {notifications.length === 0 ? (
+                                                <div className="py-8 text-center text-slate-400">
+                                                    <span className="material-symbols-outlined text-3xl block mb-1">notifications_off</span>
+                                                    <p className="text-xs">Tidak ada notifikasi</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map(n => {
+                                                    const cfg = TIPE_CONFIG[n.tipe] || TIPE_CONFIG.sistem;
+                                                    return (
+                                                        <div 
+                                                            key={n.id} 
+                                                            onClick={() => markAsRead(n.id)}
+                                                            className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${!n.dibaca ? 'bg-blue-50/20' : ''}`}
+                                                        >
+                                                            {/* Dot */}
+                                                            <div className="flex-shrink-0 mt-1.5">
+                                                                {!n.dibaca ? (
+                                                                    <span className={`block w-2 h-2 rounded-full ${cfg.dot}`}></span>
+                                                                ) : (
+                                                                    <span className="block w-2 h-2 rounded-full bg-transparent"></span>
+                                                                )}
+                                                            </div>
+                                                            {/* Icon */}
+                                                            <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
+                                                                <span className={`material-symbols-outlined text-base ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                                                                    {cfg.icon}
+                                                                </span>
+                                                            </div>
+                                                            {/* Content */}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className={`text-xs font-semibold ${!n.dibaca ? 'text-slate-900 font-bold' : 'text-slate-600'}`}>{n.judul}</p>
+                                                                <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{n.isi}</p>
+                                                                <span className="text-[10px] text-slate-400 block mt-1">{n.waktu}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                        <div className="px-4 py-2 border-t border-slate-100 text-center bg-slate-50 rounded-b-2xl">
+                                            <Link 
+                                                to="/admin/notifikasi" 
+                                                onClick={() => setNotifDropdownOpen(false)}
+                                                className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline inline-flex items-center gap-1"
+                                            >
+                                                Lihat Semua Notifikasi
+                                                <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                         
                         <div className="relative">
                             <button 

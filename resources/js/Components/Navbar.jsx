@@ -140,6 +140,14 @@ export default function Navbar() {
                                         <span className="material-symbols-outlined text-lg text-slate-400">manage_accounts</span>
                                         Edit Profil
                                     </Link>
+                                    <Link 
+                                        to="/profile/riwayat" 
+                                        onClick={() => setDropdownOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+                                    >
+                                        <span className="material-symbols-outlined text-lg text-slate-400">history</span>
+                                        Riwayat Laporan
+                                    </Link>
                                     {user.role === 'admin' && (
                                         <Link 
                                             to="/admin/dashboard" 
@@ -227,6 +235,12 @@ export default function Navbar() {
                                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700">
                                 <span className="material-symbols-outlined text-base">manage_accounts</span>
                                 Edit Profil Saya
+                            </Link>
+                            {/* Riwayat Laporan link */}
+                            <Link to="/profile/riwayat"
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700">
+                                <span className="material-symbols-outlined text-base">history</span>
+                                Riwayat Laporan Saya
                             </Link>
                             {/* Admin panel link */}
                             {user.role === 'admin' && (
