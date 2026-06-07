@@ -77,7 +77,7 @@ export default function PengaturanPage() {
                 <p className="text-sm font-semibold text-slate-800">{label}</p>
                 {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
             </div>
-            <div className="flex-shrink-0">{children}</div>
+            <div className="shrink-0">{children}</div>
         </div>
     );
 
@@ -104,7 +104,7 @@ export default function PengaturanPage() {
                     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                         {tabs.map(t => (
                             <button key={t.id} onClick={() => setActiveTab(t.id)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-shrink-0 transition-all
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all
                                     ${activeTab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
                                 <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: activeTab === t.id ? "'FILL' 1" : "'FILL' 0" }}>{t.icon}</span>
                                 {t.label}
@@ -115,7 +115,7 @@ export default function PengaturanPage() {
 
                 <div className="flex gap-6">
                     {/* Sidebar tab (desktop only) */}
-                    <div className="hidden sm:block w-52 flex-shrink-0">
+                    <div className="hidden sm:block w-52 shrink-0">
                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 space-y-1">
                             {tabs.map(t => (
                                 <button key={t.id} onClick={() => setActiveTab(t.id)}
@@ -139,7 +139,7 @@ export default function PengaturanPage() {
                                     <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">Perubahan disimpan secara lokal</p>
                                 </div>
                                 <button onClick={handleSave}
-                                    className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl text-sm font-semibold transition-all flex-shrink-0
+                                    className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl text-sm font-semibold transition-all shrink-0
                                         ${saved ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
                                     <span className="material-symbols-outlined text-base">{saved ? 'check_circle' : 'save'}</span>
                                     <span className="hidden sm:inline">{saved ? 'Tersimpan!' : 'Simpan Perubahan'}</span>
@@ -322,7 +322,7 @@ export default function PengaturanPage() {
                                 <div className="space-y-4 py-4">
                                     {/* Info backup terakhir */}
                                     <div className="p-5 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
                                             <span className="material-symbols-outlined text-green-600 text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>cloud_done</span>
                                         </div>
                                         <div>
@@ -340,7 +340,7 @@ export default function PengaturanPage() {
                                             { icon: 'schedule', label: 'Jadwal Otomatis', desc: 'Atur backup terjadwal setiap hari', color: 'text-purple-600 bg-purple-50 border-purple-200 hover:bg-purple-100' },
                                         ].map(b => (
                                             <button key={b.label} className={`flex items-center gap-4 p-4 border rounded-2xl text-left transition-colors ${b.color}`}>
-                                                <span className="material-symbols-outlined text-2xl flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{b.icon}</span>
+                                                <span className="material-symbols-outlined text-2xl shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>{b.icon}</span>
                                                 <div>
                                                     <p className="font-semibold text-sm">{b.label}</p>
                                                     <p className="text-xs opacity-70 mt-0.5">{b.desc}</p>

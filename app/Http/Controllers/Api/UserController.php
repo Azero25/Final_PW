@@ -1,0 +1,153 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use App\Models\Kelurahan;
+
+class UserController extends Controller
+{
+    public function index()
+    {
+        $users = User::all()->map(function ($user) {
+            $totalLaporan = \App\Models\Laporan::where('id_user', $user->id_user)->count();
+            
+            $kelurahanName = '-';
+            if ($user->id_kelurahan) {
+                $kelurahanName = Kelurahan::find($user->id_kelurahan)?->nama_kelurahan ?? '-';
+            }
+
+            return [
+                'id' => 'USR-' . str_pad($user->id_user, 3, '0', STR_PAD_LEFT),
+                'nama' => $user->nama_lengkap,
+                'email' => $user->email,
+                'telp' => $user->no_hp ?? '-', 
+                'kecamatan' => $kelurahanName, 
+                'totalLaporan' => $totalLaporan, 
+                'status' => $user->status ?? 'Aktif',
+                'bergabung' => $user->tanggal_bergabung ? \Carbon\Carbon::parse($user->tanggal_bergabung)->format('d M Y') : '-',
+                'avatar' => strtoupper(substr($user->nama_lengkap, 0, 1)),
+                'role' => $user->role,
+                'original_id' => $user->id_user,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $users
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'telp' => 'nullable|string|max:20',
+            'kecamatan' => 'nullable|string|max:255',
+            'status' => 'nullable|string',
+        ]);
+
+        $kelurahanId = null;
+        if ($request->kecamatan) {
+            $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+            $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+                ['nama_kecamatan' => 'Kecamatan Default'],
+                ['id_provinsi' => $provinsi->id_provinsi]
+            );
+            $kelurahan = Kelurahan::firstOrCreate(
+                ['nama_kelurahan' => $request->kecamatan],
+                ['id_kecamatan' => $kecamatanDb->id_kecamatan]
+            );
+            $kelurahanId = $kelurahan->id_kelurahan;
+        }
+
+        $user = User::create([
+            'nama_lengkap' => $request->nama,
+            'email' => $request->email,
+            'no_hp' => $request->telp,
+            'id_kelurahan' => $kelurahanId,
+            'status' => $request->status ?? 'Aktif',
+            'password' => Hash::make('password123'),
+            'role' => 'warga',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pengguna berhasil ditambahkan',
+            'data' => $user
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id_user . ',id_user',
+            'telp' => 'nullable|string|max:20',
+            'kecamatan' => 'nullable|string|max:255',
+            'status' => 'nullable|string',
+        ]);
+
+        $kelurahanId = null;
+        if ($request->kecamatan) {
+            $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+            $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+                ['nama_kecamatan' => 'Kecamatan Default'],
+                ['id_provinsi' => $provinsi->id_provinsi]
+            );
+            $kelurahan = Kelurahan::firstOrCreate(
+                ['nama_kelurahan' => $request->kecamatan],
+                ['id_kecamatan' => $kecamatanDb->id_kecamatan]
+            );
+            $kelurahanId = $kelurahan->id_kelurahan;
+        }
+
+        $user->update([
+            'nama_lengkap' => $request->nama,
+            'email' => $request->email,
+            'no_hp' => $request->telp,
+            'id_kelurahan' => $kelurahanId,
+            'status' => $request->status ?? $user->status,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pengguna berhasil diperbarui',
+            'data' => $user
+        ]);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'status' => 'required|string|in:Aktif,Nonaktif,Diblokir',
+        ]);
+
+        $user->update(['status' => $request->status]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Status pengguna berhasil diperbarui',
+            'data' => $user
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pengguna berhasil dihapus'
+        ]);
+    }
+}

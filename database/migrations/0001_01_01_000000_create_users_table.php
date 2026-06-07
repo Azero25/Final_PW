@@ -1,22 +1,21 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
-    {
+return new class extends Migration {
+    public function up(): void {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
+            $table->id('id_user');
+            $table->string('nama_lengkap');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('no_hp')->nullable();
+            $table->string('alamat_lengkap')->nullable();
+            $table->foreignId('id_kelurahan')->nullable()->constrained('kelurahans', 'id_kelurahan')->nullOnDelete();
+            $table->integer('count_laporan')->default(0);
+            $table->dateTime('tanggal_bergabung')->useCurrent();
+            $table->string('role')->default('warga'); // 'admin' atau 'warga'
             $table->rememberToken();
             $table->timestamps();
         });
@@ -37,11 +36,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
+    public function down(): void {
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');

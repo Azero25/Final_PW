@@ -61,7 +61,7 @@ export default function ManajemenLaporanPage() {
         try {
             const response = await api.get('/api/pengaduans');
             const data = response.data;
-            
+
             // Format data
             const formattedData = data.map(item => ({
                 id: item.nomor_tiket,
@@ -85,8 +85,8 @@ export default function ManajemenLaporanPage() {
         }
     };
 
-    useEffect(() => { 
-        window.scrollTo(0, 0); 
+    useEffect(() => {
+        window.scrollTo(0, 0);
         fetchData();
     }, []);
 
@@ -202,7 +202,7 @@ export default function ManajemenLaporanPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map((r) => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div>
@@ -219,7 +219,7 @@ export default function ManajemenLaporanPage() {
                 {/* Toolbar */}
                 <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-45">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                         <input
                             type="text"
@@ -259,8 +259,8 @@ export default function ManajemenLaporanPage() {
                 {selectedIds.length > 0 && (
                     <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
                         <span className="text-sm font-semibold text-blue-700">{selectedIds.length} laporan terpilih</span>
-                        
-                        <button 
+
+                        <button
                             disabled={isSaving}
                             onClick={() => handleBulkStatus('Sedang Diproses')}
                             className="text-xs text-orange-600 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
@@ -268,8 +268,8 @@ export default function ManajemenLaporanPage() {
                             <span className="material-symbols-outlined text-sm">engineering</span>
                             Tandai Diproses
                         </button>
-                        
-                        <button 
+
+                        <button
                             disabled={isSaving}
                             onClick={() => handleBulkStatus('Selesai')}
                             className="text-xs text-green-600 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
@@ -277,8 +277,8 @@ export default function ManajemenLaporanPage() {
                             <span className="material-symbols-outlined text-sm">task_alt</span>
                             Tandai Selesai
                         </button>
-                        
-                        <button 
+
+                        <button
                             disabled={isSaving}
                             onClick={openBulkDeleteModal}
                             className="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
@@ -286,7 +286,7 @@ export default function ManajemenLaporanPage() {
                             <span className="material-symbols-outlined text-sm">delete</span>
                             Hapus Terpilih
                         </button>
-                        
+
                         <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
                     </div>
                 )}
@@ -337,7 +337,7 @@ export default function ManajemenLaporanPage() {
                                     </td>
                                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-semibold whitespace-nowrap">{laporanItem.id}</td>
                                     <td className="px-4 py-3">
-                                        <p className="font-medium text-slate-800 max-w-[180px] truncate">{laporanItem.judul}</p>
+                                        <p className="font-medium text-slate-800 max-w-45 truncate">{laporanItem.judul}</p>
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium whitespace-nowrap">{laporanItem.kategori}</span>
@@ -419,7 +419,7 @@ export default function ManajemenLaporanPage() {
                                         <span className="material-symbols-outlined text-3xl">warning</span>
                                     </div>
                                     <p className="text-slate-700">Apakah Anda yakin ingin menghapus <strong>{selectedIds.length} laporan terpilih</strong>?</p>
-                                    
+
                                     <div className="max-h-28 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 text-left">
                                         {selectedIds.map(id => {
                                             const l = laporan.find(x => x.id === id);
@@ -430,7 +430,7 @@ export default function ManajemenLaporanPage() {
                                             ) : null;
                                         })}
                                     </div>
-                                    
+
                                     <p className="text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan dan seluruh pengaduan terpilih akan terhapus selamanya dari sistem.</p>
                                 </div>
                             ) : (
@@ -561,7 +561,7 @@ export default function ManajemenLaporanPage() {
                             <button disabled={isSaving} onClick={() => setModalLaporan(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
                                 {modalMode === 'detail' ? 'Tutup' : 'Batal'}
                             </button>
-                            
+
                             {modalMode === 'edit' && (
                                 <button
                                     disabled={isSaving}
@@ -601,7 +601,7 @@ export default function ManajemenLaporanPage() {
         {/* Lightbox Modal - di luar AdminLayout agar full-screen */}
         {lightboxImg && (
             <div
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
+                className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
                 onClick={() => setLightboxImg(null)}
             >
                 <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center" onClick={e => e.stopPropagation()}>

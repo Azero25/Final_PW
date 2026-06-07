@@ -13,7 +13,7 @@ export default function RiwayatLaporanPage() {
     const [filterStatus, setFilterStatus] = useState('Semua');
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
-    
+
     // State Modal Lacak Detail
     const [selectedLaporan, setSelectedLaporan] = useState(null);
     const [timelineData, setTimelineData] = useState([]);
@@ -45,13 +45,13 @@ export default function RiwayatLaporanPage() {
                 const response = await fetch('/api/pengaduans');
                 if (!response.ok) throw new Error('Gagal mengambil data pengaduan');
                 const data = await response.json();
-                
+
                 // Cari profil kustom untuk memastikan pencocokan nama
                 const storedProfile = localStorage.getItem(`profile_${activeUser.email}`);
                 const profileName = storedProfile ? JSON.parse(storedProfile).nama : activeUser.nama;
 
                 // Filter pengaduan berdasarkan nama pembuat
-                const userLaporan = data.filter(item => 
+                const userLaporan = data.filter(item =>
                     item.nama?.trim().toLowerCase() === profileName?.trim().toLowerCase() ||
                     item.email?.trim().toLowerCase() === activeUser.email?.trim().toLowerCase()
                 );
@@ -97,7 +97,7 @@ export default function RiwayatLaporanPage() {
             if (response.ok) {
                 const data = await response.json();
                 let timeline = data.timeline || [];
-                
+
                 // Tambahkan step selesai di akhir jika status belum selesai
                 if (data.status !== 'Selesai' && timeline.length > 0) {
                     timeline.push({
@@ -126,7 +126,7 @@ export default function RiwayatLaporanPage() {
 
     // Filter list laporan
     const filteredLaporan = laporanList.filter(item => {
-        const matchesSearch = item.judul.toLowerCase().includes(search.toLowerCase()) || 
+        const matchesSearch = item.judul.toLowerCase().includes(search.toLowerCase()) ||
                              item.id.toLowerCase().includes(search.toLowerCase()) ||
                              item.kategori.toLowerCase().includes(search.toLowerCase());
         const matchesStatus = filterStatus === 'Semua' || item.status === filterStatus;
@@ -161,10 +161,10 @@ export default function RiwayatLaporanPage() {
             <Navbar />
 
             {/* Banner Header */}
-            <div className="w-full h-48 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-500 relative overflow-hidden flex items-end">
+            <div className="w-full h-48 bg-linear-to-r from-blue-700 via-blue-600 to-indigo-500 relative overflow-hidden flex items-end">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]"></div>
                 <div className="absolute top-4 right-12 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl"></div>
-                
+
                 <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex items-center gap-4 relative z-10">
                     <span className="material-symbols-outlined text-white/20 text-7xl absolute right-12 bottom-2 select-none pointer-events-none hidden md:block">history</span>
                     <div>
@@ -175,24 +175,24 @@ export default function RiwayatLaporanPage() {
             </div>
 
             {/* Main Area */}
-            <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">
-                    
+
                     {/* Left Menu / Navigation Sidebar */}
-                    <div className="w-full lg:w-1/4 flex-shrink-0">
+                    <div className="w-full lg:w-1/4 shrink-0">
                         <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-2">
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-3 mb-2">Akun Saya</p>
-                            
-                            <Link 
-                                to="/profile" 
+
+                            <Link
+                                to="/profile"
                                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                             >
                                 <span className="material-symbols-outlined text-lg text-slate-400">manage_accounts</span>
                                 Edit Profil
                             </Link>
 
-                            <Link 
-                                to="/profile/riwayat" 
+                            <Link
+                                to="/profile/riwayat"
                                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold bg-blue-600 text-white shadow-md shadow-blue-500/10 transition-colors"
                             >
                                 <span className="material-symbols-outlined text-lg text-white" style={{ fontVariationSettings: "'FILL' 1" }}>history</span>
@@ -204,14 +204,14 @@ export default function RiwayatLaporanPage() {
                     {/* Right Panel: Riwayat List */}
                     <div className="w-full lg:flex-1">
                         <div className="bg-white border border-slate-100 rounded-3xl shadow-sm p-6 md:p-8">
-                            
+
                             {/* Search & Filter Controls */}
                             <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-center">
                                 {/* Search Bar */}
                                 <div className="relative w-full md:max-w-md">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
                                         placeholder="Cari berdasarkan judul, kategori, atau tiket..."
@@ -223,7 +223,7 @@ export default function RiwayatLaporanPage() {
                                 <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                                     <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">Filter Status:</span>
                                     <div className="relative">
-                                        <select 
+                                        <select
                                             value={filterStatus}
                                             onChange={(e) => setFilterStatus(e.target.value)}
                                             className="appearance-none bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-10 py-2.5 text-sm font-semibold text-slate-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
@@ -244,8 +244,8 @@ export default function RiwayatLaporanPage() {
                                         {currentItems.map((item) => {
                                             const config = statusConfig[item.status] || { color: 'bg-slate-50 text-slate-700 border-slate-100', icon: 'assignment', badge: 'bg-slate-500' };
                                             return (
-                                                <div 
-                                                    key={item.id} 
+                                                <div
+                                                    key={item.id}
                                                     className="border border-slate-100 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                                                 >
                                                     {/* Text Info */}
@@ -255,9 +255,9 @@ export default function RiwayatLaporanPage() {
                                                             <span className="text-xs font-semibold text-slate-400">•</span>
                                                             <span className="text-xs text-slate-500 font-medium">{item.tanggal}</span>
                                                         </div>
-                                                        
+
                                                         <h3 className="font-bold text-slate-800 text-base lg:text-lg leading-snug">{item.judul}</h3>
-                                                        
+
                                                         <div className="flex flex-wrap gap-2 text-xs">
                                                             <span className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded-lg border border-slate-100 font-medium capitalize flex items-center gap-1">
                                                                 <span className="material-symbols-outlined text-xs">category</span>
@@ -277,7 +277,7 @@ export default function RiwayatLaporanPage() {
                                                             {item.status}
                                                         </span>
 
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleLacakDetail(item)}
                                                             className="px-4 py-2 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 border border-blue-100 hover:border-blue-600 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer active:scale-95"
                                                         >
@@ -296,7 +296,7 @@ export default function RiwayatLaporanPage() {
                                             <p className="text-xs text-slate-500 font-medium">
                                                 Menampilkan <span className="text-slate-800 font-semibold">{startIndex + 1}</span> - <span className="text-slate-800 font-semibold">{Math.min(endIndex, totalItems)}</span> dari <span className="text-slate-800 font-semibold">{totalItems}</span> laporan
                                             </p>
-                                            
+
                                             <div className="flex items-center gap-1">
                                                 {/* Previous button */}
                                                 <button
@@ -359,8 +359,8 @@ export default function RiwayatLaporanPage() {
                                     <p className="text-slate-500 text-sm mt-2 leading-relaxed">
                                         Anda belum pernah membuat laporan pengaduan di sistem LaporWarga.
                                     </p>
-                                    <Link 
-                                        to="/buat-pengaduan" 
+                                    <Link
+                                        to="/buat-pengaduan"
                                         className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all text-sm active:scale-95"
                                     >
                                         <span className="material-symbols-outlined text-lg">campaign</span>
@@ -377,21 +377,21 @@ export default function RiwayatLaporanPage() {
 
             {/* Timeline Progress Tracking Modal */}
             {selectedLaporan && (
-                <div 
+                <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
                     onClick={() => setSelectedLaporan(null)}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 max-h-[90vh]"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-5 md:p-6 text-white flex items-center justify-between">
+                        <div className="bg-linear-to-r from-blue-700 to-blue-600 p-5 md:p-6 text-white flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Lacak Status Pengaduan</p>
                                 <h3 className="text-lg md:text-xl font-bold tracking-wide mt-1">{selectedLaporan.id}</h3>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setSelectedLaporan(null)}
                                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
                             >
@@ -400,12 +400,12 @@ export default function RiwayatLaporanPage() {
                         </div>
 
                         {/* Modal Body (Scrollable) */}
-                        <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-grow">
+                        <div className="p-6 md:p-8 overflow-y-auto space-y-6 grow">
                             {/* Short Summary Card */}
                             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
                                 <h4 className="font-bold text-slate-800 text-base">{selectedLaporan.judul}</h4>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">{selectedLaporan.deskripsi}</p>
-                                
+
                                 <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100 text-xs">
                                     <div>
                                         <span className="text-slate-400 font-medium">Kategori:</span>
@@ -441,16 +441,16 @@ export default function RiwayatLaporanPage() {
                                                 <div key={index} className="flex gap-4 relative">
                                                     {/* Vertical connection line */}
                                                     {index < timelineData.length - 1 && (
-                                                        <div className={`absolute left-[19px] top-9 bottom-0 w-0.5 ${isPending ? 'border-l-2 border-dashed border-slate-200' : 'bg-slate-200'}`}></div>
+                                                        <div className={`absolute left-4.75 top-9 bottom-0 w-0.5 ${isPending ? 'border-l-2 border-dashed border-slate-200' : 'bg-slate-200'}`}></div>
                                                     )}
                                                     {/* Round icon */}
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${isPending ? 'bg-slate-100 text-slate-300' : 'bg-white border-2 border-blue-500 text-blue-600'}`}>
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${isPending ? 'bg-slate-100 text-slate-300' : 'bg-white border-2 border-blue-500 text-blue-600'}`}>
                                                         <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
                                                             {item.icon || 'assignment'}
                                                         </span>
                                                     </div>
                                                     {/* Content details */}
-                                                    <div className={`pb-6 flex-grow ${isPending ? 'opacity-40' : ''}`}>
+                                                    <div className={`pb-6 grow ${isPending ? 'opacity-40' : ''}`}>
                                                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 mb-1">
                                                             <p className="font-bold text-slate-800 text-sm md:text-base">{item.status}</p>
                                                             <span className="hidden sm:block text-slate-300 text-xs">•</span>
@@ -468,7 +468,7 @@ export default function RiwayatLaporanPage() {
 
                         {/* Modal Footer */}
                         <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end">
-                            <button 
+                            <button
                                 onClick={() => setSelectedLaporan(null)}
                                 className="px-5 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors cursor-pointer text-xs"
                             >

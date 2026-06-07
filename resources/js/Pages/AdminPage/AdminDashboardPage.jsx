@@ -44,7 +44,7 @@ export default function AdminDashboardPage() {
         try {
             const response = await api.get('/api/pengaduans');
             const data = response.data;
-            
+
             // Format data untuk tabel
             const formattedData = data.map(item => ({
                 id: item.nomor_tiket,
@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
-            
+
             let monthlyCounts = {};
             for (let i = 5; i >= 0; i--) {
                 let d = new Date(currentYear, currentMonth - i, 1);
@@ -332,7 +332,7 @@ export default function AdminDashboardPage() {
                                         <tr key={laporan.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-4 font-mono text-xs text-blue-600 font-semibold">{laporan.id}</td>
                                             <td className="px-6 py-4">
-                                                <p className="font-medium text-slate-800 max-w-[200px] truncate">{laporan.judul}</p>
+                                                <p className="font-medium text-slate-800 max-w-50 truncate">{laporan.judul}</p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">{laporan.kategori}</span>
@@ -471,7 +471,7 @@ export default function AdminDashboardPage() {
                             <button disabled={isSaving} onClick={() => setModalLaporan(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
                                 {modalMode === 'detail' ? 'Tutup' : 'Batal'}
                             </button>
-                            
+
                             {modalMode === 'edit' && (
                                 <button
                                     disabled={isSaving}

@@ -83,7 +83,7 @@ export default function NotifikasiPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map(r => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div><p className="text-2xl font-bold text-slate-800">{r.value}</p><p className="text-xs text-slate-500">{r.label}</p></div>
@@ -97,7 +97,7 @@ export default function NotifikasiPage() {
                 {/* Toolbar */}
                 <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-45">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                         <input type="text" placeholder="Cari notifikasi..." value={search} onChange={e => setSearch(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400" />
@@ -166,14 +166,14 @@ export default function NotifikasiPage() {
                                 className={`flex items-start gap-4 px-6 py-4 transition-colors group ${!n.dibaca ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
 
                                 {/* Dot belum dibaca */}
-                                <div className="flex-shrink-0 mt-1.5">
+                                <div className="shrink-0 mt-1.5">
                                     {!n.dibaca
                                         ? <span className={`block w-2.5 h-2.5 rounded-full ${cfg.dot}`}></span>
                                         : <span className="block w-2.5 h-2.5 rounded-full bg-transparent"></span>}
                                 </div>
 
                                 {/* Icon tipe */}
-                                <div className={`w-10 h-10 ${cfg.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                <div className={`w-10 h-10 ${cfg.bg} rounded-xl flex items-center justify-center shrink-0`}>
                                     <span className={`material-symbols-outlined text-xl ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{cfg.icon}</span>
                                 </div>
 
@@ -184,7 +184,7 @@ export default function NotifikasiPage() {
                                             <p className={`text-sm font-semibold ${!n.dibaca ? 'text-slate-900' : 'text-slate-700'}`}>{n.judul}</p>
                                             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.isi}</p>
                                         </div>
-                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                        <div className="flex items-center gap-1 shrink-0">
                                             <span className="text-xs text-slate-400 whitespace-nowrap">{n.waktu}</span>
                                         </div>
                                     </div>
@@ -200,7 +200,7 @@ export default function NotifikasiPage() {
 
                                 {/* Tombol hapus (muncul saat hover) */}
                                 <button onClick={() => hapusSatu(n.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0">
+                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0">
                                     <span className="material-symbols-outlined text-base">close</span>
                                 </button>
                             </div>
