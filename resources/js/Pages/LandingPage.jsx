@@ -1,15 +1,66 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
+import axios from 'axios';
 
 /**
  * Komponen Halaman Utama (Landing Page)
  * Halaman pertama yang dilihat oleh publik (Citizen View).
  */
 export default function LandingPage() {
+    const [stats, setStats] = useState({
+        total: 0,
+        diproses: 0,
+        selesai: 0,
+        diprosesPct: 0,
+        selesaiPct: 0
+    });
+
+    // State untuk Data Public API (Persyaratan Dosen)
+    const [news, setNews] = useState([]);
+    const [isLoadingNews, setIsLoadingNews] = useState(true);
+
     useEffect(() => {
         window.scrollTo(0, 0);
+        
+        // Fetch real stats
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get('/api/pengaduans');
+                const data = response.data;
+                const total = data.length;
+                const diproses = data.filter(i => i.status === 'Laporan Diterima' || i.status === 'Verifikasi' || i.status === 'Sedang Diproses').length;
+                const selesai = data.filter(i => i.status === 'Selesai').length;
+                
+                setStats({
+                    total,
+                    diproses,
+                    selesai,
+                    diprosesPct: total > 0 ? Math.round((diproses / total) * 100) : 0,
+                    selesaiPct: total > 0 ? Math.round((selesai / total) * 100) : 0,
+                });
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+            }
+        };
+
+        // Fetch news dari Public API menggunakan Axios (Persyaratan Dosen)
+        const fetchNews = async () => {
+            try {
+                setIsLoadingNews(true);
+                // Mengambil 10 item dari JSONPlaceholder
+                const response = await axios.get('https://jsonplaceholder.typicode.com/posts?_limit=10');
+                setNews(response.data);
+            } catch (error) {
+                console.error("Failed to fetch news from public API", error);
+            } finally {
+                setIsLoadingNews(false);
+            }
+        };
+
+        fetchStats();
+        fetchNews();
     }, []);
 
     return (
@@ -57,8 +108,8 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-4 flex items-baseline gap-2">
-                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">12,450</span>
-                                   <span className="text-sm text-secondary hidden sm:block">+12% bulan ini</span>
+                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">{stats.total}</span>
+                                   <span className="text-sm text-secondary hidden sm:block">Laporan Real-time</span>
                             </div>
                         </div>
 
@@ -71,9 +122,9 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-4 relative z-10">
-                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">1,234</span>
+                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">{stats.diproses}</span>
                                 <div className="w-full bg-surface-container-high h-2 rounded-full mt-3">
-                                    <div className="bg-amber-500 h-2 rounded-full" style={{ width: "10%" }}></div>
+                                    <div className="bg-amber-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${stats.diprosesPct}%` }}></div>
                                 </div>
                             </div>
                         </div>
@@ -87,9 +138,9 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-4 relative z-10">
-                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">11,105</span>
+                                <span className="text-4xl font-bold font-public-sans text-on-background block leading-none">{stats.selesai}</span>
                                 <div className="w-full bg-surface-container-high h-2 rounded-full mt-3">
-                                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: "89%" }}></div>
+                                    <div className="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${stats.selesaiPct}%` }}></div>
                                 </div>
                             </div>
                         </div>
@@ -107,6 +158,40 @@ export default function LandingPage() {
                             </div>
                         </div>
                     </div>
+                </section>
+
+                {/* Bagian Berita Terbaru (Public API Integration) */}
+                <section className="py-12 border-t border-outline-variant/30 mt-8">
+                    <div className="text-center mb-10">
+                        <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 font-bold text-xs tracking-widest uppercase mb-3">Informasi Publik</span>
+                        <h2 className="font-h2 text-3xl font-bold">Pengumuman & Berita Terkini</h2>
+                        <p className="text-slate-500 mt-2 text-sm max-w-xl mx-auto">Data ini diambil secara langsung dari Public API menggunakan Axios sebagai demonstrasi integrasi pihak ketiga.</p>
+                    </div>
+
+                    {isLoadingNews ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <svg className="animate-spin h-10 w-10 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p className="text-slate-500 font-medium animate-pulse">Mengambil data dari server publik...</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {news.map((item) => (
+                                <div key={item.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0px_4px_20px_rgba(0,102,204,0.05)] hover:shadow-[0px_10px_30px_rgba(0,102,204,0.1)] transition-shadow flex flex-col h-full">
+                                    <div className="flex gap-2 mb-3">
+                                        <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-md">Berita #{item.id}</span>
+                                    </div>
+                                    <h3 className="font-bold text-lg text-slate-800 mb-2 capitalize line-clamp-2">{item.title}</h3>
+                                    <p className="text-slate-500 text-sm line-clamp-3 mb-4 flex-grow">{item.body}</p>
+                                    <div className="mt-auto pt-4 border-t border-slate-100">
+                                        <button className="text-blue-600 font-semibold text-sm hover:text-blue-800 transition-colors">Baca selengkapnya &rarr;</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {/* Bagian Cara Kerja Layanan */}

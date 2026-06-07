@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * Halaman Login
@@ -15,8 +15,11 @@ const DUMMY_ACCOUNTS = [
     { email: 'warga@email.com',   password: 'warga123', role: 'warga', nama: 'Budi Santoso' },
 ];
 
+import api from '../axios';
+
 export default function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +27,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
 
     // Fungsi menangani login
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
 
@@ -34,42 +37,34 @@ export default function LoginPage() {
             return;
         }
 
-        // Validasi: format email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            setError('Format email tidak valid. Contoh: nama@domain.com');
-            return;
-        }
-
-        // Validasi: panjang password minimal 6 karakter
-        if (password.length < 6) {
-            setError('Password minimal harus 6 karakter.');
-            return;
-        }
-
         setIsLoading(true);
 
-        // Simulasi delay autentikasi
-        setTimeout(() => {
-            const akun = DUMMY_ACCOUNTS.find(
-                (a) => a.email === email.trim() && a.password === password
-            );
+        try {
+            const response = await api.post('/api/login', {
+                email: email.trim(),
+                password: password
+            });
 
-            if (akun) {
-                // Simpan sesi sederhana di sessionStorage
-                sessionStorage.setItem('user', JSON.stringify({ email: akun.email, nama: akun.nama, role: akun.role }));
+            // Simpan sesi sederhana di sessionStorage
+            const user = response.data.user;
+            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.nama_lengkap, role: user.role }));
 
-                // Arahkan berdasarkan role
-                if (akun.role === 'admin') {
-                    navigate('/admin/dashboard');
-                } else {
-                    navigate('/');
-                }
+            // Arahkan berdasarkan role
+            if (user.role === 'admin') {
+                navigate('/admin/dashboard');
             } else {
-                setError('Email atau password salah. Silakan coba lagi.');
-                setIsLoading(false);
+                const from = location.state?.from?.pathname || '/';
+                navigate(from, { replace: true });
             }
-        }, 1000);
+        } catch (err) {
+            if (err.response && err.response.data && err.response.data.message) {
+                setError(err.response.data.message);
+            } else {
+                setError('Terjadi kesalahan. Silakan coba lagi.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
    

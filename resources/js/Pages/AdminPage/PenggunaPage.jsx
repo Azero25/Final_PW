@@ -24,14 +24,8 @@ const StatusBadge = ({ status }) => {
 export default function PenggunaPage() {
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    const [penggunaList, setPenggunaList] = useState(() => {
-        const stored = localStorage.getItem('laporwarga_cache_users');
-        return stored ? JSON.parse(stored) : [];
-    });
-    const [loading, setLoading] = useState(() => {
-        const stored = localStorage.getItem('laporwarga_cache_users');
-        return !stored;
-    });
+    const [penggunaList, setPenggunaList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const [search, setSearch]               = useState('');
     const [filterStatus, setFilterStatus]   = useState('Semua');
@@ -46,13 +40,11 @@ export default function PenggunaPage() {
 
     // Load users from backend API
     const fetchUsers = async () => {
-        const hasCache = !!localStorage.getItem('laporwarga_cache_users');
-        if (!hasCache) setLoading(true);
+        setLoading(true);
         try {
             const response = await api.get('/api/users');
             if (response.data && response.data.status === 'success') {
                 setPenggunaList(response.data.data);
-                localStorage.setItem('laporwarga_cache_users', JSON.stringify(response.data.data));
             }
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -148,7 +140,7 @@ export default function PenggunaPage() {
             const id = modalUser.id;
             const targetId = modalUser.original_id || id.replace('USR-', '');
             const response = await api.delete(`/api/users/${targetId}`);
-            
+
             if (response.data && response.data.status === 'success') {
                 setPenggunaList(prev => prev.filter(u => u.id !== id));
                 setSelectedIds(prev => prev.filter(i => i !== id));
@@ -219,7 +211,7 @@ export default function PenggunaPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map((r) => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div>
@@ -236,7 +228,7 @@ export default function PenggunaPage() {
                 {/* Toolbar */}
                 <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-45">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                         <input
                             type="text"
@@ -270,17 +262,17 @@ export default function PenggunaPage() {
                 {selectedIds.length > 0 && (
                     <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
                         <span className="text-sm font-semibold text-blue-700">{selectedIds.length} pengguna terpilih</span>
-                        
+
                         <button onClick={openBulkStatusModal} className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">edit</span>
                             Ubah Status Terpilih
                         </button>
-                        
+
                         <button onClick={openBulkDeleteModal} className="text-xs text-red-600 hover:underline font-semibold flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">delete</span>
                             Hapus Terpilih
                         </button>
-                        
+
                         <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
                     </div>
                 )}
@@ -330,7 +322,7 @@ export default function PenggunaPage() {
                                     {/* Pengguna: Avatar + Nama + ID */}
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center flex-shrink-0`}>
+                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center shrink-0`}>
                                                 <span className="text-white text-sm font-bold">{u.avatar}</span>
                                             </div>
                                             <div>
@@ -430,7 +422,7 @@ export default function PenggunaPage() {
                                         <span className="material-symbols-outlined text-3xl">warning</span>
                                     </div>
                                     <p className="text-slate-700">Apakah Anda yakin ingin menghapus <strong>{selectedIds.length} pengguna terpilih</strong>?</p>
-                                    
+
                                     <div className="max-h-28 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 text-left">
                                         {selectedIds.map(id => {
                                             const u = penggunaList.find(x => x.id === id);
@@ -441,13 +433,13 @@ export default function PenggunaPage() {
                                             ) : null;
                                         })}
                                     </div>
-                                    
+
                                     <p className="text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan dan seluruh akun terpilih akan terhapus selamanya dari sistem.</p>
                                 </div>
                             ) : modalMode === 'bulkStatus' ? (
                                 <div className="space-y-4">
                                     <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100/50 flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                                             <span className="material-symbols-outlined text-xl">group</span>
                                         </div>
                                         <div>

@@ -1,11 +1,90 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
+import axios from 'axios';
 
 export default function StatistikPage() {
+    const [stats, setStats] = useState({
+        total: 0,
+        proses: 0,
+        selesai: 0,
+        resolusi: 0,
+    });
+    const [chartKategori, setChartKategori] = useState([]);
+    const [chartBulanan, setChartBulanan] = useState([]);
+
     useEffect(() => {
         window.scrollTo(0, 0);
+
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get('/api/pengaduans');
+                const data = response.data;
+                const total = data.length;
+                const proses = data.filter(i => i.status === 'Laporan Diterima' || i.status === 'Verifikasi' || i.status === 'Sedang Diproses').length;
+                const selesai = data.filter(i => i.status === 'Selesai').length;
+                
+                setStats({
+                    total,
+                    proses,
+                    selesai,
+                    resolusi: total > 0 ? ((selesai / total) * 100).toFixed(1) : 0,
+                });
+
+                // Hitung Data Grafik Kategori Top 5
+                const kategoriCounts = {};
+                data.forEach(item => {
+                    const k = item.kategori || 'Lainnya';
+                    const label = k.charAt(0).toUpperCase() + k.slice(1);
+                    kategoriCounts[label] = (kategoriCounts[label] || 0) + 1;
+                });
+
+                const sortedKategori = Object.keys(kategoriCounts)
+                    .map(key => ({ label: key, count: kategoriCounts[key] }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+
+                const colors = ['bg-primary', 'bg-blue-400', 'bg-tertiary', 'bg-secondary', 'bg-slate-300'];
+                const kategoriArr = sortedKategori.map((item, idx) => ({
+                    label: item.label,
+                    val: total > 0 ? Math.round((item.count / total) * 100) : 0,
+                    color: colors[idx % colors.length]
+                }));
+                setChartKategori(kategoriArr);
+
+                // Hitung Data Grafik Tren Bulanan (6 bulan terakhir)
+                const monthNames = ["JAN", "FEB", "MAR", "APR", "MEI", "JUN", "JUL", "AGS", "SEP", "OKT", "NOV", "DES"];
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                
+                let monthlyCounts = {};
+                for (let i = 6; i >= 0; i--) {
+                    let d = new Date(currentYear, currentMonth - i, 1);
+                    monthlyCounts[`${monthNames[d.getMonth()]}`] = 0;
+                }
+
+                data.forEach(item => {
+                    const date = new Date(item.created_at);
+                    const monthStr = monthNames[date.getMonth()];
+                    if (monthlyCounts[monthStr] !== undefined) {
+                        monthlyCounts[monthStr]++;
+                    }
+                });
+
+                const bulananArr = Object.keys(monthlyCounts).map(month => ({
+                    bulan: month,
+                    val: monthlyCounts[month],
+                    active: month === monthNames[currentMonth]
+                }));
+                setChartBulanan(bulananArr);
+
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+            }
+        };
+
+        fetchStats();
     }, []);
 
     return (
@@ -43,20 +122,20 @@ export default function StatistikPage() {
                     <div className="md:col-span-3 bg-white p-6 rounded-xl card-shadow flex flex-col items-center justify-center text-center border border-slate-100">
                         <span className="material-symbols-outlined text-4xl text-primary mb-3">description</span>
                         <h4 className="font-label-caps text-label-caps text-slate-500 uppercase mb-1">Total Laporan</h4>
-                        <div className="font-h2 text-h2 text-primary">12,842</div>
-                        <p className="text-xs text-green-600 font-label-bold mt-2">↑ 12% dari bulan lalu</p>
+                        <div className="font-h2 text-h2 text-primary">{stats.total}</div>
+                        <p className="text-xs text-green-600 font-label-bold mt-2">Data Real-time</p>
                     </div>
                     <div className="md:col-span-3 bg-white p-6 rounded-xl card-shadow flex flex-col items-center justify-center text-center border border-slate-100">
                         <span className="material-symbols-outlined text-4xl text-tertiary mb-3">pending_actions</span>
                         <h4 className="font-label-caps text-label-caps text-slate-500 uppercase mb-1">Dalam Proses</h4>
-                        <div className="font-h2 text-h2 text-tertiary">458</div>
-                        <p className="text-xs text-slate-400 font-label-bold mt-2">Update: 5 menit yang lalu</p>
+                        <div className="font-h2 text-h2 text-tertiary">{stats.proses}</div>
+                        <p className="text-xs text-slate-400 font-label-bold mt-2">Sedang dikerjakan</p>
                     </div>
                     <div className="md:col-span-3 bg-white p-6 rounded-xl card-shadow flex flex-col items-center justify-center text-center border border-slate-100">
                         <span className="material-symbols-outlined text-4xl text-green-600 mb-3">task_alt</span>
                         <h4 className="font-label-caps text-label-caps text-slate-500 uppercase mb-1">Selesai</h4>
-                        <div className="font-h2 text-h2 text-green-600">11,924</div>
-                        <p className="text-xs text-green-600 font-label-bold mt-2">93.2% Tingkat Resolusi</p>
+                        <div className="font-h2 text-h2 text-green-600">{stats.selesai}</div>
+                        <p className="text-xs text-green-600 font-label-bold mt-2">{stats.resolusi}% Tingkat Resolusi</p>
                     </div>
                     <div className="md:col-span-3 bg-white p-6 rounded-xl card-shadow flex flex-col items-center justify-center text-center border border-slate-100">
                         <span className="material-symbols-outlined text-4xl text-blue-400 mb-3">avg_pace</span>
@@ -107,51 +186,17 @@ export default function StatistikPage() {
                             Kategori Laporan
                         </h3>
                         <div className="space-y-6 flex-grow flex flex-col justify-center">
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-label-bold">Infrastruktur &amp; Jalan</span>
-                                    <span className="text-sm font-label-bold">42%</span>
+                            {chartKategori.map(item => (
+                                <div key={item.label}>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-sm font-label-bold">{item.label}</span>
+                                        <span className="text-sm font-label-bold">{item.val}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div className={`${item.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${item.val}%` }}></div>
+                                    </div>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-primary h-full rounded-full" style={{ width: "42%" }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-label-bold">Kebersihan &amp; Sampah</span>
-                                    <span className="text-sm font-label-bold">28%</span>
-                                </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-blue-400 h-full rounded-full" style={{ width: "28%" }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-label-bold">Penerangan Jalan</span>
-                                    <span className="text-sm font-label-bold">15%</span>
-                                </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-tertiary h-full rounded-full" style={{ width: "15%" }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-label-bold">Kesehatan</span>
-                                    <span className="text-sm font-label-bold">10%</span>
-                                </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-secondary h-full rounded-full" style={{ width: "10%" }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-label-bold">Lainnya</span>
-                                    <span className="text-sm font-label-bold">5%</span>
-                                </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-slate-300 h-full rounded-full" style={{ width: "5%" }}></div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                     {/* Monthly Trend Graph */}
@@ -166,34 +211,18 @@ export default function StatistikPage() {
                             </div>
                         </div>
                         <div className="h-64 flex items-end justify-between gap-2 px-4">
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-primary" style={{ height: "60%" }}></div>
-                                <span className="text-[10px] font-label-bold text-slate-400">JAN</span>
-                            </div>
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-primary" style={{ height: "75%" }}></div>
-                                <span className="text-[10px] font-label-bold text-slate-400">FEB</span>
-                            </div>
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-primary" style={{ height: "45%" }}></div>
-                                <span className="text-[10px] font-label-bold text-slate-400">MAR</span>
-                            </div>
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-primary" style={{ height: "90%" }}></div>
-                                <span className="text-[10px] font-label-bold text-slate-400">APR</span>
-                            </div>
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-primary" style={{ height: "65%" }}></div>
-                                <span className="text-[10px] font-label-bold text-slate-400">MEI</span>
-                            </div>
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-primary rounded-t-lg transition-all" style={{ height: "100%" }}></div>
-                                <span className="text-[10px] font-label-bold text-blue-700">JUN</span>
-                            </div>
-                            <div className="w-full flex flex-col items-center gap-2 group">
-                                <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-primary" style={{ height: "55%" }}></div>
-                                <span className="text-[10px] font-label-bold text-slate-400">JUL</span>
-                            </div>
+                            {chartBulanan.map((item) => {
+                                const maxVal = Math.max(...chartBulanan.map(b => b.val), 1);
+                                return (
+                                    <div key={item.bulan} className="w-full flex flex-col items-center gap-2 group relative">
+                                        <div className="absolute -top-8 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                            {item.val} Lap
+                                        </div>
+                                        <div className={`w-full ${item.active ? 'bg-primary' : 'bg-blue-100 group-hover:bg-primary'} rounded-t-lg transition-all duration-700`} style={{ height: `${(item.val / maxVal) * 100}%` }}></div>
+                                        <span className={`text-[10px] font-label-bold ${item.active ? 'text-blue-700' : 'text-slate-400'}`}>{item.bulan}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                     {/* Fast Response Ranking */}

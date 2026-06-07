@@ -16,34 +16,23 @@ export default function PetugasDinasPage() {
     const [search, setSearch] = useState('');
     const [filterDinas, setFilterDinas] = useState('Semua');
     const [filterStatus, setFilterStatus] = useState('Semua');
-    
+
     const [modal, setModal] = useState(null);
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'edit' | 'tambah'
     const [editData, setEditData] = useState({});
-    
+
     // Delete states
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const [dinasList, setDinasList] = useState(() => {
-        const stored = localStorage.getItem('laporwarga_cache_dinas');
-        return stored ? JSON.parse(stored) : [];
-    });
-    const [petugasList, setPetugasList] = useState(() => {
-        const stored = localStorage.getItem('laporwarga_cache_petugas');
-        return stored ? JSON.parse(stored) : [];
-    });
-    const [loading, setLoading] = useState(() => {
-        const storedDinas = localStorage.getItem('laporwarga_cache_dinas');
-        const storedPetugas = localStorage.getItem('laporwarga_cache_petugas');
-        return !(storedDinas && storedPetugas);
-    });
+    const [dinasList, setDinasList] = useState([]);
+    const [petugasList, setPetugasList] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
     // Fetch dynamic data from database
     const fetchData = async () => {
-        const hasCache = !!(localStorage.getItem('laporwarga_cache_dinas') && localStorage.getItem('laporwarga_cache_petugas'));
-        if (!hasCache) setLoading(true);
+        setLoading(true);
         try {
             const [dinasRes, petugasRes] = await Promise.all([
                 api.get('/api/dinas'),
@@ -51,8 +40,6 @@ export default function PetugasDinasPage() {
             ]);
             setDinasList(dinasRes.data);
             setPetugasList(petugasRes.data);
-            localStorage.setItem('laporwarga_cache_dinas', JSON.stringify(dinasRes.data));
-            localStorage.setItem('laporwarga_cache_petugas', JSON.stringify(petugasRes.data));
         } catch (error) {
             console.error("Error fetching dinas and petugas:", error);
         } finally {
@@ -193,7 +180,7 @@ export default function PetugasDinasPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 {ringkasan.map(r => (
                     <div key={r.label} className={`bg-white rounded-2xl p-4 border ${r.border} shadow-sm flex items-center gap-4`}>
-                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 ${r.bg} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className={`material-symbols-outlined text-2xl ${r.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{r.icon}</span>
                         </div>
                         <div><p className="text-2xl font-bold text-slate-800">{r.value}</p><p className="text-xs text-slate-500">{r.label}</p></div>
@@ -270,7 +257,7 @@ export default function PetugasDinasPage() {
                                     <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center shrink-0`}>
                                                     <span className="text-white text-xs font-bold">{p.nama.charAt(0)}</span>
                                                 </div>
                                                 <div>
@@ -338,7 +325,7 @@ export default function PetugasDinasPage() {
                                     <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                                <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center shrink-0`}>
                                                     <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
                                                 </div>
                                                 <div>
