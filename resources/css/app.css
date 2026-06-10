@@ -65,3 +65,9 @@
     --color-on-primary-fixed: #001b3e;
     --color-on-error: #ffffff;
 }
+
+/* Sembunyikan ikon mata bawaan browser (Edge/IE/Chrome) agar tidak tampil ganda */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
