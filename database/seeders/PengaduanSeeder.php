@@ -62,16 +62,16 @@ class PengaduanSeeder extends Seeder
         );
 
         // Map categories to all nine Dinas
-        $katInfras = Kategori::firstOrCreate(['nama_kategori' => 'infrastruktur'], ['id_dinas' => $dinasPUPR->id_dinas]);
-        $katKebersihan = Kategori::firstOrCreate(['nama_kategori' => 'kebersihan'], ['id_dinas' => $dinasDLH->id_dinas]);
-        $katKesehatan = Kategori::firstOrCreate(['nama_kategori' => 'kesehatan'], ['id_dinas' => $dinasKesehatan->id_dinas]);
-        $katTransportasi = Kategori::firstOrCreate(['nama_kategori' => 'transportasi'], ['id_dinas' => $dinasPerhubungan->id_dinas]);
-        $katPerumahan = Kategori::firstOrCreate(['nama_kategori' => 'perumahan'], ['id_dinas' => $dinasPerkim->id_dinas]);
-        $katPendidikan = Kategori::firstOrCreate(['nama_kategori' => 'pendidikan'], ['id_dinas' => $dinasPendidikan->id_dinas]);
-        $katSosial = Kategori::firstOrCreate(['nama_kategori' => 'sosial'], ['id_dinas' => $dinasSosial->id_dinas]);
-        $katKetertiban = Kategori::firstOrCreate(['nama_kategori' => 'ketertiban'], ['id_dinas' => $dinasSatpolPP->id_dinas]);
-        $katKedaruratan = Kategori::firstOrCreate(['nama_kategori' => 'kedaruratan'], ['id_dinas' => $dinasBPBD->id_dinas]);
-        $katLainnya = Kategori::firstOrCreate(['nama_kategori' => 'lainnya'], ['id_dinas' => $dinasPUPR->id_dinas]);
+        $katInfras = Kategori::firstOrCreate(['nama_kategori' => 'infrastruktur'], ['id_dinas' => $dinasPUPR->id_dinas, 'icon' => 'construction', 'warna' => 'bg-blue-500']);
+        $katKebersihan = Kategori::firstOrCreate(['nama_kategori' => 'kebersihan'], ['id_dinas' => $dinasDLH->id_dinas, 'icon' => 'delete', 'warna' => 'bg-green-500']);
+        $katKesehatan = Kategori::firstOrCreate(['nama_kategori' => 'kesehatan'], ['id_dinas' => $dinasKesehatan->id_dinas, 'icon' => 'local_hospital', 'warna' => 'bg-red-500']);
+        $katTransportasi = Kategori::firstOrCreate(['nama_kategori' => 'transportasi'], ['id_dinas' => $dinasPerhubungan->id_dinas, 'icon' => 'traffic', 'warna' => 'bg-yellow-500']);
+        $katPerumahan = Kategori::firstOrCreate(['nama_kategori' => 'perumahan'], ['id_dinas' => $dinasPerkim->id_dinas, 'icon' => 'home', 'warna' => 'bg-pink-500']);
+        $katPendidikan = Kategori::firstOrCreate(['nama_kategori' => 'pendidikan'], ['id_dinas' => $dinasPendidikan->id_dinas, 'icon' => 'school', 'warna' => 'bg-indigo-500']);
+        $katSosial = Kategori::firstOrCreate(['nama_kategori' => 'sosial'], ['id_dinas' => $dinasSosial->id_dinas, 'icon' => 'stadium', 'warna' => 'bg-purple-500']);
+        $katKetertiban = Kategori::firstOrCreate(['nama_kategori' => 'ketertiban'], ['id_dinas' => $dinasSatpolPP->id_dinas, 'icon' => 'gavel', 'warna' => 'bg-orange-500']);
+        $katKedaruratan = Kategori::firstOrCreate(['nama_kategori' => 'kedaruratan'], ['id_dinas' => $dinasBPBD->id_dinas, 'icon' => 'emergency', 'warna' => 'bg-red-500']);
+        $katLainnya = Kategori::firstOrCreate(['nama_kategori' => 'lainnya'], ['id_dinas' => $dinasPUPR->id_dinas, 'icon' => 'category', 'warna' => 'bg-slate-500']);
 
         // Demo 1: Jalan Berlubang di Malioboro
         $kec1 = Kecamatan::firstOrCreate(['nama_kecamatan' => 'Gedongtengen', 'id_provinsi' => $provinsi->id_provinsi]);

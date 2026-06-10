@@ -8,6 +8,7 @@ use App\Models\Laporan;
 use App\Models\Kategori;
 use App\Models\Kelurahan;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Support\Facades\Storage;
 
 class PengaduanController extends Controller
@@ -228,6 +229,20 @@ class PengaduanController extends Controller
             'timeline_log'  => $initialLog,
         ]);
 
+        // Create Notification
+        $pelaporName = 'Anonim';
+        if (!$request->anonim && $userId) {
+            $pelaporName = User::find($userId)?->nama_lengkap ?? 'Warga';
+        }
+
+        Notification::create([
+            'judul' => 'Laporan baru masuk',
+            'isi' => "{$nomorTiket}: {$request->judul} telah dilaporkan oleh {$pelaporName}.",
+            'tipe' => $prioritas === 'Tinggi' ? 'darurat' : 'laporan',
+            'target_id' => $nomorTiket,
+            'dibaca' => false,
+        ]);
+
         return response()->json([
             'message' => 'Pengaduan berhasil dibuat',
             'data' => $this->mapToFrontend($laporan)
@@ -276,6 +291,15 @@ class PengaduanController extends Controller
         $laporan->timeline_log = $log;
 
         $laporan->save();
+
+        // Create Notification for status update
+        Notification::create([
+            'judul' => 'Status laporan diperbarui',
+            'isi' => "{$nomorTiket} berhasil diubah menjadi \"{$newStatus}\".",
+            'tipe' => 'update',
+            'target_id' => $nomorTiket,
+            'dibaca' => false,
+        ]);
 
         return response()->json([
             'message' => 'Status berhasil diperbarui', 

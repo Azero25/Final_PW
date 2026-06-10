@@ -72,4 +72,43 @@ class DinasController extends Controller
             ]
         ]);
     }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'singkatan' => 'required|string|max:20',
+        ]);
+
+        $d = Dinas::findOrFail($id);
+        $d->update([
+            'nama_dinas' => $request->nama,
+            'singkatan' => $request->singkatan,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'id' => 'DNS-' . str_pad($d->id_dinas, 3, '0', STR_PAD_LEFT),
+                'original_id' => $d->id_dinas,
+                'nama' => $d->nama_dinas,
+                'singkatan' => $d->singkatan,
+                'kategori' => \App\Models\Kategori::where('id_dinas', $d->id_dinas)->first()?->nama_kategori ?? 'Umum',
+                'totalPetugas' => Petugas::where('id_dinas', $d->id_dinas)->count(),
+                'totalLaporan' => 0,
+                'color' => 'bg-blue-500',
+            ]
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $d = Dinas::findOrFail($id);
+        $d->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Dinas berhasil dihapus'
+        ]);
+    }
 }

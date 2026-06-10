@@ -1,20 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../Components/AdminLayout';
-
-const DUMMY_NOTIF = [
-    { id: 'NTF-001', judul: 'Laporan baru masuk',           isi: 'LPW-2024-001284: Jalan Rusak di Jl. Solo telah dilaporkan oleh Budi Santoso.',         tipe: 'laporan',    waktu: '2 menit lalu',   dibaca: false },
-    { id: 'NTF-002', judul: 'Status laporan diperbarui',    isi: 'LPW-2024-001281 berhasil diubah menjadi "Selesai" oleh petugas Ir. Hadi Susanto.',       tipe: 'update',     waktu: '15 menit lalu',  dibaca: false },
-    { id: 'NTF-003', judul: 'Pengguna baru terdaftar',      isi: 'Yulia Sari (yulia@email.com) berhasil mendaftar sebagai warga di sistem LaporWarga.',    tipe: 'pengguna',   waktu: '1 jam lalu',     dibaca: false },
-    { id: 'NTF-004', judul: 'Laporan prioritas tinggi',     isi: 'LPW-2024-001277: Banjir di Gang Mawar memerlukan penanganan segera oleh BPBD.',           tipe: 'darurat',    waktu: '2 jam lalu',     dibaca: true  },
-    { id: 'NTF-005', judul: 'Pengaduan menunggu verifikasi',isi: '5 laporan baru menunggu verifikasi admin selama lebih dari 24 jam.',                      tipe: 'peringatan', waktu: '3 jam lalu',     dibaca: true  },
-    { id: 'NTF-006', judul: 'Petugas ditugaskan',           isi: 'Tri Wahyudi, S.T. berhasil ditugaskan untuk menangani 3 laporan Infrastruktur.',          tipe: 'petugas',    waktu: '5 jam lalu',     dibaca: true  },
-    { id: 'NTF-007', judul: 'Laporan baru masuk',           isi: 'LPW-2024-001283: Sampah Menumpuk TPS Demangan dilaporkan oleh Siti Rahayu.',              tipe: 'laporan',    waktu: '6 jam lalu',     dibaca: true  },
-    { id: 'NTF-008', judul: 'Sistem: Backup data selesai',  isi: 'Backup database otomatis berhasil dilakukan pada pukul 00:00 WIB.',                       tipe: 'sistem',     waktu: '8 jam lalu',     dibaca: true  },
-    { id: 'NTF-009', judul: 'Laporan ditolak',              isi: 'LPW-2024-001276: Trotoar Berlubang ditolak karena duplikat dengan laporan sebelumnya.',   tipe: 'update',     waktu: '1 hari lalu',    dibaca: true  },
-    { id: 'NTF-010', judul: 'Pengguna diblokir',            isi: 'Akun Sri Mulyati (sri@email.com) telah diblokir oleh admin karena melanggar ketentuan.',  tipe: 'pengguna',   waktu: '1 hari lalu',    dibaca: true  },
-    { id: 'NTF-011', judul: 'Laporan prioritas tinggi',     isi: 'LPW-2024-001281: Saluran Air Tersumbat di Umbulharjo perlu penanganan cepat.',            tipe: 'darurat',    waktu: '2 hari lalu',    dibaca: true  },
-    { id: 'NTF-012', judul: 'Sistem: Pembaruan tersedia',   isi: 'Versi terbaru sistem LaporWarga v2.1.0 tersedia untuk diinstal.',                         tipe: 'sistem',     waktu: '3 hari lalu',    dibaca: true  },
-];
+import api from '../../axios';
 
 const TIPE_CONFIG = {
     laporan:    { icon: 'assignment',    bg: 'bg-blue-100',    color: 'text-blue-600',   label: 'Laporan Baru',   dot: 'bg-blue-500'   },
@@ -31,15 +17,22 @@ export default function NotifikasiPage() {
 
     const [notifs, setNotifs] = useState(() => {
         const stored = localStorage.getItem('admin_notifications');
-        return stored ? JSON.parse(stored) : DUMMY_NOTIF;
+        return stored ? JSON.parse(stored) : [];
     });
 
-    useEffect(() => {
-        localStorage.setItem('admin_notifications', JSON.stringify(notifs));
-        window.dispatchEvent(new Event('notificationsUpdated'));
-    }, [notifs]);
+    const fetchNotifications = async () => {
+        try {
+            const response = await api.get('/api/notifications');
+            setNotifs(response.data);
+            localStorage.setItem('admin_notifications', JSON.stringify(response.data));
+        } catch (error) {
+            console.error("Gagal mengambil data notifikasi:", error);
+        }
+    };
 
     useEffect(() => {
+        fetchNotifications();
+
         const syncNotifs = () => {
             const stored = localStorage.getItem('admin_notifications');
             if (stored) setNotifs(JSON.parse(stored));
@@ -47,18 +40,62 @@ export default function NotifikasiPage() {
         window.addEventListener('notificationsUpdated', syncNotifs);
         return () => window.removeEventListener('notificationsUpdated', syncNotifs);
     }, []);
+
     const [filterTipe, setFilterTipe] = useState('Semua');
     const [filterBaca, setFilterBaca] = useState('Semua'); // 'Semua' | 'Belum Dibaca' | 'Sudah Dibaca'
     const [search, setSearch] = useState('');
 
     // Tandai semua sudah dibaca
-    const tandaiSemuaDibaca = () => setNotifs(prev => prev.map(n => ({ ...n, dibaca: true })));
+    const tandaiSemuaDibaca = async () => {
+        try {
+            await api.put('/api/notifications/read-all');
+            const updated = notifs.map(n => ({ ...n, dibaca: true }));
+            setNotifs(updated);
+            localStorage.setItem('admin_notifications', JSON.stringify(updated));
+            window.dispatchEvent(new Event('notificationsUpdated'));
+        } catch (error) {
+            console.error("Gagal menandai semua dibaca:", error);
+        }
+    };
+
     // Tandai satu
-    const tandaiSatu = (id) => setNotifs(prev => prev.map(n => n.id === id ? { ...n, dibaca: true } : n));
+    const tandaiSatu = async (id) => {
+        try {
+            await api.put(`/api/notifications/${id}/read`);
+            const updated = notifs.map(n => n.id === id ? { ...n, dibaca: true } : n);
+            setNotifs(updated);
+            localStorage.setItem('admin_notifications', JSON.stringify(updated));
+            window.dispatchEvent(new Event('notificationsUpdated'));
+        } catch (error) {
+            console.error("Gagal menandai dibaca:", error);
+        }
+    };
+
     // Hapus satu
-    const hapusSatu = (id) => setNotifs(prev => prev.filter(n => n.id !== id));
+    const hapusSatu = async (id) => {
+        try {
+            await api.delete(`/api/notifications/${id}`);
+            const updated = notifs.filter(n => n.id !== id);
+            setNotifs(updated);
+            localStorage.setItem('admin_notifications', JSON.stringify(updated));
+            window.dispatchEvent(new Event('notificationsUpdated'));
+        } catch (error) {
+            console.error("Gagal menghapus notifikasi:", error);
+        }
+    };
+
     // Hapus semua yang sudah dibaca
-    const hapusDibaca = () => setNotifs(prev => prev.filter(n => !n.dibaca));
+    const hapusDibaca = async () => {
+        try {
+            await api.delete('/api/notifications/delete-read');
+            const updated = notifs.filter(n => !n.dibaca);
+            setNotifs(updated);
+            localStorage.setItem('admin_notifications', JSON.stringify(updated));
+            window.dispatchEvent(new Event('notificationsUpdated'));
+        } catch (error) {
+            console.error("Gagal menghapus notifikasi dibaca:", error);
+        }
+    };
 
     const belumDibaca = notifs.filter(n => !n.dibaca).length;
 
