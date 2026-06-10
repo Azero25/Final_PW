@@ -18,6 +18,9 @@ import NotifikasiPage from "./Pages/AdminPage/NotifikasiPage";
 import PengaturanPage from "./Pages/AdminPage/PengaturanPage";
 import ProfilePage from "./Pages/ProfilePage";
 import RiwayatLaporanPage from "./Pages/RiwayatLaporanPage";
+import LoginPetugasPage from "./Pages/PetugasPage/LoginPetugasPage";
+import PetugasDashboardPage from "./Pages/PetugasPage/PetugasDashboardPage";
+import LaporanPetugasPage from "./Pages/PetugasPage/LaporanPetugasPage";
 
 ReactDOM.createRoot(document.getElementById("app")).render(
     <BrowserRouter>
@@ -25,6 +28,9 @@ ReactDOM.createRoot(document.getElementById("app")).render(
             <Route path="/" element={<LandingPage />} />
             <Route path="/cara-kerja" element={<CaraKerjaPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login-petugas" element={<LoginPetugasPage />} />
+            <Route path="/petugas/dashboard" element={<PetugasDashboardPage />} />
+            <Route path="/petugas/laporan" element={<LaporanPetugasPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/buat-pengaduan" element={<BuatPengaduanPage />} />
             <Route path="/statistik" element={<StatistikPage />} />
