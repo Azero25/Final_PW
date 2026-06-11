@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import api from '../axios';
 
 /**
  * Layout bersama untuk semua halaman Admin — Mobile Responsive.
@@ -37,45 +38,60 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
     const [showToast, setShowToast] = useState(false);
 
     // Notifications State & Sync
-    const defaultNotifs = [
-        { id: 'NTF-001', judul: 'Laporan baru masuk',           isi: 'LPW-2024-001284: Jalan Rusak di Jl. Solo telah dilaporkan oleh Budi Santoso.',         tipe: 'laporan',    waktu: '2 menit lalu',   dibaca: false },
-        { id: 'NTF-002', judul: 'Status laporan diperbarui',    isi: 'LPW-2024-001281 berhasil diubah menjadi "Selesai" oleh petugas Ir. Hadi Susanto.',       tipe: 'update',     waktu: '15 menit lalu',  dibaca: false },
-        { id: 'NTF-003', judul: 'Pengguna baru terdaftar',      isi: 'Yulia Sari (yulia@email.com) berhasil mendaftar sebagai warga di sistem LaporWarga.',    tipe: 'pengguna',   waktu: '1 jam lalu',     dibaca: false },
-        { id: 'NTF-004', judul: 'Laporan prioritas tinggi',     isi: 'LPW-2024-001277: Banjir di Gang Mawar memerlukan penanganan segera oleh BPBD.',           tipe: 'darurat',    waktu: '2 jam lalu',     dibaca: true  },
-    ];
-
-    const [notifications, setNotifications] = useState(() => {
-        const stored = localStorage.getItem('admin_notifications');
-        return stored ? JSON.parse(stored) : defaultNotifs;
-    });
-
+    const [notifications, setNotifications] = useState([]);
     const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
 
+    const fetchNotifications = async () => {
+        try {
+            const response = await api.get('/api/notifications');
+            setNotifications(response.data);
+            localStorage.setItem('admin_notifications', JSON.stringify(response.data));
+        } catch (error) {
+            console.error("Gagal mengambil data notifikasi:", error);
+        }
+    };
+
     useEffect(() => {
+        fetchNotifications();
+
+        const interval = setInterval(fetchNotifications, 5000);
+
         const syncNotifs = () => {
             const stored = localStorage.getItem('admin_notifications');
             if (stored) setNotifications(JSON.parse(stored));
         };
         window.addEventListener('notificationsUpdated', syncNotifs);
         window.addEventListener('storage', syncNotifs);
+
         return () => {
+            clearInterval(interval);
             window.removeEventListener('notificationsUpdated', syncNotifs);
             window.removeEventListener('storage', syncNotifs);
         };
     }, []);
 
-    const markAllAsRead = () => {
-        const updated = notifications.map(n => ({ ...n, dibaca: true }));
-        setNotifications(updated);
-        localStorage.setItem('admin_notifications', JSON.stringify(updated));
-        window.dispatchEvent(new Event('notificationsUpdated'));
+    const markAllAsRead = async () => {
+        try {
+            await api.put('/api/notifications/read-all');
+            const updated = notifications.map(n => ({ ...n, dibaca: true }));
+            setNotifications(updated);
+            localStorage.setItem('admin_notifications', JSON.stringify(updated));
+            window.dispatchEvent(new Event('notificationsUpdated'));
+        } catch (error) {
+            console.error("Gagal menandai semua dibaca:", error);
+        }
     };
 
-    const markAsRead = (id) => {
-        const updated = notifications.map(n => n.id === id ? { ...n, dibaca: true } : n);
-        setNotifications(updated);
-        localStorage.setItem('admin_notifications', JSON.stringify(updated));
-        window.dispatchEvent(new Event('notificationsUpdated'));
+    const markAsRead = async (id) => {
+        try {
+            await api.put(`/api/notifications/${id}/read`);
+            const updated = notifications.map(n => n.id === id ? { ...n, dibaca: true } : n);
+            setNotifications(updated);
+            localStorage.setItem('admin_notifications', JSON.stringify(updated));
+            window.dispatchEvent(new Event('notificationsUpdated'));
+        } catch (error) {
+            console.error("Gagal menandai dibaca:", error);
+        }
     };
 
     const unreadCount = notifications.filter(n => !n.dibaca).length;

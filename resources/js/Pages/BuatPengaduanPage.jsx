@@ -39,6 +39,7 @@ export default function BuatPengaduanPage() {
     const [missingFields, setMissingFields] = useState([]);
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const [kategoris, setKategoris] = useState([]);
 
     // State untuk upload & konversi gambar
     const [uploadedImages, setUploadedImages] = useState([]);
@@ -216,6 +217,19 @@ export default function BuatPengaduanPage() {
         } else {
             setIsComplete(true);
         }
+
+        const fetchKategoris = async () => {
+            try {
+                const res = await fetch('/api/kategoris');
+                if (res.ok) {
+                    const data = await res.json();
+                    setKategoris(data.filter(k => k.aktif));
+                }
+            } catch (err) {
+                console.error("Gagal memuat kategori:", err);
+            }
+        };
+        fetchKategoris();
     }, [navigate]);
 
     const showToast = (message, type = 'success') => {
@@ -432,11 +446,11 @@ export default function BuatPengaduanPage() {
                                             <div className="relative">
                                                 <select className="w-full bg-[#F1F5F9] border border-outline-variant focus:border-primary-container rounded-lg px-4 py-3 font-body-md text-on-surface appearance-none focus:ring-2 focus:ring-primary-container/20 transition-colors outline-none cursor-pointer" id="kategori" defaultValue="" required>
                                                     <option disabled value="">Pilih Kategori</option>
-                                                    <option value="infrastruktur">Infrastruktur &amp; Jalan</option>
-                                                    <option value="kebersihan">Kebersihan &amp; Lingkungan</option>
-                                                    <option value="kesehatan">Kesehatan</option>
-                                                    <option value="pendidikan">Pendidikan</option>
-                                                    <option value="lainnya">Lainnya</option>
+                                                    {kategoris.map(k => (
+                                                        <option key={k.original_id} value={k.nama.toLowerCase()}>
+                                                            {k.nama}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                                 <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
                                             </div>

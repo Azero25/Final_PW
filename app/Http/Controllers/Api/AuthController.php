@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Notification;
 
 class AuthController extends Controller
 {
@@ -20,6 +21,15 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => \Illuminate\Support\Facades\Hash::make($request->password),
             'role' => 'warga',
+        ]);
+
+        // Create Notification
+        Notification::create([
+            'judul' => 'Pengguna baru terdaftar',
+            'isi' => "{$user->nama_lengkap} ({$user->email}) berhasil mendaftar sebagai warga di sistem LaporWarga.",
+            'tipe' => 'pengguna',
+            'target_id' => $user->id_user,
+            'dibaca' => false,
         ]);
 
         \Illuminate\Support\Facades\Auth::login($user);

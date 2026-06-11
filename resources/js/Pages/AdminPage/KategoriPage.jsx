@@ -1,30 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../Components/AdminLayout';
-
-const DUMMY_KATEGORI = [
-    { id: 'KAT-001', nama: 'Infrastruktur',    icon: 'construction',    warna: 'bg-blue-500',   dinas: 'Dinas PU',          totalLaporan: 145, aktif: true,  deskripsi: 'Laporan terkait jalan, jembatan, drainase, dan bangunan umum.' },
-    { id: 'KAT-002', nama: 'Kebersihan',        icon: 'delete',          warna: 'bg-green-500',  dinas: 'Dinas LH',          totalLaporan: 98,  aktif: true,  deskripsi: 'Laporan terkait sampah, TPS, dan kebersihan lingkungan.' },
-    { id: 'KAT-003', nama: 'Penerangan',        icon: 'lightbulb',       warna: 'bg-yellow-500', dinas: 'Dishub',             totalLaporan: 72,  aktif: true,  deskripsi: 'Laporan terkait lampu jalan padam atau rusak.' },
-    { id: 'KAT-004', nama: 'Sanitasi',          icon: 'water_drop',      warna: 'bg-cyan-500',   dinas: 'Dinas PU',          totalLaporan: 55,  aktif: true,  deskripsi: 'Laporan terkait saluran air, gorong-gorong, dan sanitasi.' },
-    { id: 'KAT-005', nama: 'Ketertiban',        icon: 'gavel',           warna: 'bg-orange-500', dinas: 'Satpol PP',         totalLaporan: 44,  aktif: true,  deskripsi: 'Laporan pelanggaran ketertiban umum di area publik.' },
-    { id: 'KAT-006', nama: 'Lingkungan',        icon: 'park',            warna: 'bg-emerald-500',dinas: 'Dinas LH',          totalLaporan: 38,  aktif: true,  deskripsi: 'Laporan terkait pohon tumbang, polusi, dan lingkungan hidup.' },
-    { id: 'KAT-007', nama: 'Fasilitas Umum',   icon: 'stadium',         warna: 'bg-purple-500', dinas: 'Dinas Sosial',      totalLaporan: 29,  aktif: true,  deskripsi: 'Laporan terkait taman, halte, dan fasilitas umum lainnya.' },
-    { id: 'KAT-008', nama: 'Kedaruratan',       icon: 'emergency',       warna: 'bg-red-500',    dinas: 'BPBD',              totalLaporan: 17,  aktif: false, deskripsi: 'Laporan situasi darurat seperti bencana dan kebakaran.' },
-];
+import api from '../../axios';
 
 export default function KategoriPage() {
-    useEffect(() => { window.scrollTo(0, 0); }, []);
-
+    const [kategoris, setKategoris] = useState([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
     const [modal, setModal] = useState(null);
     const [modalMode, setModalMode] = useState('detail');
     const [editData, setEditData] = useState({});
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [dinasList, setDinasList] = useState([]);
+
+    const fetchKategoris = async () => {
+        try {
+            const response = await api.get('/api/kategoris');
+            setKategoris(response.data);
+        } catch (error) {
+            console.error("Gagal mengambil data kategori:", error);
+        }
+    };
+
+    const fetchDinasList = async () => {
+        try {
+            const response = await api.get('/api/dinas');
+            setDinasList(response.data);
+        } catch (error) {
+            console.error("Gagal mengambil data dinas:", error);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        fetchKategoris();
+        fetchDinasList();
+    }, []);
 
     const ICONS = ['construction','delete','lightbulb','water_drop','gavel','park','stadium','emergency','report','traffic','local_hospital','school'];
     const WARNA = ['bg-blue-500','bg-green-500','bg-yellow-500','bg-cyan-500','bg-orange-500','bg-emerald-500','bg-purple-500','bg-red-500','bg-pink-500','bg-indigo-500'];
 
-    const filtered = DUMMY_KATEGORI.filter(k =>
+    const filtered = kategoris.filter(k =>
         k.nama.toLowerCase().includes(search.toLowerCase()) ||
         k.dinas.toLowerCase().includes(search.toLowerCase())
     );
@@ -32,11 +47,59 @@ export default function KategoriPage() {
     const openModal = (k, mode = 'detail') => { setModal(k); setModalMode(mode); setEditData({ ...k }); };
     const openTambah = () => { setModal({}); setModalMode('tambah'); setEditData({ nama: '', icon: 'construction', warna: 'bg-blue-500', dinas: '', deskripsi: '', aktif: true }); };
 
+    const handleSave = async () => {
+        try {
+            if (modalMode === 'tambah') {
+                const response = await api.post('/api/kategoris', {
+                    nama: editData.nama,
+                    dinas: editData.dinas,
+                    deskripsi: editData.deskripsi,
+                    icon: editData.icon,
+                    warna: editData.warna,
+                    aktif: editData.aktif,
+                });
+                if (response.data.status === 'success') {
+                    setKategoris(prev => [...prev, response.data.data]);
+                }
+            } else if (modalMode === 'edit') {
+                const response = await api.put(`/api/kategoris/${editData.original_id}`, {
+                    nama: editData.nama,
+                    dinas: editData.dinas,
+                    deskripsi: editData.deskripsi,
+                    icon: editData.icon,
+                    warna: editData.warna,
+                    aktif: editData.aktif,
+                });
+                if (response.data.status === 'success') {
+                    setKategoris(prev => prev.map(k => k.original_id === editData.original_id ? response.data.data : k));
+                }
+            }
+            setModal(null);
+        } catch (error) {
+            console.error("Gagal menyimpan kategori:", error);
+        }
+    };
+
+    const handleDelete = (k) => {
+        setDeleteTarget(k);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        try {
+            await api.delete(`/api/kategoris/${deleteTarget.original_id}`);
+            setKategoris(prev => prev.filter(k => k.original_id !== deleteTarget.original_id));
+            setDeleteTarget(null);
+        } catch (error) {
+            console.error("Gagal menghapus kategori:", error);
+        }
+    };
+
     const ringkasan = [
-        { label: 'Total Kategori', value: DUMMY_KATEGORI.length,                              bg: 'bg-blue-50',   color: 'text-blue-600',   border: 'border-blue-100',   icon: 'category' },
-        { label: 'Aktif',          value: DUMMY_KATEGORI.filter(k => k.aktif).length,          bg: 'bg-green-50',  color: 'text-green-600',  border: 'border-green-100',  icon: 'check_circle' },
-        { label: 'Nonaktif',       value: DUMMY_KATEGORI.filter(k => !k.aktif).length,         bg: 'bg-slate-100', color: 'text-slate-500',  border: 'border-slate-200',  icon: 'do_not_disturb_on' },
-        { label: 'Total Laporan',  value: DUMMY_KATEGORI.reduce((s, k) => s + k.totalLaporan, 0), bg: 'bg-purple-50', color: 'text-purple-600', border: 'border-purple-100', icon: 'assignment' },
+        { label: 'Total Kategori', value: kategoris.length,                              bg: 'bg-blue-50',   color: 'text-blue-600',   border: 'border-blue-100',   icon: 'category' },
+        { label: 'Aktif',          value: kategoris.filter(k => k.aktif).length,          bg: 'bg-green-50',  color: 'text-green-600',  border: 'border-green-100',  icon: 'check_circle' },
+        { label: 'Nonaktif',       value: kategoris.filter(k => !k.aktif).length,         bg: 'bg-slate-100', color: 'text-slate-500',  border: 'border-slate-200',  icon: 'do_not_disturb_on' },
+        { label: 'Total Laporan',  value: kategoris.reduce((s, k) => s + k.totalLaporan, 0), bg: 'bg-purple-50', color: 'text-purple-600', border: 'border-purple-100', icon: 'assignment' },
     ];
 
     return (
@@ -103,7 +166,7 @@ export default function KategoriPage() {
                                     <button onClick={() => openModal(k, 'edit')} className="p-1.5 bg-white text-green-500 hover:bg-green-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
                                         <span className="material-symbols-outlined text-sm">edit</span>
                                     </button>
-                                    <button className="p-1.5 bg-white text-red-400 hover:bg-red-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
+                                    <button onClick={() => handleDelete(k)} className="p-1.5 bg-white text-red-400 hover:bg-red-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
                                         <span className="material-symbols-outlined text-sm">delete</span>
                                     </button>
                                 </div>
@@ -161,7 +224,7 @@ export default function KategoriPage() {
                                             <div className="flex gap-1">
                                                 <button onClick={() => openModal(k, 'detail')} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><span className="material-symbols-outlined text-base">visibility</span></button>
                                                 <button onClick={() => openModal(k, 'edit')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors"><span className="material-symbols-outlined text-base">edit</span></button>
-                                                <button className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors"><span className="material-symbols-outlined text-base">delete</span></button>
+                                                <button onClick={() => handleDelete(k)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors"><span className="material-symbols-outlined text-base">delete</span></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -217,8 +280,18 @@ export default function KategoriPage() {
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-500 font-semibold block mb-1.5">Dinas Terkait</label>
-                                        <input type="text" value={editData.dinas || ''} onChange={e => setEditData({ ...editData, dinas: e.target.value })}
-                                            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400" />
+                                        <div className="relative">
+                                            <select value={editData.dinas || ''} onChange={e => setEditData({ ...editData, dinas: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 appearance-none bg-white cursor-pointer">
+                                                <option disabled value="">Pilih Dinas Terkait</option>
+                                                {dinasList.map(d => (
+                                                    <option key={d.original_id} value={d.singkatan || d.nama}>
+                                                        {d.nama} ({d.singkatan || d.nama})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">expand_more</span>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-500 font-semibold block mb-1.5">Deskripsi</label>
@@ -281,10 +354,36 @@ export default function KategoriPage() {
                                 {modalMode === 'detail' ? 'Tutup' : 'Batal'}
                             </button>
                             {modalMode !== 'detail' && (
-                                <button onClick={() => setModal(null)} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold">
+                                <button onClick={handleSave} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold">
                                     {modalMode === 'tambah' ? 'Tambahkan' : 'Simpan'}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== DELETE CONFIRM MODAL ===== */}
+            {deleteTarget !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 text-center">
+                            {/* Danger Icon */}
+                            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100 animate-pulse">
+                                <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>delete_forever</span>
+                            </div>
+                            <h3 className="font-bold text-slate-800 text-lg mb-2">Hapus Kategori?</h3>
+                            <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                                Apakah Anda yakin ingin menghapus kategori <span className="font-semibold text-slate-700">"{deleteTarget.nama}"</span>? Tindakan ini tidak dapat dibatalkan.
+                            </p>
+                            <div className="flex gap-3 justify-center">
+                                <button onClick={() => setDeleteTarget(null)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors flex-1">
+                                    Batal
+                                </button>
+                                <button onClick={confirmDelete} className="px-5 py-2.5 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex-1 shadow-lg shadow-red-600/20">
+                                    Ya, Hapus
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PengaduanController;
 use App\Http\Controllers\Api\DinasController;
 use App\Http\Controllers\Api\PetugasController;
+use App\Http\Controllers\Api\KategoriController;
 
 Route::prefix('api')->group(function () {
     // Auth Routes
@@ -30,12 +31,27 @@ Route::prefix('api')->group(function () {
     // Dinas Routes
     Route::get('/dinas', [DinasController::class, 'index']);
     Route::post('/dinas', [DinasController::class, 'store']);
+    Route::put('/dinas/{id}', [DinasController::class, 'update']);
+    Route::delete('/dinas/{id}', [DinasController::class, 'destroy']);
+
+    // Kategori Routes
+    Route::get('/kategoris', [KategoriController::class, 'index']);
+    Route::post('/kategoris', [KategoriController::class, 'store']);
+    Route::put('/kategoris/{id}', [KategoriController::class, 'update']);
+    Route::delete('/kategoris/{id}', [KategoriController::class, 'destroy']);
 
     // Petugas Routes
     Route::get('/petugas', [PetugasController::class, 'index']);
     Route::post('/petugas', [PetugasController::class, 'store']);
     Route::put('/petugas/{id}', [PetugasController::class, 'update']);
     Route::delete('/petugas/{id}', [PetugasController::class, 'destroy']);
+
+    // Notification Routes
+    Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::put('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+    Route::put('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/delete-read', [\App\Http\Controllers\Api\NotificationController::class, 'destroyRead']);
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'destroy']);
 });
 
 Route::get('/{any}', function () {

@@ -135,6 +135,15 @@ export default function PetugasDinasPage() {
                         setModal(null);
                         await fetchData();
                     }
+                } else if (modalMode === 'edit') {
+                    const res = await api.put(`/api/dinas/${modal.original_id}`, {
+                        nama: editData.nama,
+                        singkatan: editData.singkatan,
+                    });
+                    if (res.data && res.data.status === 'success') {
+                        setModal(null);
+                        await fetchData();
+                    }
                 }
             }
         } catch (error) {
@@ -153,14 +162,22 @@ export default function PetugasDinasPage() {
         if (!deleteTarget) return;
         setIsDeleting(true);
         try {
-            const res = await api.delete(`/api/petugas/${deleteTarget.original_id}`);
-            if (res.data && res.data.status === 'success') {
-                setDeleteTarget(null);
-                await fetchData();
+            if (tab === 'petugas') {
+                const res = await api.delete(`/api/petugas/${deleteTarget.original_id}`);
+                if (res.data && res.data.status === 'success') {
+                    setDeleteTarget(null);
+                    await fetchData();
+                }
+            } else {
+                const res = await api.delete(`/api/dinas/${deleteTarget.original_id}`);
+                if (res.data && res.data.status === 'success') {
+                    setDeleteTarget(null);
+                    await fetchData();
+                }
             }
         } catch (error) {
-            console.error("Gagal menghapus petugas:", error);
-            alert("Gagal menghapus petugas dari database.");
+            console.error(`Gagal menghapus ${tab}:`, error);
+            alert(`Gagal menghapus ${tab} dari database.`);
         } finally {
             setIsDeleting(false);
         }
@@ -322,7 +339,7 @@ export default function PetugasDinasPage() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                 {filteredDinas.map(d => (
-                                    <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white">
+                                    <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white relative group">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center shrink-0`}>
@@ -346,6 +363,15 @@ export default function PetugasDinasPage() {
                                                 <p className="text-xl font-bold text-blue-700">{d.totalLaporan}</p>
                                                 <p className="text-xs text-blue-400">Laporan</p>
                                             </div>
+                                        </div>
+                                        {/* Hover actions */}
+                                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                            <button onClick={() => openModal(d, 'edit')} className="p-1.5 bg-white text-green-500 hover:bg-green-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
+                                                <span className="material-symbols-outlined text-sm">edit</span>
+                                            </button>
+                                            <button onClick={() => setDeleteTarget(d)} className="p-1.5 bg-white text-red-400 hover:bg-red-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
+                                                <span className="material-symbols-outlined text-sm">delete</span>
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -430,13 +456,20 @@ export default function PetugasDinasPage() {
                             ) : (
                                 // Form Dinas
                                 <>
-                                    {['nama', 'singkatan', 'kategori'].map(field => (
+                                    {['nama', 'singkatan'].map(field => (
                                         <div key={field}>
-                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field}</label>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field === 'nama' ? 'Nama Dinas' : 'Singkatan'}</label>
                                             <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })}
                                                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
                                         </div>
                                     ))}
+                                    {modalMode === 'tambah' && (
+                                        <div>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">Kategori Bawaan</label>
+                                            <input type="text" value={editData.kategori || ''} onChange={e => setEditData({ ...editData, kategori: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -460,8 +493,8 @@ export default function PetugasDinasPage() {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between px-6 py-5 border-b border-red-50 bg-red-50/10">
                             <div>
-                                <h2 className="font-bold text-red-600 text-lg">Konfirmasi Hapus Petugas</h2>
-                                <p className="text-xs text-red-500 mt-0.5">Petugas ID: {deleteTarget.id}</p>
+                                <h2 className="font-bold text-red-600 text-lg">Konfirmasi Hapus {tab === 'petugas' ? 'Petugas' : 'Dinas'}</h2>
+                                <p className="text-xs text-red-500 mt-0.5">{tab === 'petugas' ? 'Petugas' : 'Dinas'} ID: {deleteTarget.id}</p>
                             </div>
                             <button onClick={() => setDeleteTarget(null)} className="p-2 hover:bg-red-50 rounded-xl text-red-400 hover:text-red-600"><span className="material-symbols-outlined">close</span></button>
                         </div>
@@ -470,10 +503,12 @@ export default function PetugasDinasPage() {
                                 <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
                             </div>
                             <p className="text-sm font-semibold text-slate-800 mb-2 px-2">
-                                Apakah Anda yakin ingin menghapus petugas <span className="text-red-600 font-bold">{deleteTarget.nama}</span>?
+                                Apakah Anda yakin ingin menghapus {tab === 'petugas' ? 'petugas' : 'dinas'} <span className="text-red-600 font-bold">{deleteTarget.nama}</span>?
                             </p>
                             <p className="text-xs text-slate-500 max-w-xs px-2 leading-relaxed">
-                                Tindakan ini tidak dapat dibatalkan dan seluruh penugasan kerja petugas ini di database akan dihapus secara permanen.
+                                {tab === 'petugas' 
+                                    ? 'Tindakan ini tidak dapat dibatalkan dan seluruh penugasan kerja petugas ini di database akan dihapus secara permanen.'
+                                    : 'Tindakan ini tidak dapat dibatalkan dan seluruh kategori terkait dinas ini di database akan terpengaruh.'}
                             </p>
                         </div>
                         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
@@ -481,7 +516,7 @@ export default function PetugasDinasPage() {
                                 Batal
                             </button>
                             <button disabled={isDeleting} onClick={handleDelete} className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold shadow-sm shadow-red-100">
-                                {isDeleting ? 'Menghapus...' : 'Ya, Hapus Petugas'}
+                                {isDeleting ? 'Menghapus...' : `Ya, Hapus ${tab === 'petugas' ? 'Petugas' : 'Dinas'}`}
                             </button>
                         </div>
                     </div>
