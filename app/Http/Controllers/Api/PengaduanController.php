@@ -74,7 +74,15 @@ class PengaduanController extends Controller
             'Ditolak' => 'bg-red-100 text-red-800 border-red-200',
         ];
 
-        $kategoriName = Kategori::find($laporan->id_kategori)?->nama_kategori ?? 'Umum';
+        $kategoriObj = Kategori::find($laporan->id_kategori);
+        $kategoriName = $kategoriObj?->nama_kategori ?? 'Umum';
+        $dinasName = $kategoriObj && $kategoriObj->id_dinas ? (\App\Models\Dinas::find($kategoriObj->id_dinas)?->nama_dinas ?? '-') : '-';
+        $dinasId = $kategoriObj ? $kategoriObj->id_dinas : null;
+
+        $petugas = $laporan->id_petugas ? \App\Models\Petugas::find($laporan->id_petugas) : null;
+        $petugasName = $petugas ? $petugas->nama_petugas : '-';
+        $petugasId = $petugas ? $petugas->id_petugas : null;
+
         $kelurahanName = Kelurahan::find($laporan->id_kelurahan)?->nama_kelurahan ?? 'Tidak Diketahui';
         $userName = User::find($laporan->id_user)?->nama_lengkap ?? 'Anonim';
         $userHp = User::find($laporan->id_user)?->no_hp ?? '-';
@@ -82,13 +90,18 @@ class PengaduanController extends Controller
         $decodedGambar = is_string($laporan->bukti_foto) && str_starts_with($laporan->bukti_foto, '[') ? json_decode($laporan->bukti_foto, true) : null;
 
         return [
-            'id' => $laporan->no_ticket, // frontend might need id
+            'id' => $laporan->no_ticket,
             'nomor_tiket' => $laporan->no_ticket,
             'nama' => $userName,
             'nohp' => $userHp,
             'anonim' => false,
             'judul' => $laporan->judul_laporan,
             'kategori' => $kategoriName,
+            'id_kategori' => $laporan->id_kategori,
+            'id_dinas' => $dinasId,
+            'nama_dinas' => $dinasName,
+            'id_petugas' => $petugasId,
+            'nama_petugas' => $petugasName,
             'urgensi' => strtolower($laporan->prioritas),
             'lokasi' => $kelurahanName,
             'deskripsi' => $laporan->isi_laporan,
@@ -241,6 +254,7 @@ class PengaduanController extends Controller
             'tipe' => $prioritas === 'Tinggi' ? 'darurat' : 'laporan',
             'target_id' => $nomorTiket,
             'dibaca' => false,
+            'target_role' => 'admin',
         ]);
 
         return response()->json([
@@ -293,12 +307,40 @@ class PengaduanController extends Controller
         $laporan->save();
 
         // Create Notification for status update
+        // Create Notification for warga
+        if ($laporan->id_user) {
+            Notification::create([
+                'judul' => 'Status laporan diperbarui',
+                'isi' => "Status laporan Anda ({$nomorTiket}) telah diubah menjadi \"{$newStatus}\".",
+                'tipe' => 'update',
+                'target_id' => $nomorTiket,
+                'dibaca' => false,
+                'target_role' => 'warga',
+                'id_user' => $laporan->id_user,
+            ]);
+        }
+
+        // Create Notification for petugas if assigned
+        if ($laporan->id_petugas) {
+            Notification::create([
+                'judul' => 'Status laporan diperbarui',
+                'isi' => "Status laporan {$nomorTiket} yang ditugaskan kepada Anda telah diubah menjadi \"{$newStatus}\".",
+                'tipe' => 'update',
+                'target_id' => $nomorTiket,
+                'dibaca' => false,
+                'target_role' => 'petugas',
+                'id_petugas' => $laporan->id_petugas,
+            ]);
+        }
+
+        // Create Notification for admin
         Notification::create([
             'judul' => 'Status laporan diperbarui',
-            'isi' => "{$nomorTiket} berhasil diubah menjadi \"{$newStatus}\".",
+            'isi' => "Status laporan {$nomorTiket} telah diubah menjadi \"{$newStatus}\".",
             'tipe' => 'update',
             'target_id' => $nomorTiket,
             'dibaca' => false,
+            'target_role' => 'admin',
         ]);
 
         return response()->json([
@@ -315,8 +357,110 @@ class PengaduanController extends Controller
             return response()->json(['message' => 'Pengaduan tidak ditemukan'], 404);
         }
 
+        // Delete associated files from storage
+        if ($laporan->bukti_foto) {
+            $decoded = json_decode($laporan->bukti_foto, true);
+            $filesToDelete = is_array($decoded) ? $decoded : [$laporan->bukti_foto];
+
+            foreach ($filesToDelete as $fileUrl) {
+                $diskPath = $fileUrl;
+                if (str_starts_with($fileUrl, '/storage/')) {
+                    $diskPath = substr($fileUrl, 9); // Strip "/storage/"
+                }
+
+                if (Storage::disk('public')->exists($diskPath)) {
+                    Storage::disk('public')->delete($diskPath);
+                }
+            }
+        }
+
         $laporan->delete();
 
         return response()->json(['message' => 'Pengaduan berhasil dihapus']);
+    }
+
+    public function getEligiblePetugas(string $nomorTiket)
+    {
+        $laporan = Laporan::where('no_ticket', $nomorTiket)->first();
+        if (!$laporan) {
+            return response()->json(['message' => 'Pengaduan tidak ditemukan'], 404);
+        }
+
+        $kategori = Kategori::find($laporan->id_kategori);
+        if (!$kategori || !$kategori->id_dinas) {
+            return response()->json([], 200); // Return empty array if category or dinas is not found
+        }
+
+        $petugas = \App\Models\Petugas::where('id_dinas', $kategori->id_dinas)->get();
+
+        return response()->json($petugas);
+    }
+
+    public function assignPetugas(Request $request, string $nomorTiket)
+    {
+        $laporan = Laporan::where('no_ticket', $nomorTiket)->first();
+        if (!$laporan) {
+            return response()->json(['message' => 'Pengaduan tidak ditemukan'], 404);
+        }
+
+        $request->validate([
+            'id_petugas' => 'required|exists:petugas,id_petugas'
+        ]);
+
+        $petugas = \App\Models\Petugas::findOrFail($request->id_petugas);
+        
+        $laporan->id_petugas = $petugas->id_petugas;
+        $laporan->status_laporan = 'Sedang Diproses';
+
+        $log = $laporan->timeline_log ?? [];
+        $log[] = [
+            'tanggal'   => now()->format('d M Y, H:i'),
+            'status'    => 'Sedang Diproses',
+            'keterangan'=> 'Laporan telah ditugaskan kepada petugas: ' . $petugas->nama_petugas,
+            'icon'      => 'engineering',
+            'color'     => 'text-yellow-500',
+        ];
+        $laporan->timeline_log = $log;
+
+        $laporan->save();
+
+        // Create Notification for petugas
+        Notification::create([
+            'judul' => 'Tugas baru ditugaskan',
+            'isi' => "Laporan {$nomorTiket} telah ditugaskan kepada Anda.",
+            'tipe' => 'update',
+            'target_id' => $nomorTiket,
+            'dibaca' => false,
+            'target_role' => 'petugas',
+            'id_petugas' => $petugas->id_petugas,
+        ]);
+
+        // Create Notification for warga
+        if ($laporan->id_user) {
+            Notification::create([
+                'judul' => 'Petugas ditugaskan',
+                'isi' => "Laporan Anda ({$nomorTiket}) telah ditugaskan kepada petugas {$petugas->nama_petugas}.",
+                'tipe' => 'update',
+                'target_id' => $nomorTiket,
+                'dibaca' => false,
+                'target_role' => 'warga',
+                'id_user' => $laporan->id_user,
+            ]);
+        }
+
+        // Create Notification for admin
+        Notification::create([
+            'judul' => 'Petugas ditugaskan',
+            'isi' => "Laporan {$nomorTiket} telah ditugaskan kepada petugas {$petugas->nama_petugas}.",
+            'tipe' => 'update',
+            'target_id' => $nomorTiket,
+            'dibaca' => false,
+            'target_role' => 'admin',
+        ]);
+
+        return response()->json([
+            'message' => 'Petugas berhasil ditugaskan',
+            'data' => $this->mapToFrontend($laporan)
+        ]);
     }
 }

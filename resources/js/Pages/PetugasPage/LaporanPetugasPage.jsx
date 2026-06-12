@@ -74,7 +74,8 @@ const formatLaporanToTugas = (laporan) => {
         prioritas: laporan.prioritas || (laporan.urgensi ? (laporan.urgensi.charAt(0).toUpperCase() + laporan.urgensi.slice(1)) : 'Sedang'),
         status: mapStatusToPetugas(laporan.status),
         pelapor: laporan.nama || 'Warga',
-        deskripsi: laporan.deskripsi
+        deskripsi: laporan.deskripsi,
+        gambar: laporan.gambar || []
     };
 };
 
@@ -411,6 +412,33 @@ export default function LaporanPetugasPage() {
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5">Deskripsi Lengkap Laporan</p>
                                 <p className="text-sm text-slate-700 leading-relaxed font-medium">{modalTugas.deskripsi}</p>
                             </div>
+
+                            {/* Bukti Foto Laporan */}
+                            {modalTugas.gambar && modalTugas.gambar.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Bukti Foto Kejadian</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {modalTugas.gambar.map((imgUrl, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={imgUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative block aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/80 hover:shadow-lg transition-all duration-300"
+                                            >
+                                                <img
+                                                    src={imgUrl}
+                                                    alt={`Bukti ${idx + 1}`}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-white text-xl">open_in_new</span>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Status Saat Ini */}
                             <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between">

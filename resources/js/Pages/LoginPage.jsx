@@ -65,7 +65,7 @@ export default function LoginPage() {
 
             // Simpan sesi sederhana di sessionStorage
             const user = response.data.user;
-            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.nama_lengkap, role: user.role }));
+            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.nama_lengkap, role: user.role, avatar: user.avatar }));
 
             // Arahkan berdasarkan role
             if (user.role === 'admin') {

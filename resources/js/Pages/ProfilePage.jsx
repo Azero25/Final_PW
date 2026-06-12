@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
+import api from '../axios';
 
 export default function ProfilePage() {
     const navigate = useNavigate();
@@ -44,69 +45,42 @@ export default function ProfilePage() {
     useEffect(() => {
         window.scrollTo(0, 0);
         
-        const sesi = sessionStorage.getItem('user');
-        if (!sesi) {
-            // Jika belum login, arahkan ke login
-            showToast('Silakan masuk terlebih dahulu untuk mengedit profil Anda.', 'error');
-            setTimeout(() => navigate('/login'), 1500);
-            return;
-        }
+        const fetchProfile = async () => {
+            try {
+                const response = await api.get('/api/me');
+                const activeUser = response.data.user;
+                if (!activeUser) {
+                    showToast('Silakan masuk terlebih dahulu untuk mengedit profil Anda.', 'error');
+                    setTimeout(() => navigate('/login'), 1500);
+                    return;
+                }
+                setUser(activeUser);
 
-        const activeUser = JSON.parse(sesi);
-        setUser(activeUser);
-
-        // Cari data profil di localStorage
-        const storedProfileKey = `profile_${activeUser.email}`;
-        const storedProfile = localStorage.getItem(storedProfileKey);
-
-        if (storedProfile) {
-            setProfile(JSON.parse(storedProfile));
-        } else {
-            // Inisialisasi default berdasarkan dummy user
-            let defaultProfile = {
-                nama: activeUser.nama || '',
-                email: activeUser.email || '',
-                role: activeUser.role || 'warga',
-                nik: '',
-                telepon: '',
-                alamat: '',
-                desa: '',
-                kelurahan: '',
-                kecamatan: '',
-                kabupaten: '',
-                provinsi: '',
-                avatar: null,
-                tglDaftar: activeUser.role === 'admin' ? '01 Desember 2023' : '18 Maret 2024',
-                status: 'Terverifikasi'
-            };
-
-            // Berikan data dummy lebih lengkap untuk akun bawaan
-            if (activeUser.email === 'warga@email.com') {
-                defaultProfile.nik = '3471020304950001';
-                defaultProfile.telepon = '081234567890';
-                defaultProfile.alamat = 'Jl. Malioboro No. 12';
-                defaultProfile.desa = 'Sosromenduran';
-                defaultProfile.kelurahan = 'Sosromenduran';
-                defaultProfile.kecamatan = 'Gedongtengen';
-                defaultProfile.kabupaten = 'Kota Yogyakarta';
-                defaultProfile.provinsi = 'DI Yogyakarta';
-            } else if (activeUser.email === 'admin@lapor.go.id') {
-                defaultProfile.nik = '3471010101010001';
-                defaultProfile.telepon = '089876543210';
-                defaultProfile.alamat = 'Kantor Balaikota Yogyakarta, Jl. Kenari No. 56';
-                defaultProfile.desa = 'Muja Muju';
-                defaultProfile.kelurahan = 'Muja Muju';
-                defaultProfile.kecamatan = 'Umbulharjo';
-                defaultProfile.kabupaten = 'Kota Yogyakarta';
-                defaultProfile.provinsi = 'DI Yogyakarta';
-                defaultProfile.status = 'Admin Utama';
+                setProfile({
+                    nama: activeUser.nama_lengkap || '',
+                    email: activeUser.email || '',
+                    role: activeUser.role || 'warga',
+                    nik: activeUser.nik || '',
+                    telepon: activeUser.no_hp || '',
+                    alamat: activeUser.alamat_lengkap || '',
+                    desa: activeUser.desa || '',
+                    kelurahan: activeUser.kelurahan || '',
+                    kecamatan: activeUser.kecamatan || '',
+                    kabupaten: activeUser.kabupaten || '',
+                    provinsi: activeUser.provinsi || '',
+                    avatar: activeUser.avatar || null,
+                    tglDaftar: activeUser.tanggal_bergabung ? new Date(activeUser.tanggal_bergabung).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '18 Maret 2024',
+                    status: activeUser.status || 'Terverifikasi'
+                });
+            } catch (err) {
+                showToast('Gagal memuat profil dari server.', 'error');
+                setTimeout(() => navigate('/login'), 1500);
+            } finally {
+                setLoading(false);
             }
+        };
 
-            setProfile(defaultProfile);
-            localStorage.setItem(storedProfileKey, JSON.stringify(defaultProfile));
-        }
-        
-        setLoading(false);
+        fetchProfile();
     }, [navigate]);
 
     // Fungsi menampilkan Toast notification
@@ -135,37 +109,79 @@ export default function ProfilePage() {
         }
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             const base64Image = event.target.result;
             const updatedProfile = { ...profile, avatar: base64Image };
             setProfile(updatedProfile);
             
-            // Simpan di local storage
-            if (user) {
-                localStorage.setItem(`profile_${user.email}`, JSON.stringify(updatedProfile));
+            try {
+                const response = await api.put('/api/profile', {
+                    nama_lengkap: profile.nama,
+                    nik: profile.nik,
+                    no_hp: profile.telepon,
+                    alamat_lengkap: profile.alamat,
+                    desa: profile.desa,
+                    kelurahan: profile.kelurahan,
+                    kecamatan: profile.kecamatan,
+                    kabupaten: profile.kabupaten,
+                    provinsi: profile.provinsi,
+                    avatar: base64Image
+                });
+
+                const updatedUser = response.data.user;
+                const sesi = JSON.parse(sessionStorage.getItem('user'));
+                if (sesi) {
+                    sesi.nama = updatedUser.nama_lengkap;
+                    sesi.avatar = updatedUser.avatar;
+                    sessionStorage.setItem('user', JSON.stringify(sesi));
+                }
                 
                 // Kirim event agar Navbar tahu foto profil diperbarui
                 window.dispatchEvent(new Event('profileUpdated'));
                 showToast('Foto profil berhasil diunggah!', 'success');
+            } catch (err) {
+                showToast('Gagal menyimpan foto profil ke server.', 'error');
             }
         };
         reader.readAsDataURL(file);
     };
 
     // Fungsi hapus foto profil
-    const handleRemoveAvatar = () => {
+    const handleRemoveAvatar = async () => {
         const updatedProfile = { ...profile, avatar: null };
         setProfile(updatedProfile);
         
-        if (user) {
-            localStorage.setItem(`profile_${user.email}`, JSON.stringify(updatedProfile));
+        try {
+            const response = await api.put('/api/profile', {
+                nama_lengkap: profile.nama,
+                nik: profile.nik,
+                no_hp: profile.telepon,
+                alamat_lengkap: profile.alamat,
+                desa: profile.desa,
+                kelurahan: profile.kelurahan,
+                kecamatan: profile.kecamatan,
+                kabupaten: profile.kabupaten,
+                provinsi: profile.provinsi,
+                avatar: null
+            });
+
+            const updatedUser = response.data.user;
+            const sesi = JSON.parse(sessionStorage.getItem('user'));
+            if (sesi) {
+                sesi.nama = updatedUser.nama_lengkap;
+                sesi.avatar = updatedUser.avatar;
+                sessionStorage.setItem('user', JSON.stringify(sesi));
+            }
+
             window.dispatchEvent(new Event('profileUpdated'));
             showToast('Foto profil telah dihapus.', 'success');
+        } catch (err) {
+            showToast('Gagal menghapus foto profil di server.', 'error');
         }
     };
 
     // Fungsi simpan data profil
-    const handleSaveProfile = (e) => {
+    const handleSaveProfile = async (e) => {
         e.preventDefault();
         
         // Validasi form
@@ -188,27 +204,47 @@ export default function ProfilePage() {
 
         setSaving(true);
 
-        setTimeout(() => {
-            const storedProfileKey = `profile_${user.email}`;
-            localStorage.setItem(storedProfileKey, JSON.stringify(profile));
+        try {
+            const response = await api.put('/api/profile', {
+                nama_lengkap: profile.nama.trim(),
+                nik: profile.nik,
+                no_hp: profile.telepon,
+                alamat_lengkap: profile.alamat,
+                desa: profile.desa,
+                kelurahan: profile.kelurahan,
+                kecamatan: profile.kecamatan,
+                kabupaten: profile.kabupaten,
+                provinsi: profile.provinsi,
+                avatar: profile.avatar
+            });
 
+            const updatedUser = response.data.user;
+            
             // Perbarui nama di sessionStorage agar Navbar ter-update
             const sesi = JSON.parse(sessionStorage.getItem('user'));
             if (sesi) {
-                sesi.nama = profile.nama;
+                sesi.nama = updatedUser.nama_lengkap;
+                sesi.avatar = updatedUser.avatar;
                 sessionStorage.setItem('user', JSON.stringify(sesi));
             }
 
             // Kirim event untuk memberitahu Navbar
             window.dispatchEvent(new Event('profileUpdated'));
             
-            setSaving(false);
             showToast('Profil Anda berhasil diperbarui!', 'success');
-        }, 1200);
+        } catch (err) {
+            if (err.response && err.response.data && err.response.data.message) {
+                showToast(err.response.data.message, 'error');
+            } else {
+                showToast('Gagal memperbarui profil.', 'error');
+            }
+        } finally {
+            setSaving(false);
+        }
     };
 
     // Fungsi ubah password
-    const handlePasswordChange = (e) => {
+    const handlePasswordChange = async (e) => {
         e.preventDefault();
         const { passwordLama, passwordBaru, konfirmasiPassword } = passwordData;
 
@@ -218,8 +254,8 @@ export default function ProfilePage() {
             return;
         }
 
-        if (passwordBaru.length < 6) {
-            showToast('Password baru minimal harus 6 karakter.', 'error');
+        if (passwordBaru.length < 8) {
+            showToast('Password baru minimal harus 8 karakter.', 'error');
             return;
         }
 
@@ -230,35 +266,27 @@ export default function ProfilePage() {
 
         setSaving(true);
 
-        setTimeout(() => {
-            // Simulasi verifikasi password lama berdasarkan default password demo
-            let defaultPassword = 'warga123';
-            if (user.email === 'admin@lapor.go.id') {
-                defaultPassword = 'admin123';
-            }
-
-            // Bisa juga cek dari localStorage jika user pernah mengubahnya
-            const customPassKey = `pwd_${user.email}`;
-            const storedPassword = localStorage.getItem(customPassKey);
-            const activePassword = storedPassword || defaultPassword;
-
-            if (passwordLama !== activePassword) {
-                setSaving(false);
-                showToast('Password saat ini salah. Silakan coba lagi.', 'error');
-                return;
-            }
-
-            // Simpan password baru di localStorage
-            localStorage.setItem(customPassKey, passwordBaru);
+        try {
+            await api.put('/api/profile/password', {
+                password_lama: passwordLama,
+                password_baru: passwordBaru
+            });
             
-            setSaving(false);
             setPasswordData({
                 passwordLama: '',
                 passwordBaru: '',
                 konfirmasiPassword: ''
             });
             showToast('Password berhasil diubah!', 'success');
-        }, 1200);
+        } catch (err) {
+            if (err.response && err.response.data && err.response.data.message) {
+                showToast(err.response.data.message, 'error');
+            } else {
+                showToast('Kata sandi saat ini salah atau terjadi kesalahan.', 'error');
+            }
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (loading) {

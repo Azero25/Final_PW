@@ -1,47 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../../axios';
 
 /**
  * Halaman Login Petugas
  * Login terpisah dari user biasa. Petugas login dengan username + password.
- * Data dummy:
- *   petugas_demo / petugas123  → Dinas Pekerjaan Umum
- *   petugas_bpbd / petugas123  → BPBD
- *   petugas_dlh  / petugas123  → Dinas Lingkungan Hidup
  */
-
-const DUMMY_PETUGAS = [
-    {
-        id: 'PTG-001',
-        username: 'petugas_demo',
-        email: 'petugas@email.com',
-        password: 'petugas123',
-        nama: 'Ir. Hadi Susanto',
-        dinas: 'Dinas Pekerjaan Umum',
-        jabatan: 'Kepala Seksi Pemeliharaan Jalan',
-        telepon: '081234567890',
-    },
-    {
-        id: 'PTG-002',
-        username: 'petugas_bpbd',
-        email: 'petugas_bpbd@email.com',
-        password: 'petugas123',
-        nama: 'Dra. Siti Rahayu',
-        dinas: 'BPBD',
-        jabatan: 'Koordinator Lapangan',
-        telepon: '081345678901',
-    },
-    {
-        id: 'PTG-003',
-        username: 'petugas_dlh',
-        email: 'petugas_dlh@email.com',
-        password: 'petugas123',
-        nama: 'Ahmad Fauzi, S.T.',
-        dinas: 'Dinas Lingkungan Hidup',
-        jabatan: 'Staf Pengelolaan Limbah',
-        telepon: '081456789012',
-    },
-];
 
 export default function LoginPetugasPage() {
     const navigate = useNavigate();
@@ -51,45 +15,36 @@ export default function LoginPetugasPage() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
 
         // Validasi: field kosong
         if (!username.trim() || !password.trim()) {
-            setError('Username atau email dan password tidak boleh kosong.');
+            setError('Username/NIP atau password tidak boleh kosong.');
             return;
         }
 
         setIsLoading(true);
 
-        // Simulasi delay network
-        setTimeout(() => {
-            const found = DUMMY_PETUGAS.find(
-                (p) => (p.username === username.trim() || p.email === username.trim()) && p.password === password
-            );
+        try {
+            const response = await api.post('/api/petugas/login', {
+                username: username.trim(),
+                password: password
+            });
 
-            if (found) {
+            if (response.data && response.data.status === 'success') {
                 // Simpan sesi petugas di sessionStorage
-                sessionStorage.setItem(
-                    'petugas',
-                    JSON.stringify({
-                        id: found.id,
-                        nama: found.nama,
-                        dinas: found.dinas,
-                        jabatan: found.jabatan,
-                        username: found.username,
-                        email: found.email,
-                        telepon: found.telepon,
-                    })
-                );
+                sessionStorage.setItem('petugas', JSON.stringify(response.data.petugas));
                 navigate('/petugas/dashboard');
             } else {
-                setError('Username/Email atau password salah. Silakan coba lagi.');
+                setError('Terjadi kesalahan saat login.');
             }
-
+        } catch (err) {
+            setError(err.response?.data?.message || 'Username/NIP atau password salah. Silakan coba lagi.');
+        } finally {
             setIsLoading(false);
-        }, 800);
+        }
     };
 
     return (
@@ -154,7 +109,7 @@ export default function LoginPetugasPage() {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="petugas@email.com atau petugas_demo"
+                                placeholder="petugas@gmail.com"
                                 className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-700 bg-slate-800/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                             />
                         </div>
@@ -213,13 +168,13 @@ export default function LoginPetugasPage() {
                     </div>
                     <div className="space-y-1">
                         <p className="text-xs text-slate-400 font-mono">
-                            <span className="text-slate-500">DPU&nbsp;&nbsp;&nbsp;:</span> petugas_demo (petugas@email.com) / petugas123
+                            <span className="text-slate-500">PUPR&nbsp;&nbsp;&nbsp;:</span> ahmadwijaya@gmail.com / petugas123
                         </p>
                         <p className="text-xs text-slate-400 font-mono">
-                            <span className="text-slate-500">BPBD&nbsp;&nbsp;:</span> petugas_bpbd (petugas_bpbd@email.com) / petugas123
+                            <span className="text-slate-500">BPBD&nbsp;&nbsp;&nbsp;:</span> bintangemon@gmail.com / petugas123
                         </p>
                         <p className="text-xs text-slate-400 font-mono">
-                            <span className="text-slate-500">DLH&nbsp;&nbsp;&nbsp;:</span> petugas_dlh (petugas_dlh@email.com) / petugas123
+                            <span className="text-slate-500">DLH&nbsp;&nbsp;&nbsp;&nbsp;:</span> andimulyono@gmail.com / petugas123
                         </p>
                     </div>
                 </div>

@@ -23,6 +23,11 @@ export default function RegisterPage() {
             return;
         }
 
+        if (password.length < 8) {
+            setError('Password minimal harus 8 karakter.');
+            return;
+        }
+
         setIsLoading(true);
 
         try {

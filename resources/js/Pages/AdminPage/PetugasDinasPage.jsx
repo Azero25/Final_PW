@@ -20,10 +20,13 @@ export default function PetugasDinasPage() {
     const [modal, setModal] = useState(null);
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'edit' | 'tambah'
     const [editData, setEditData] = useState({});
+    const [successAccount, setSuccessAccount] = useState(null);
 
     // Delete states
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
     const [dinasList, setDinasList] = useState([]);
     const [petugasList, setPetugasList] = useState([]);
@@ -110,6 +113,11 @@ export default function PetugasDinasPage() {
                     if (res.data && res.data.status === 'success') {
                         setModal(null);
                         await fetchData();
+                        setSuccessAccount({
+                            nama: res.data.data.nama,
+                            username: res.data.data.username,
+                            password: 'petugas123'
+                        });
                     }
                 } else if (modalMode === 'edit') {
                     const res = await api.put(`/api/petugas/${modal.original_id}`, {
@@ -183,6 +191,31 @@ export default function PetugasDinasPage() {
         }
     };
 
+    const toggleAll = () => setSelectedIds(selectedIds.length === filteredPetugas.length && filteredPetugas.length > 0 ? [] : filteredPetugas.map(p => p.original_id));
+    const toggleOne = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
+    const handleBulkDelete = () => {
+        setShowBulkDeleteModal(true);
+    };
+
+    const handleBulkDeleteConfirm = async () => {
+        setIsDeleting(true);
+        try {
+            for (const id of selectedIds) {
+                await api.delete(`/api/petugas/${id}`);
+            }
+            setSelectedIds([]);
+            setShowBulkDeleteModal(false);
+            await fetchData();
+            alert("Petugas terpilih berhasil dihapus.");
+        } catch (err) {
+            console.error("Gagal menghapus petugas secara massal", err);
+            alert("Gagal menghapus beberapa petugas.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const ringkasan = [
         { label: 'Total Dinas',    value: dinasList.length,                                         bg: 'bg-indigo-50',  color: 'text-indigo-600',  border: 'border-indigo-100', icon: 'account_balance' },
         { label: 'Total Petugas',  value: petugasList.length,                                       bg: 'bg-blue-50',    color: 'text-blue-600',    border: 'border-blue-100',   icon: 'badge' },
@@ -212,7 +245,7 @@ export default function PetugasDinasPage() {
                         {/* Tabs */}
                         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                             {[{ id: 'petugas', label: 'Data Petugas', icon: 'badge' }, { id: 'dinas', label: 'Data Dinas', icon: 'account_balance' }].map(t => (
-                                <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); }}
+                                <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); setSelectedIds([]); }}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t.id ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                     <span className="material-symbols-outlined text-base">{t.icon}</span>{t.label}
                                 </button>
@@ -247,9 +280,27 @@ export default function PetugasDinasPage() {
                 {/* ===== TAB: PETUGAS ===== */}
                 {tab === 'petugas' && (
                     <div className="overflow-x-auto">
+                        {/* Bulk Action Bar */}
+                        {selectedIds.length > 0 && (
+                            <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-4 flex-wrap">
+                                <span className="text-sm font-semibold text-blue-700">{selectedIds.length} petugas terpilih</span>
+                                <button
+                                    disabled={isDeleting}
+                                    onClick={handleBulkDelete}
+                                    className="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                                >
+                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                    Hapus Terpilih
+                                </button>
+                                <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-slate-500 hover:underline">Batalkan Pilihan</button>
+                            </div>
+                        )}
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-slate-50 text-left">
+                                    <th className="px-4 py-3 w-10">
+                                        <input type="checkbox" checked={selectedIds.length === filteredPetugas.length && filteredPetugas.length > 0} onChange={toggleAll} className="rounded" />
+                                    </th>
                                     {['Petugas', 'NIP', 'Dinas', 'Jabatan', 'Telepon', 'Beban Kerja', 'Status', 'Aksi'].map(h => (
                                         <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                                     ))}
@@ -271,7 +322,10 @@ export default function PetugasDinasPage() {
                                         <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>Tidak ada petugas ditemukan
                                     </td></tr>
                                 ) : filteredPetugas.map(p => (
-                                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={p.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(p.original_id) ? 'bg-blue-50/50' : ''}`}>
+                                        <td className="px-4 py-3">
+                                            <input type="checkbox" checked={selectedIds.includes(p.original_id)} onChange={() => toggleOne(p.original_id)} className="rounded" />
+                                        </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center shrink-0`}>
@@ -517,6 +571,107 @@ export default function PetugasDinasPage() {
                             </button>
                             <button disabled={isDeleting} onClick={handleDelete} className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold shadow-sm shadow-red-100">
                                 {isDeleting ? 'Menghapus...' : `Ya, Hapus ${tab === 'petugas' ? 'Petugas' : 'Dinas'}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== PREMIUM RED KUSTOM BULK DELETE CONFIRMATION MODAL ===== */}
+            {showBulkDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowBulkDeleteModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-red-50 bg-red-50/10">
+                            <div>
+                                <h2 className="font-bold text-red-600 text-lg">Konfirmasi Hapus Masal</h2>
+                                <p className="text-xs text-red-500 mt-0.5">{selectedIds.length} Petugas Terpilih</p>
+                            </div>
+                            <button onClick={() => setShowBulkDeleteModal(false)} className="p-2 hover:bg-red-50 rounded-xl text-red-400 hover:text-red-600"><span className="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div className="px-6 py-6 space-y-4">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3 text-red-500 border border-red-100">
+                                    <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                                </div>
+                                <p className="text-sm font-semibold text-slate-800 mb-2 px-2">
+                                    Apakah Anda yakin ingin menghapus <span className="text-red-600 font-bold">{selectedIds.length} petugas</span> terpilih?
+                                </p>
+                            </div>
+
+                            <div className="max-h-36 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 justify-center">
+                                {selectedIds.map(id => {
+                                    const p = petugasList.find(x => x.original_id === id);
+                                    return p ? (
+                                        <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                                            {p.nama}
+                                        </span>
+                                    ) : null;
+                                })}
+                            </div>
+
+                            <p className="text-xs text-slate-500 text-center leading-relaxed px-4">
+                                Tindakan ini tidak dapat dibatalkan dan seluruh data pekerjaan serta akun petugas terpilih akan dihapus secara permanen dari sistem.
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+                            <button disabled={isDeleting} onClick={() => setShowBulkDeleteModal(false)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
+                                Batal
+                            </button>
+                            <button disabled={isDeleting} onClick={handleBulkDeleteConfirm} className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold shadow-sm shadow-red-100">
+                                {isDeleting ? 'Menghapus...' : `Ya, Hapus ${selectedIds.length} Petugas`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== SUCCESS ACCOUNT CREATION MODAL ===== */}
+            {successAccount !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSuccessAccount(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-green-50 bg-green-50/10">
+                            <div>
+                                <h2 className="font-bold text-green-700 text-lg">Akun Otomatis Terbuat!</h2>
+                                <p className="text-xs text-green-600 mt-0.5">Petugas: {successAccount.nama}</p>
+                            </div>
+                            <button onClick={() => setSuccessAccount(null)} className="p-2 hover:bg-green-50 rounded-xl text-green-400 hover:text-green-600"><span className="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div className="px-6 py-6 space-y-4">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-3 text-green-500 border border-green-100">
+                                    <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                </div>
+                                <p className="text-sm font-semibold text-slate-800 mb-1">
+                                    Kredensial login petugas berhasil digenerate:
+                                </p>
+                            </div>
+
+                            <div className="border border-slate-100 rounded-xl p-4 bg-slate-50 space-y-2.5 font-mono text-sm">
+                                <div className="flex justify-between border-b border-slate-200/60 pb-2">
+                                    <span className="text-slate-400">Username</span>
+                                    <span className="font-semibold text-slate-800 select-all">{successAccount.username}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Password</span>
+                                    <span className="font-semibold text-slate-800 select-all">{successAccount.password}</span>
+                                </div>
+                            </div>
+
+                            <p className="text-xs text-slate-500 text-center leading-relaxed px-4">
+                                Petugas dapat login menggunakan NIP atau Username di atas, dengan password default <span className="font-bold text-slate-700">{successAccount.password}</span>.
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+                            <button onClick={() => {
+                                const text = `Kredensial Petugas Baru:\nNama: ${successAccount.nama}\nUsername: ${successAccount.username}\nPassword: ${successAccount.password}`;
+                                navigator.clipboard.writeText(text);
+                                alert("Kredensial disalin ke clipboard!");
+                            }} className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-xl transition-colors font-semibold flex items-center gap-1.5 bg-transparent">
+                                <span className="material-symbols-outlined text-base">content_copy</span>
+                                Salin Kredensial
+                            </button>
+                            <button onClick={() => setSuccessAccount(null)} className="px-5 py-2 text-sm bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold">
+                                Selesai
                             </button>
                         </div>
                     </div>

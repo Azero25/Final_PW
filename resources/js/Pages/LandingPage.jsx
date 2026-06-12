@@ -16,6 +16,7 @@ export default function LandingPage() {
         diprosesPct: 0,
         selesaiPct: 0
     });
+    const [categoriesChart, setCategoriesChart] = useState([]);
 
     // State untuk Data Public API (Persyaratan Dosen)
     const [news, setNews] = useState([]);
@@ -40,6 +41,28 @@ export default function LandingPage() {
                     diprosesPct: total > 0 ? Math.round((diproses / total) * 100) : 0,
                     selesaiPct: total > 0 ? Math.round((selesai / total) * 100) : 0,
                 });
+
+                // Hitung Data Grafik Kategori Top 4
+                const kategoriCounts = {};
+                data.forEach(item => {
+                    const k = item.kategori || 'Lainnya';
+                    const label = k.charAt(0).toUpperCase() + k.slice(1);
+                    kategoriCounts[label] = (kategoriCounts[label] || 0) + 1;
+                });
+
+                const sortedKategori = Object.keys(kategoriCounts)
+                    .map(key => ({ label: key, count: kategoriCounts[key] }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 4);
+
+                const colors = ['bg-primary', 'bg-green-500', 'bg-red-500', 'bg-yellow-500'];
+                const kategoriArr = sortedKategori.map((item, idx) => ({
+                    label: item.label,
+                    count: item.count,
+                    val: total > 0 ? Math.round((item.count / total) * 100) : 0,
+                    color: colors[idx % colors.length]
+                }));
+                setCategoriesChart(kategoriArr);
             } catch (error) {
                 console.error("Failed to fetch stats", error);
             }
@@ -155,6 +178,57 @@ export default function LandingPage() {
                             <div className="mt-4 flex items-baseline gap-2">
                                 <span className="text-4xl font-bold font-public-sans text-on-primary block leading-none">2.4</span>
                                 <span className="text-lg font-medium text-on-primary-container block">Hari</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Bagian Kategori Laporan Terbanyak (Real-time) */}
+                <section className="py-8 sm:py-12 border-t border-outline-variant/30 mt-8">
+                    <div className="bg-surface-container-lowest p-6 sm:p-8 rounded-3xl shadow-[0px_4px_30px_rgba(0,102,204,0.05)] border border-outline-variant/30">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                            <div>
+                                <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 font-bold text-xs tracking-widest uppercase mb-3">Statistik Kategori</span>
+                                <h2 className="font-h2 text-3xl font-bold">Kategori Laporan Terbanyak</h2>
+                                <p className="text-slate-500 mt-1 text-sm">Distribusi keluhan warga berdasarkan bidang masalah secara real-time.</p>
+                            </div>
+                            <Link to="/statistik" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+                                Lihat Statistik Lengkap <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                            </Link>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            {/* Chart Bar List */}
+                            <div className="space-y-5">
+                                {categoriesChart.length === 0 ? (
+                                    <p className="text-sm text-slate-400 italic">Belum ada data laporan.</p>
+                                ) : (
+                                    categoriesChart.map((item, idx) => (
+                                        <div key={item.label} className="group">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">{item.label}</span>
+                                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{item.count} Laporan ({item.val}%)</span>
+                                            </div>
+                                            <div className="w-full bg-slate-150 h-3 rounded-full overflow-hidden border border-slate-100">
+                                                <div className={`${item.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${item.val}%` }}></div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Info Box / Graphic Illustration */}
+                            <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 flex flex-col justify-center h-full">
+                                <span className="material-symbols-outlined text-primary text-5xl mb-4">analytics</span>
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">Pantau & Berpartisipasi</h3>
+                                <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                                    Setiap laporan yang masuk langsung dikelompokkan sesuai dengan dinas teknis yang berwenang untuk memprosesnya. Grafik ini diperbarui otomatis setiap kali ada warga yang mengirimkan laporan baru.
+                                </p>
+                                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-primary"></span> Infrastruktur</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span> Kebersihan</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> Kesehatan</span>
+                                </div>
                             </div>
                         </div>
                     </div>

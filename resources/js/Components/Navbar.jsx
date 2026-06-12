@@ -25,7 +25,7 @@ export default function Navbar() {
                 setUser({
                     ...parsedUser,
                     nama: profile.nama || parsedUser.nama,
-                    avatar: profile.avatar || null
+                    avatar: profile.avatar || parsedUser.avatar || null
                 });
             } else {
                 setUser(parsedUser);

@@ -9,10 +9,30 @@ use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         Carbon::setLocale('id');
-        $notifications = Notification::latest()->get();
+        
+        $query = Notification::query();
+
+        if ($request->has('role')) {
+            $role = $request->input('role');
+            if ($role === 'admin') {
+                $query->where('target_role', 'admin');
+            } elseif ($role === 'petugas') {
+                $query->where('target_role', 'petugas');
+                if ($request->has('id')) {
+                    $query->where('id_petugas', $request->input('id'));
+                }
+            } elseif ($role === 'warga') {
+                $query->where('target_role', 'warga');
+                if ($request->has('id')) {
+                    $query->where('id_user', $request->input('id'));
+                }
+            }
+        }
+
+        $notifications = $query->latest()->get();
 
         $mapped = $notifications->map(function ($notif) {
             return [
