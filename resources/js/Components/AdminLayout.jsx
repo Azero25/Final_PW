@@ -140,7 +140,6 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
         { id: 'petugas',    label: 'Petugas & Dinas',   icon: 'badge',          path: '/admin/petugas' },
         { id: 'kategori',   label: 'Kategori',           icon: 'category',       path: '/admin/kategori' },
         { id: 'notifikasi', label: 'Notifikasi',         icon: 'notifications',  path: '/admin/notifikasi' },
-        { id: 'pengaturan', label: 'Pengaturan',         icon: 'settings',       path: '/admin/pengaturan' },
     ];
 
     const isActive = (path) => location.pathname === path;

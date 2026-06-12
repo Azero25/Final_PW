@@ -207,7 +207,7 @@ export default function StatistikPage() {
                                     <span className="material-symbols-outlined text-primary">trending_up</span>
                                     Tren Laporan Bulanan
                                 </h3>
-                                <p className="text-sm text-slate-500 mt-1">Volume laporan yang masuk sepanjang tahun 2024</p>
+                                <p className="text-sm text-slate-500 mt-1">Volume laporan yang masuk sepanjang tahun 2026</p>
                             </div>
                         </div>
                         <div className="h-64 flex items-end justify-between gap-2 px-4">
