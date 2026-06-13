@@ -157,66 +157,77 @@ export default function BuatPengaduanPage() {
 
         const sesi = sessionStorage.getItem('user');
         if (!sesi) {
-            navigate('/login');
+            navigate('/login', { state: { from: { pathname: '/buat-pengaduan' } } });
             return;
         }
 
         const activeUser = JSON.parse(sesi);
         setUser(activeUser);
 
-        // Ambil data profil dari localStorage
-        const storedProfileKey = `profile_${activeUser.email}`;
-        const storedProfile = localStorage.getItem(storedProfileKey);
+        // ===== PERBAIKAN: Fetch data profil dari API, bukan localStorage =====
+        // ProfilePage menyimpan ke server via API, bukan ke localStorage.
+        const validateProfile = async () => {
+            try {
+                const res = await fetch('/api/me', {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
 
-        if (!storedProfile) {
-            // Jika data profil belum pernah diinisialisasi sama sekali
-            setIsComplete(false);
-            setMissingFields([
-                'Nomor Induk Kependudukan (NIK)',
-                'Alamat Tinggal Lengkap',
-                'Desa / Kelurahan',
-                'Kecamatan',
-                'Kabupaten',
-                'Provinsi'
-            ]);
-            return;
-        }
+                if (!res.ok) {
+                    navigate('/login', { state: { from: { pathname: '/buat-pengaduan' } } });
+                    return;
+                }
 
-        const profile = JSON.parse(storedProfile);
-        const missing = [];
+                const data = await res.json();
+                const serverUser = data.user;
 
-        // Prefill nama dan telepon di form buat pengaduan
-        setIdentitas({
-            nama: profile.nama || activeUser.nama || '',
-            telepon: profile.telepon || ''
-        });
+                if (!serverUser) {
+                    navigate('/login', { state: { from: { pathname: '/buat-pengaduan' } } });
+                    return;
+                }
 
-        // Validasi kelengkapan data sesuai permintaan user
-        if (!profile.nik || profile.nik.trim().length !== 16 || isNaN(profile.nik)) {
-            missing.push('Nomor Induk Kependudukan (NIK - 16 Digit)');
-        }
-        if (!profile.alamat || !profile.alamat.trim()) {
-            missing.push('Alamat Tinggal Lengkap');
-        }
-        if (!profile.desa || !profile.desa.trim()) {
-            missing.push('Desa / Kelurahan');
-        }
-        if (!profile.kecamatan || !profile.kecamatan.trim()) {
-            missing.push('Kecamatan');
-        }
-        if (!profile.kabupaten || !profile.kabupaten.trim()) {
-            missing.push('Kabupaten / Kota');
-        }
-        if (!profile.provinsi || !profile.provinsi.trim()) {
-            missing.push('Provinsi');
-        }
+                // Prefill identitas dari data server
+                setIdentitas({
+                    nama: serverUser.nama_lengkap || activeUser.nama || '',
+                    telepon: serverUser.no_hp || ''
+                });
 
-        if (missing.length > 0) {
-            setIsComplete(false);
-            setMissingFields(missing);
-        } else {
-            setIsComplete(true);
-        }
+                // Validasi kelengkapan data profil dari server
+                const missing = [];
+
+                if (!serverUser.nik || String(serverUser.nik).trim().length !== 16 || isNaN(serverUser.nik)) {
+                    missing.push('Nomor Induk Kependudukan (NIK - 16 Digit)');
+                }
+                if (!serverUser.alamat_lengkap || !serverUser.alamat_lengkap.trim()) {
+                    missing.push('Alamat Tinggal Lengkap');
+                }
+                if (!serverUser.desa || !serverUser.desa.trim()) {
+                    missing.push('Desa / Kelurahan');
+                }
+                if (!serverUser.kecamatan || !serverUser.kecamatan.trim()) {
+                    missing.push('Kecamatan');
+                }
+                if (!serverUser.kabupaten || !serverUser.kabupaten.trim()) {
+                    missing.push('Kabupaten / Kota');
+                }
+                if (!serverUser.provinsi || !serverUser.provinsi.trim()) {
+                    missing.push('Provinsi');
+                }
+
+                if (missing.length > 0) {
+                    setIsComplete(false);
+                    setMissingFields(missing);
+                } else {
+                    setIsComplete(true);
+                }
+            } catch (err) {
+                console.error('Gagal validasi profil dari server:', err);
+                // Jika server tidak bisa dijangkau, izinkan lanjut
+                setIsComplete(true);
+            }
+        };
+
+        validateProfile();
 
         const fetchKategoris = async () => {
             try {

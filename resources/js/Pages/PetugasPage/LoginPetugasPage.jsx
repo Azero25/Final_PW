@@ -160,24 +160,7 @@ export default function LoginPetugasPage() {
                     </button>
                 </form>
 
-                {/* Info Akun Demo */}
-                <div className="mt-6 p-4 bg-blue-500/5 rounded-xl border border-blue-500/15">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="material-symbols-outlined text-blue-400 text-sm">info</span>
-                        <p className="text-xs text-blue-400 font-bold">Akun Demo Petugas</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-xs text-slate-400 font-mono">
-                            <span className="text-slate-500">PUPR&nbsp;&nbsp;&nbsp;:</span> ahmadwijaya@gmail.com / petugas123
-                        </p>
-                        <p className="text-xs text-slate-400 font-mono">
-                            <span className="text-slate-500">BPBD&nbsp;&nbsp;&nbsp;:</span> bintangemon@gmail.com / petugas123
-                        </p>
-                        <p className="text-xs text-slate-400 font-mono">
-                            <span className="text-slate-500">DLH&nbsp;&nbsp;&nbsp;&nbsp;:</span> andimulyono@gmail.com / petugas123
-                        </p>
-                    </div>
-                </div>
+
 
                 {/* Link ke login user */}
                 <p className="mt-5 text-center text-xs text-slate-500">

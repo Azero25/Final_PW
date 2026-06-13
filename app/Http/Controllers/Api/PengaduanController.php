@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Storage;
 
 class PengaduanController extends Controller
 {
-    private function buildLogEntry(string $status): array {
+    private function buildLogEntry(string $status): array
+    {
         $meta = [
             'Laporan Diterima' => ['keterangan' => 'Laporan Anda telah berhasil diterima dan sedang menunggu verifikasi.', 'icon' => 'check_circle', 'color' => 'text-green-500'],
             'Verifikasi'       => ['keterangan' => 'Laporan sedang diverifikasi oleh admin.', 'icon' => 'verified', 'color' => 'text-blue-500'],
@@ -25,13 +26,14 @@ class PengaduanController extends Controller
         return [
             'tanggal'   => now()->format('d M Y, H:i'),
             'status'    => $status,
-            'keterangan'=> $m['keterangan'],
+            'keterangan' => $m['keterangan'],
             'icon'      => $m['icon'],
             'color'     => $m['color'],
         ];
     }
 
-    private function generateTimeline($laporan): array {
+    private function generateTimeline($laporan): array
+    {
         // Jika ada log nyata, gunakan itu
         if (!empty($laporan->timeline_log) && is_array($laporan->timeline_log)) {
             return $laporan->timeline_log;
@@ -65,7 +67,8 @@ class PengaduanController extends Controller
     /**
      * Map dari Laporan (Backend ERD) ke format JSON Pengaduan (Frontend yang lama)
      */
-    private function mapToFrontend($laporan) {
+    private function mapToFrontend($laporan)
+    {
         $statusColors = [
             'Laporan Diterima' => 'bg-green-100 text-green-800 border-green-200',
             'Verifikasi' => 'bg-blue-100 text-blue-800 border-blue-200',
@@ -84,14 +87,18 @@ class PengaduanController extends Controller
         $petugasId = $petugas ? $petugas->id_petugas : null;
 
         $kelurahanName = Kelurahan::find($laporan->id_kelurahan)?->nama_kelurahan ?? 'Tidak Diketahui';
-        $userName = User::find($laporan->id_user)?->nama_lengkap ?? 'Anonim';
-        $userHp = User::find($laporan->id_user)?->no_hp ?? '-';
+        $userObj = User::find($laporan->id_user);
+        $userName = $userObj?->nama_lengkap ?? 'Anonim';
+        $userHp = $userObj?->no_hp ?? '-';
+        $userEmail = $userObj?->email ?? '-';
 
         $decodedGambar = is_string($laporan->bukti_foto) && str_starts_with($laporan->bukti_foto, '[') ? json_decode($laporan->bukti_foto, true) : null;
 
         return [
             'id' => $laporan->no_ticket,
             'nomor_tiket' => $laporan->no_ticket,
+            'id_user' => $laporan->id_user,
+            'email' => $userEmail,
             'nama' => $userName,
             'nohp' => $userHp,
             'anonim' => false,
@@ -121,15 +128,88 @@ class PengaduanController extends Controller
     public function index(Request $request)
     {
         $query = Laporan::latest();
-        
+
         if ($request->has('judul')) {
             $query->where('judul_laporan', 'LIKE', '%' . $request->judul . '%');
         }
 
         $laporans = $query->get();
-        $mapped = $laporans->map(function($laporan) {
-            return $this->mapToFrontend($laporan);
+
+        // Manual Eager Loading to fix N+1 in MySQL
+        $kategoriIds = $laporans->pluck('id_kategori')->filter()->unique();
+        $kategoris = Kategori::whereIn('id_kategori', $kategoriIds)->get()->keyBy('id_kategori');
+
+        $dinasIds = $kategoris->pluck('id_dinas')->filter()->unique();
+        $dinasList = \App\Models\Dinas::whereIn('id_dinas', $dinasIds)->get()->keyBy('id_dinas');
+
+        $petugasIds = $laporans->pluck('id_petugas')->filter()->unique();
+        $petugasList = \App\Models\Petugas::whereIn('id_petugas', $petugasIds)->get()->keyBy('id_petugas');
+
+        $kelurahanIds = $laporans->pluck('id_kelurahan')->filter()->unique();
+        $kelurahans = Kelurahan::whereIn('id_kelurahan', $kelurahanIds)->get()->keyBy('id_kelurahan');
+
+        $userIds = $laporans->pluck('id_user')->filter()->unique();
+        $users = User::whereIn('id_user', $userIds)->get()->keyBy('id_user');
+
+        $statusColors = [
+            'Laporan Diterima' => 'bg-emerald-50 text-emerald-600 border-emerald-200',
+            'Verifikasi'       => 'bg-blue-50 text-blue-600 border-blue-200',
+            'Sedang Diproses'  => 'bg-amber-50 text-amber-600 border-amber-200',
+            'Selesai'          => 'bg-green-50 text-green-600 border-green-200',
+            'Ditolak'          => 'bg-red-50 text-red-600 border-red-200',
+        ];
+
+        $mapped = $laporans->map(function ($laporan) use ($kategoris, $dinasList, $petugasList, $kelurahans, $users, $statusColors) {
+            $kategoriObj = $kategoris->get($laporan->id_kategori);
+            $kategoriName = $kategoriObj ? $kategoriObj->nama_kategori : 'Lainnya';
+
+            $dinasId = $kategoriObj ? $kategoriObj->id_dinas : null;
+            $dinasName = $dinasId && $dinasList->has($dinasId) ? $dinasList->get($dinasId)->nama_dinas : '-';
+
+            $petugas = $petugasList->get($laporan->id_petugas);
+            $petugasName = $petugas ? $petugas->nama_petugas : '-';
+            $petugasId = $petugas ? $petugas->id_petugas : null;
+
+            $kelurahanName = $kelurahans->get($laporan->id_kelurahan)?->nama_kelurahan ?? 'Tidak Diketahui';
+
+            $userObj = $users->get($laporan->id_user);
+            $userName = $userObj?->nama_lengkap ?? 'Anonim';
+            $userHp = $userObj?->no_hp ?? '-';
+            $userEmail = $userObj?->email ?? '-';
+
+            $decodedGambar = is_string($laporan->bukti_foto) && str_starts_with($laporan->bukti_foto, '[') ? json_decode($laporan->bukti_foto, true) : null;
+
+            return [
+                'id' => $laporan->no_ticket,
+                'nomor_tiket' => $laporan->no_ticket,
+                'id_user' => $laporan->id_user,
+                'email' => $userEmail,
+                'nama' => $userName,
+                'nohp' => $userHp,
+                'anonim' => false,
+                'judul' => $laporan->judul_laporan,
+                'kategori' => $kategoriName,
+                'id_kategori' => $laporan->id_kategori,
+                'id_dinas' => $dinasId,
+                'nama_dinas' => $dinasName,
+                'id_petugas' => $petugasId,
+                'nama_petugas' => $petugasName,
+                'urgensi' => strtolower($laporan->prioritas),
+                'lokasi' => $kelurahanName,
+                'deskripsi' => $laporan->isi_laporan,
+                'bukti_foto' => $decodedGambar ? ($decodedGambar[0] ?? null) : $laporan->bukti_foto,
+                'gambar' => $decodedGambar ? $decodedGambar : ($laporan->bukti_foto ? [$laporan->bukti_foto] : []),
+                'status' => $laporan->status_laporan,
+                'timeline' => $this->generateTimeline($laporan),
+                'created_at' => $laporan->created_at,
+                'updated_at' => $laporan->updated_at,
+                'statusColor' => $statusColors[$laporan->status_laporan] ?? 'bg-slate-100 text-slate-800 border-slate-200',
+                'tanggalDibuat' => \Carbon\Carbon::parse($laporan->tanggal_laporan)->format('d M Y'),
+                'prioritas' => ucfirst($laporan->prioritas),
+                'nomorTiket' => $laporan->no_ticket,
+            ];
         });
+
         return response()->json($mapped);
     }
 
@@ -173,16 +253,8 @@ class PengaduanController extends Controller
         );
 
         $userId = null;
-        if (auth()->check()) {
-            $userId = auth()->id();
-        } else {
-            if ($request->nama) {
-                $user = User::firstOrCreate(
-                    ['nama_lengkap' => $request->nama],
-                    ['email' => uniqid().'@dummy.com', 'password' => bcrypt('dummy'), 'no_hp' => $request->nohp]
-                );
-                $userId = $user->id_user;
-            }
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $userId = \Illuminate\Support\Facades\Auth::id();
         }
 
         $prioritasMap = [
@@ -235,7 +307,7 @@ class PengaduanController extends Controller
             'id_kelurahan'  => $kelurahan->id_kelurahan,
             'id_user'       => $userId,
             'prioritas'     => $prioritas,
-            'status_laporan'=> 'Laporan Diterima',
+            'status_laporan' => 'Laporan Diterima',
             'isi_laporan'   => $request->deskripsi,
             'bukti_foto'    => $finalBukti, // Save WebP image paths
             'tanggal_laporan' => now(),
@@ -344,7 +416,7 @@ class PengaduanController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Status berhasil diperbarui', 
+            'message' => 'Status berhasil diperbarui',
             'data' => $this->mapToFrontend($laporan)
         ]);
     }
@@ -408,7 +480,7 @@ class PengaduanController extends Controller
         ]);
 
         $petugas = \App\Models\Petugas::findOrFail($request->id_petugas);
-        
+
         $laporan->id_petugas = $petugas->id_petugas;
         $laporan->status_laporan = 'Sedang Diproses';
 
@@ -416,7 +488,7 @@ class PengaduanController extends Controller
         $log[] = [
             'tanggal'   => now()->format('d M Y, H:i'),
             'status'    => 'Sedang Diproses',
-            'keterangan'=> 'Laporan telah ditugaskan kepada petugas: ' . $petugas->nama_petugas,
+            'keterangan' => 'Laporan telah ditugaskan kepada petugas: ' . $petugas->nama_petugas,
             'icon'      => 'engineering',
             'color'     => 'text-yellow-500',
         ];

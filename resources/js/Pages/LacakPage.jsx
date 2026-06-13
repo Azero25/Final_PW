@@ -185,12 +185,10 @@ export default function LacakPage() {
                         </div>
                     )}
 
-                    {/* Contoh Nomor Tiket untuk Demo */}
-                    <p className="mt-4 text-sm text-slate-400">
-                        Coba tiket demo:{' '}
-                        <button onClick={() => setNomorTiket('LPW-2024-001234')} className="text-primary underline hover:text-blue-700 font-medium">LPW-2024-001234</button>
-                        {' '}atau{' '}
-                        <button onClick={() => setNomorTiket('LPW-2024-005678')} className="text-primary underline hover:text-blue-700 font-medium">LPW-2024-005678</button>
+                    {/* Tips cara mendapatkan nomor tiket */}
+                    <p className="mt-4 text-sm text-slate-400 flex items-center justify-center gap-1.5">
+                        <span className="material-symbols-outlined text-base text-slate-300">info</span>
+                        Nomor tiket dikirim ke email Anda saat laporan berhasil dibuat.
                     </p>
                 </div>
             </section>

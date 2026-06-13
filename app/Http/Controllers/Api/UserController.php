@@ -12,12 +12,21 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all()->map(function ($user) {
-            $totalLaporan = \App\Models\Laporan::where('id_user', $user->id_user)->count();
+        $users = User::all();
+        
+        $laporanCounts = \App\Models\Laporan::selectRaw('id_user, count(*) as count')
+            ->groupBy('id_user')
+            ->pluck('count', 'id_user');
+            
+        $kelurahanIds = $users->pluck('id_kelurahan')->filter()->unique();
+        $kelurahans = Kelurahan::whereIn('id_kelurahan', $kelurahanIds)->get()->keyBy('id_kelurahan');
+
+        $mappedUsers = $users->map(function ($user) use ($laporanCounts, $kelurahans) {
+            $totalLaporan = $laporanCounts->get($user->id_user, 0);
             
             $kelurahanName = '-';
-            if ($user->id_kelurahan) {
-                $kelurahanName = Kelurahan::find($user->id_kelurahan)?->nama_kelurahan ?? '-';
+            if ($user->id_kelurahan && $kelurahans->has($user->id_kelurahan)) {
+                $kelurahanName = $kelurahans->get($user->id_kelurahan)->nama_kelurahan;
             }
 
             return [
@@ -37,7 +46,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $users
+            'data' => $mappedUsers
         ]);
     }
 

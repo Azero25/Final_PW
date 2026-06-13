@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import axios from 'axios';
@@ -9,6 +9,8 @@ import axios from 'axios';
  * Halaman pertama yang dilihat oleh publik (Citizen View).
  */
 export default function LandingPage() {
+    const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState(null);
     const [stats, setStats] = useState({
         total: 0,
         diproses: 0,
@@ -21,6 +23,36 @@ export default function LandingPage() {
     // State untuk Data Public API (Persyaratan Dosen)
     const [news, setNews] = useState([]);
     const [isLoadingNews, setIsLoadingNews] = useState(true);
+
+    // State untuk chart tren laporan bulanan
+    const [chartData, setChartData] = useState([
+        { name: '', count: 0, selesai: 0 },
+        { name: '', count: 0, selesai: 0 },
+        { name: '', count: 0, selesai: 0 },
+        { name: '', count: 0, selesai: 0 },
+        { name: '', count: 0, selesai: 0 },
+        { name: '', count: 0, selesai: 0 },
+    ]);
+    const [hoveredIndex, setHoveredIndex] = useState(null);
+
+    // Muat data user saat komponen dimuat
+    useEffect(() => {
+        const sesi = sessionStorage.getItem('user');
+        if (sesi) {
+            try { setCurrentUser(JSON.parse(sesi)); } catch (e) { setCurrentUser(null); }
+        } else {
+            setCurrentUser(null);
+        }
+    }, []);
+
+    // Handler tombol buat pengaduan
+    const handleBuatPengaduan = () => {
+        if (currentUser) {
+            navigate('/buat-pengaduan');
+        } else {
+            navigate('/login', { state: { from: { pathname: '/buat-pengaduan' } } });
+        }
+    };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -63,6 +95,39 @@ export default function LandingPage() {
                     color: colors[idx % colors.length]
                 }));
                 setCategoriesChart(kategoriArr);
+
+                // Generate chart data based on last 6 months
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+                const result = [];
+                const d = new Date();
+                
+                for (let i = 5; i >= 0; i--) {
+                    const monthDate = new Date(d.getFullYear(), d.getMonth() - i, 1);
+                    const m = monthDate.getMonth();
+                    const y = monthDate.getFullYear();
+                    
+                    // Count real matching reports
+                    const realCount = data.filter(item => {
+                        const dateStr = item.tanggal_laporan || item.created_at;
+                        if (!dateStr) return false;
+                        const date = new Date(dateStr);
+                        return date.getMonth() === m && date.getFullYear() === y;
+                    }).length;
+
+                    const realSelesai = data.filter(item => {
+                        const dateStr = item.tanggal_laporan || item.created_at;
+                        if (!dateStr) return false;
+                        const date = new Date(dateStr);
+                        return date.getMonth() === m && date.getFullYear() === y && item.status === 'Selesai';
+                    }).length;
+
+                    result.push({
+                        name: months[m],
+                        count: realCount,
+                        selesai: realSelesai
+                    });
+                }
+                setChartData(result);
             } catch (error) {
                 console.error("Failed to fetch stats", error);
             }
@@ -104,15 +169,31 @@ export default function LandingPage() {
                             Platform resmi pemerintah daerah untuk menerima, memproses, dan menyelesaikan laporan masyarakat. Transparan, terukur, dan terintegrasi untuk mewujudkan Smart City.
                         </p>
                         <div className="flex flex-wrap gap-3 pt-2">
-                            <Link to="/buat-pengaduan" className="px-5 sm:px-8 py-3 sm:py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2">
+                            <button
+                                onClick={handleBuatPengaduan}
+                                className="px-5 sm:px-8 py-3 sm:py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2"
+                            >
                                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
-                                Buat Pengaduan
-                            </Link>
+                                {currentUser ? 'Buat Pengaduan' : 'Mulai Laporan'}
+                            </button>
                             <Link to="/lacak" className="px-5 sm:px-8 py-3 sm:py-4 bg-surface text-primary border-2 border-primary-container rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary-fixed-dim transition-all flex items-center gap-2">
                                 <span className="material-symbols-outlined">search</span>
                                 Lacak Tiket
                             </Link>
                         </div>
+
+                        {/* Badge status user */}
+                        {currentUser ? (
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 w-fit">
+                                <span className="material-symbols-outlined text-emerald-600 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+                                <span className="text-emerald-700 text-sm font-semibold">Login sebagai <strong>{currentUser.nama}</strong> — siap membuat laporan</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 w-fit">
+                                <span className="material-symbols-outlined text-amber-600 text-base">info</span>
+                                <span className="text-amber-700 text-sm">Belum punya akun? <Link to="/register" className="font-bold underline hover:text-amber-900">Daftar gratis</Link> atau <Link to="/login" className="font-bold underline hover:text-amber-900">Login</Link> untuk membuat laporan.</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex-1 w-full relative">
                         <div className="absolute inset-0 bg-primary-container/5 rounded-3xl blur-3xl"></div>
@@ -202,7 +283,7 @@ export default function LandingPage() {
                             <div className="space-y-5">
                                 {categoriesChart.length === 0 ? (
                                     <p className="text-sm text-slate-400 italic">Belum ada data laporan.</p>
-                                ) : (
+                               ) : (
                                     categoriesChart.map((item, idx) => (
                                         <div key={item.label} className="group">
                                             <div className="flex justify-between items-center mb-2">
@@ -233,6 +314,238 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </section>
+
+                {/* Chart Trend Bulanan */}
+                {(() => {
+                    const maxVal = Math.max(...chartData.map(d => d.count), 10);
+                    const roundedMax = Math.ceil(maxVal / 5) * 5;
+                    return (
+                        <section className="py-12">
+                            <div className="bg-surface-container-lowest p-6 sm:p-8 rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.05)] border border-outline-variant/30">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                                    <div>
+                                        <span className="inline-block py-1 px-3 rounded-full bg-primary-container/10 text-primary font-label-bold text-xs tracking-widest uppercase mb-2 border border-primary/20">Aktivitas Laporan</span>
+                                        <h2 className="font-h2 text-2xl sm:text-3xl font-bold text-on-background">Tren Laporan Bulanan</h2>
+                                        <p className="text-on-surface-variant text-sm mt-1">Perkembangan jumlah pengaduan masuk vs laporan selesai dalam 6 bulan terakhir</p>
+                                    </div>
+                                    {/* Legend */}
+                                    <div className="flex gap-4 text-sm font-label-bold">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-3.5 h-3.5 rounded-full bg-primary shadow-sm shadow-primary/30"></span>
+                                            <span className="text-on-surface">Total Laporan</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30"></span>
+                                            <span className="text-on-surface">Laporan Selesai</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Chart Area */}
+                                <div className="relative w-full overflow-hidden">
+                                    {/* Custom Tooltip */}
+                                    {hoveredIndex !== null && (
+                                        <div 
+                                            className="absolute top-2 bg-slate-900/95 text-white p-3.5 rounded-xl border border-slate-700/50 shadow-xl backdrop-blur-md pointer-events-none transition-all duration-150 z-20"
+                                            style={{ 
+                                                left: `${Math.min(Math.max(60 + hoveredIndex * 100 - 80, 10), 450)}px`,
+                                            }}
+                                        >
+                                            <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">{chartData[hoveredIndex].name}</p>
+                                            <div className="space-y-1 text-sm font-semibold">
+                                                <div className="flex justify-between gap-6">
+                                                    <span className="text-blue-300">Total Masuk:</span>
+                                                    <span>{chartData[hoveredIndex].count}</span>
+                                                </div>
+                                                <div className="flex justify-between gap-6">
+                                                    <span className="text-emerald-400">Selesai:</span>
+                                                    <span>{chartData[hoveredIndex].selesai}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Responsive SVG Chart */}
+                                    <svg 
+                                        viewBox="0 0 600 240" 
+                                        className="w-full h-auto overflow-visible"
+                                    >
+                                        <defs>
+                                            {/* Gradients */}
+                                            <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#0066cc" stopOpacity="0.25" />
+                                                <stop offset="100%" stopColor="#0066cc" stopOpacity="0.0" />
+                                            </linearGradient>
+                                            <linearGradient id="selesaiGrad" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                                                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                                            </linearGradient>
+                                            <linearGradient id="lineTotal" x1="0" y1="0" x2="1" y2="0">
+                                                <stop offset="0%" stopColor="#0066cc" />
+                                                <stop offset="100%" stopColor="#6366f1" />
+                                            </linearGradient>
+                                            <linearGradient id="lineSelesai" x1="0" y1="0" x2="1" y2="0">
+                                                <stop offset="0%" stopColor="#10b981" />
+                                                <stop offset="100%" stopColor="#059669" />
+                                            </linearGradient>
+                                        </defs>
+
+                                        {/* Gridlines */}
+                                        {[0, 1, 2, 3, 4].map(idx => (
+                                            <line 
+                                                key={idx}
+                                                x1="60" 
+                                                y1={40 + idx * 40} 
+                                                x2="560" 
+                                                y2={40 + idx * 40} 
+                                                stroke="rgba(148, 163, 184, 0.15)" 
+                                                strokeDasharray="4 4" 
+                                            />
+                                        ))}
+
+                                        {/* Y-Axis Labels */}
+                                        {[0, 1, 2, 3, 4].map(idx => {
+                                            const val = Math.round(roundedMax - (idx * (roundedMax / 4)));
+                                            return (
+                                                <text 
+                                                    key={idx}
+                                                    x="45" 
+                                                    y={44 + idx * 40} 
+                                                    className="fill-on-surface-variant font-public-sans text-[10px] font-semibold text-right"
+                                                    textAnchor="end"
+                                                >
+                                                    {val}
+                                                </text>
+                                            );
+                                        })}
+
+                                        {/* SVG Area Paths (Gradient Fills) */}
+                                        <path 
+                                            d={`M 60 ${200 - (chartData[0].count / roundedMax) * 160} 
+                                                L 160 ${200 - (chartData[1].count / roundedMax) * 160} 
+                                                L 260 ${200 - (chartData[2].count / roundedMax) * 160} 
+                                                L 360 ${200 - (chartData[3].count / roundedMax) * 160} 
+                                                L 460 ${200 - (chartData[4].count / roundedMax) * 160} 
+                                                L 560 ${200 - (chartData[5].count / roundedMax) * 160} 
+                                                L 560 200 L 60 200 Z`}
+                                            fill="url(#totalGrad)" 
+                                        />
+                                        <path 
+                                            d={`M 60 ${200 - (chartData[0].selesai / roundedMax) * 160} 
+                                                L 160 ${200 - (chartData[1].selesai / roundedMax) * 160} 
+                                                L 260 ${200 - (chartData[2].selesai / roundedMax) * 160} 
+                                                L 360 ${200 - (chartData[3].selesai / roundedMax) * 160} 
+                                                L 460 ${200 - (chartData[4].selesai / roundedMax) * 160} 
+                                                L 560 ${200 - (chartData[5].selesai / roundedMax) * 160} 
+                                                L 560 200 L 60 200 Z`}
+                                            fill="url(#selesaiGrad)" 
+                                        />
+
+                                        {/* SVG Lines */}
+                                        <path 
+                                            d={`M 60 ${200 - (chartData[0].count / roundedMax) * 160} 
+                                                L 160 ${200 - (chartData[1].count / roundedMax) * 160} 
+                                                L 260 ${200 - (chartData[2].count / roundedMax) * 160} 
+                                                L 360 ${200 - (chartData[3].count / roundedMax) * 160} 
+                                                L 460 ${200 - (chartData[4].count / roundedMax) * 160} 
+                                                L 560 ${200 - (chartData[5].count / roundedMax) * 160}`}
+                                            fill="none" 
+                                            stroke="url(#lineTotal)" 
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                        />
+                                        <path 
+                                            d={`M 60 ${200 - (chartData[0].selesai / roundedMax) * 160} 
+                                                L 160 ${200 - (chartData[1].selesai / roundedMax) * 160} 
+                                                L 260 ${200 - (chartData[2].selesai / roundedMax) * 160} 
+                                                L 360 ${200 - (chartData[3].selesai / roundedMax) * 160} 
+                                                L 460 ${200 - (chartData[4].selesai / roundedMax) * 160} 
+                                                L 560 ${200 - (chartData[5].selesai / roundedMax) * 160}`}
+                                            fill="none" 
+                                            stroke="url(#lineSelesai)" 
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                        />
+
+                                        {/* Hover vertical alignment line */}
+                                        {hoveredIndex !== null && (
+                                            <line 
+                                                x1={60 + hoveredIndex * 100} 
+                                                y1="30" 
+                                                x2={60 + hoveredIndex * 100} 
+                                                y2="200" 
+                                                stroke="rgba(148, 163, 184, 0.3)" 
+                                                strokeWidth="1.5"
+                                                strokeDasharray="2 2"
+                                            />
+                                        )}
+
+                                        {/* Glowing Circles on Vertices */}
+                                        {chartData.map((d, idx) => {
+                                            const x = 60 + idx * 100;
+                                            const yTotal = 200 - (d.count / roundedMax) * 160;
+                                            const ySelesai = 200 - (d.selesai / roundedMax) * 160;
+                                            const isHovered = hoveredIndex === idx;
+
+                                            return (
+                                                <g key={idx}>
+                                                    {/* Total Laporan Circle */}
+                                                    <circle 
+                                                        cx={x} 
+                                                        cy={yTotal} 
+                                                        r={isHovered ? 7 : 4} 
+                                                        fill="#ffffff" 
+                                                        stroke="#0066cc" 
+                                                        strokeWidth={isHovered ? 4 : 2}
+                                                        className="transition-all duration-150 cursor-pointer"
+                                                    />
+                                                    {/* Laporan Selesai Circle */}
+                                                    <circle 
+                                                        cx={x} 
+                                                        cy={ySelesai} 
+                                                        r={isHovered ? 7 : 4} 
+                                                        fill="#ffffff" 
+                                                        stroke="#10b981" 
+                                                        strokeWidth={isHovered ? 4 : 2}
+                                                        className="transition-all duration-150 cursor-pointer"
+                                                    />
+                                                </g>
+                                            );
+                                        })}
+
+                                        {/* X-Axis Labels */}
+                                        {chartData.map((d, idx) => (
+                                            <text 
+                                                key={idx}
+                                                x={60 + idx * 100} 
+                                                y="222" 
+                                                className="fill-on-surface-variant font-public-sans text-[11px] font-bold"
+                                                textAnchor="middle"
+                                            >
+                                                {d.name}
+                                            </text>
+                                        ))}
+
+                                        {/* Interactive Transparent Hover Bars */}
+                                        {chartData.map((d, idx) => (
+                                            <rect 
+                                                key={idx}
+                                                x={35 + idx * 100} 
+                                                y="20" 
+                                                width="50" 
+                                                height="190" 
+                                                fill="transparent" 
+                                                className="cursor-pointer"
+                                                onMouseEnter={() => setHoveredIndex(idx)}
+                                                onMouseLeave={() => setHoveredIndex(null)}
+                                            />
+                                        ))}
+                                    </svg>
+                                </div>
+                            </div>
+                        </section>
+                    );
+                })()}
 
                 {/* Bagian Berita Terbaru (Public API Integration) */}
                 <section className="py-12 border-t border-outline-variant/30 mt-8">
