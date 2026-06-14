@@ -7,6 +7,10 @@ const WARNA_AVATAR = [
     'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500',
 ];
 
+const isImageUrl = (avatar) => {
+    return avatar && (avatar.startsWith('/storage') || avatar.startsWith('http') || avatar.startsWith('data:image'));
+};
+
 const StatusBadge = ({ status }) => {
     const config = {
         'Aktif':    'bg-green-100 text-green-700 border border-green-200',
@@ -35,6 +39,7 @@ export default function PenggunaPage() {
     const [editData, setEditData]           = useState({});
     const [isSaving, setIsSaving]           = useState(false);
     const [bulkTargetStatus, setBulkTargetStatus] = useState('Aktif');
+    const [showTambahPass, setShowTambahPass] = useState(false);
 
     const statusList = ['Semua', 'Aktif', 'Nonaktif', 'Diblokir'];
 
@@ -77,7 +82,8 @@ export default function PenggunaPage() {
     const openTambah = () => {
         setModalUser({});
         setModalMode('tambah');
-        setEditData({ nama: '', email: '', telp: '', kecamatan: '', status: 'Aktif' });
+        setShowTambahPass(false);
+        setEditData({ nama: '', email: '', telp: '', kecamatan: '', status: 'Aktif', role: 'warga', password: '' });
     };
 
     const openBulkStatusModal = () => {
@@ -100,7 +106,9 @@ export default function PenggunaPage() {
                     email: editData.email,
                     telp: editData.telp,
                     kecamatan: editData.kecamatan,
-                    status: editData.status || 'Aktif'
+                    status: editData.status || 'Aktif',
+                    role: editData.role || 'warga',
+                    password: editData.password
                 });
                 if (response.data && response.data.status === 'success') {
                     await fetchUsers();
@@ -322,8 +330,12 @@ export default function PenggunaPage() {
                                     {/* Pengguna: Avatar + Nama + ID */}
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center shrink-0`}>
-                                                <span className="text-white text-sm font-bold">{u.avatar}</span>
+                                            <div className={`w-9 h-9 ${WARNA_AVATAR[idx % WARNA_AVATAR.length]} rounded-full flex items-center justify-center shrink-0 overflow-hidden`}>
+                                                {isImageUrl(u.avatar) ? (
+                                                    <img src={u.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-white text-sm font-bold">{u.avatar}</span>
+                                                )}
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-slate-800 text-sm">{u.nama}</p>
@@ -488,8 +500,12 @@ export default function PenggunaPage() {
                                     {/* Avatar besar (detail/edit) */}
                                     {modalMode !== 'tambah' && (
                                         <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                                            <div className={`w-14 h-14 ${WARNA_AVATAR[penggunaList.findIndex(u => u.id === modalUser.id) % WARNA_AVATAR.length] || 'bg-blue-500'} rounded-2xl flex items-center justify-center`}>
-                                                <span className="text-white text-xl font-bold">{modalUser.avatar}</span>
+                                            <div className={`w-14 h-14 ${WARNA_AVATAR[penggunaList.findIndex(u => u.id === modalUser.id) % WARNA_AVATAR.length] || 'bg-blue-500'} rounded-2xl flex items-center justify-center overflow-hidden`}>
+                                                {isImageUrl(modalUser.avatar) ? (
+                                                    <img src={modalUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-white text-xl font-bold">{modalUser.avatar}</span>
+                                                )}
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-800">{modalUser.nama}</p>
@@ -515,6 +531,46 @@ export default function PenggunaPage() {
                                             )}
                                         </div>
                                     ))}
+
+                                    {/* Role (khusus tambah) */}
+                                    {modalMode === 'tambah' && (
+                                        <div>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5">Pilih Peran (Role)</label>
+                                            <select
+                                                value={editData.role || 'warga'}
+                                                onChange={(e) => setEditData({ ...editData, role: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors bg-white font-medium text-slate-850"
+                                            >
+                                                <option value="warga">Warga (Citizen)</option>
+                                                <option value="admin">Admin (Administrator)</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {/* Password (khusus tambah) */}
+                                    {modalMode === 'tambah' && (
+                                        <div>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5">Kata Sandi (Password)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showTambahPass ? "text" : "password"}
+                                                    value={editData.password || ''}
+                                                    onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                                                    placeholder="Minimal 8 karakter"
+                                                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors font-medium text-slate-800"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowTambahPass(!showTambahPass)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg select-none">
+                                                        {showTambahPass ? 'visibility_off' : 'visibility'}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Status (khusus edit) */}
                                     {modalMode === 'edit' && (

@@ -13,6 +13,8 @@ Route::prefix('api')->group(function () {
     Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/me', [\App\Http\Controllers\Api\AuthController::class, 'me']);
+    Route::put('/profile', [\App\Http\Controllers\Api\AuthController::class, 'updateProfile']);
+    Route::put('/profile/password', [\App\Http\Controllers\Api\AuthController::class, 'updatePassword']);
 
     // Pengaduan Routes
     Route::get('/pengaduans', [PengaduanController::class, 'index']);
@@ -20,6 +22,8 @@ Route::prefix('api')->group(function () {
     Route::get('/pengaduans/{nomorTiket}', [PengaduanController::class, 'show']);
     Route::put('/pengaduans/{nomorTiket}', [PengaduanController::class, 'update']);
     Route::delete('/pengaduans/{nomorTiket}', [PengaduanController::class, 'destroy']);
+    Route::get('/pengaduans/{nomorTiket}/petugas-eligible', [PengaduanController::class, 'getEligiblePetugas']);
+    Route::post('/pengaduans/{nomorTiket}/assign', [PengaduanController::class, 'assignPetugas']);
     
     // Users Routes
     Route::get('/users', [\App\Http\Controllers\Api\UserController::class, 'index']);
@@ -45,6 +49,10 @@ Route::prefix('api')->group(function () {
     Route::post('/petugas', [PetugasController::class, 'store']);
     Route::put('/petugas/{id}', [PetugasController::class, 'update']);
     Route::delete('/petugas/{id}', [PetugasController::class, 'destroy']);
+    Route::post('/petugas/login', [PetugasController::class, 'login']);
+    Route::put('/petugas/profile/{id}', [PetugasController::class, 'updateProfile']);
+    Route::put('/petugas/profile/{id}/password', [PetugasController::class, 'updatePassword']);
+
 
     // Notification Routes
     Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);

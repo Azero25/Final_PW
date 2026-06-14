@@ -22,7 +22,7 @@ export default function NotifikasiPage() {
 
     const fetchNotifications = async () => {
         try {
-            const response = await api.get('/api/notifications');
+            const response = await api.get('/api/notifications?role=admin');
             setNotifs(response.data);
             localStorage.setItem('admin_notifications', JSON.stringify(response.data));
         } catch (error) {

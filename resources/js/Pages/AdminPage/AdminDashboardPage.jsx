@@ -38,6 +38,11 @@ export default function AdminDashboardPage() {
     const [editStatus, setEditStatus] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Search & Pagination States
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
+
     const fetchData = async () => {
         const hasCache = !!localStorage.getItem('laporwarga_cache_dashboard_laporan');
         if (!hasCache) setIsLoading(true);
@@ -135,6 +140,28 @@ export default function AdminDashboardPage() {
         window.scrollTo(0, 0);
         fetchData();
     }, []);
+
+    // Filter dan Paginate Data Laporan
+    const filteredLaporan = laporanTerbaru.filter(l => 
+        l.judul.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        l.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.pelapor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.kategori.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredLaporan.length / ITEMS_PER_PAGE) || 1;
+    
+    // Pastikan halaman saat ini tidak melebihi total halaman jika filter berubah
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages > 0 ? totalPages : 1);
+        }
+    }, [searchQuery, totalPages]);
+
+    const paginatedLaporan = filteredLaporan.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE, 
+        currentPage * ITEMS_PER_PAGE
+    );
 
     const openModal = (laporanItem, mode = 'detail') => {
         setModalLaporan(laporanItem);
@@ -295,6 +322,11 @@ export default function AdminDashboardPage() {
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                                     <input
                                         type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => {
+                                            setSearchQuery(e.target.value);
+                                            setCurrentPage(1); // Reset page on search
+                                        }}
                                         placeholder="Cari laporan..."
                                         className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 transition-colors"
                                     />
@@ -328,7 +360,13 @@ export default function AdminDashboardPage() {
                                                 Memuat data...
                                             </td>
                                         </tr>
-                                    ) : laporanTerbaru.map((laporan, idx) => (
+                                    ) : paginatedLaporan.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="8" className="px-6 py-8 text-center text-slate-500">
+                                                Tidak ada laporan yang sesuai pencarian.
+                                            </td>
+                                        </tr>
+                                    ) : paginatedLaporan.map((laporan, idx) => (
                                         <tr key={laporan.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-4 font-mono text-xs text-blue-600 font-semibold">{laporan.id}</td>
                                             <td className="px-6 py-4">
@@ -362,11 +400,39 @@ export default function AdminDashboardPage() {
 
                         {/* Pagination */}
                         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                            <p className="text-xs text-slate-500">Menampilkan {laporanTerbaru.length} dari {laporanTerbaru.length} laporan</p>
+                            <p className="text-xs text-slate-500">
+                                Menampilkan {filteredLaporan.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredLaporan.length)} dari {filteredLaporan.length} laporan
+                            </p>
                             <div className="flex gap-1">
-                                <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Sebelumnya</button>
-                                <button className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white transition-colors">1</button>
-                                <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Berikutnya</button>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Sebelumnya
+                                </button>
+                                
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                            currentPage === pageNum
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-slate-500 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                ))}
+
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Berikutnya
+                                </button>
                             </div>
                         </div>
                     </div>

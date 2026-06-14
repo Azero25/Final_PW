@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import axios from 'axios';
@@ -9,6 +9,8 @@ import axios from 'axios';
  * Halaman pertama yang dilihat oleh publik (Citizen View).
  */
 export default function LandingPage() {
+    const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState(null);
     const [stats, setStats] = useState({
         total: 0,
         diproses: 0,
@@ -16,10 +18,32 @@ export default function LandingPage() {
         diprosesPct: 0,
         selesaiPct: 0
     });
+    const [categoriesChart, setCategoriesChart] = useState([]);
 
     // State untuk Data Public API (Persyaratan Dosen)
     const [news, setNews] = useState([]);
     const [isLoadingNews, setIsLoadingNews] = useState(true);
+
+
+
+    // Muat data user saat komponen dimuat
+    useEffect(() => {
+        const sesi = sessionStorage.getItem('user');
+        if (sesi) {
+            try { setCurrentUser(JSON.parse(sesi)); } catch (e) { setCurrentUser(null); }
+        } else {
+            setCurrentUser(null);
+        }
+    }, []);
+
+    // Handler tombol buat pengaduan
+    const handleBuatPengaduan = () => {
+        if (currentUser) {
+            navigate('/buat-pengaduan');
+        } else {
+            navigate('/login', { state: { from: { pathname: '/buat-pengaduan' } } });
+        }
+    };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -40,6 +64,30 @@ export default function LandingPage() {
                     diprosesPct: total > 0 ? Math.round((diproses / total) * 100) : 0,
                     selesaiPct: total > 0 ? Math.round((selesai / total) * 100) : 0,
                 });
+
+                // Hitung Data Grafik Kategori Top 4
+                const kategoriCounts = {};
+                data.forEach(item => {
+                    const k = item.kategori || 'Lainnya';
+                    const label = k.charAt(0).toUpperCase() + k.slice(1);
+                    kategoriCounts[label] = (kategoriCounts[label] || 0) + 1;
+                });
+
+                const sortedKategori = Object.keys(kategoriCounts)
+                    .map(key => ({ label: key, count: kategoriCounts[key] }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 4);
+
+                const colors = ['bg-primary', 'bg-green-500', 'bg-red-500', 'bg-yellow-500'];
+                const kategoriArr = sortedKategori.map((item, idx) => ({
+                    label: item.label,
+                    count: item.count,
+                    val: total > 0 ? Math.round((item.count / total) * 100) : 0,
+                    color: colors[idx % colors.length]
+                }));
+                setCategoriesChart(kategoriArr);
+
+
             } catch (error) {
                 console.error("Failed to fetch stats", error);
             }
@@ -81,15 +129,31 @@ export default function LandingPage() {
                             Platform resmi pemerintah daerah untuk menerima, memproses, dan menyelesaikan laporan masyarakat. Transparan, terukur, dan terintegrasi untuk mewujudkan Smart City.
                         </p>
                         <div className="flex flex-wrap gap-3 pt-2">
-                            <Link to="/buat-pengaduan" className="px-5 sm:px-8 py-3 sm:py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2">
+                            <button
+                                onClick={handleBuatPengaduan}
+                                className="px-5 sm:px-8 py-3 sm:py-4 bg-primary-container text-on-primary rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.2)] flex items-center gap-2"
+                            >
                                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
-                                Buat Pengaduan
-                            </Link>
+                                {currentUser ? 'Buat Pengaduan' : 'Mulai Laporan'}
+                            </button>
                             <Link to="/lacak" className="px-5 sm:px-8 py-3 sm:py-4 bg-surface text-primary border-2 border-primary-container rounded-xl font-label-bold text-sm sm:text-lg hover:bg-primary-fixed-dim transition-all flex items-center gap-2">
                                 <span className="material-symbols-outlined">search</span>
                                 Lacak Tiket
                             </Link>
                         </div>
+
+                        {/* Badge status user */}
+                        {currentUser ? (
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 w-fit">
+                                <span className="material-symbols-outlined text-emerald-600 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+                                <span className="text-emerald-700 text-sm font-semibold">Login sebagai <strong>{currentUser.nama}</strong> — siap membuat laporan</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 w-fit">
+                                <span className="material-symbols-outlined text-amber-600 text-base">info</span>
+                                <span className="text-amber-700 text-sm">Belum punya akun? <Link to="/register" className="font-bold underline hover:text-amber-900">Daftar gratis</Link> atau <Link to="/login" className="font-bold underline hover:text-amber-900">Login</Link> untuk membuat laporan.</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex-1 w-full relative">
                         <div className="absolute inset-0 bg-primary-container/5 rounded-3xl blur-3xl"></div>
@@ -159,6 +223,59 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </section>
+
+                {/* Bagian Kategori Laporan Terbanyak (Real-time) */}
+                <section className="py-8 sm:py-12 border-t border-outline-variant/30 mt-8">
+                    <div className="bg-surface-container-lowest p-6 sm:p-8 rounded-3xl shadow-[0px_4px_30px_rgba(0,102,204,0.05)] border border-outline-variant/30">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                            <div>
+                                <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 font-bold text-xs tracking-widest uppercase mb-3">Statistik Kategori</span>
+                                <h2 className="font-h2 text-3xl font-bold">Kategori Laporan Terbanyak</h2>
+                                <p className="text-slate-500 mt-1 text-sm">Distribusi keluhan warga berdasarkan bidang masalah secara real-time.</p>
+                            </div>
+                            <Link to="/statistik" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+                                Lihat Statistik Lengkap <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                            </Link>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            {/* Chart Bar List */}
+                            <div className="space-y-5">
+                                {categoriesChart.length === 0 ? (
+                                    <p className="text-sm text-slate-400 italic">Belum ada data laporan.</p>
+                               ) : (
+                                    categoriesChart.map((item, idx) => (
+                                        <div key={item.label} className="group">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">{item.label}</span>
+                                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{item.count} Laporan ({item.val}%)</span>
+                                            </div>
+                                            <div className="w-full bg-slate-150 h-3 rounded-full overflow-hidden border border-slate-100">
+                                                <div className={`${item.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${item.val}%` }}></div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Info Box / Graphic Illustration */}
+                            <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 flex flex-col justify-center h-full">
+                                <span className="material-symbols-outlined text-primary text-5xl mb-4">analytics</span>
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">Pantau & Berpartisipasi</h3>
+                                <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                                    Setiap laporan yang masuk langsung dikelompokkan sesuai dengan dinas teknis yang berwenang untuk memprosesnya. Grafik ini diperbarui otomatis setiap kali ada warga yang mengirimkan laporan baru.
+                                </p>
+                                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-primary"></span> Infrastruktur</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span> Kebersihan</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> Kesehatan</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
 
                 {/* Bagian Berita Terbaru (Public API Integration) */}
                 <section className="py-12 border-t border-outline-variant/30 mt-8">

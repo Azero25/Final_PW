@@ -51,6 +51,20 @@ export default function ManajemenLaporanPage() {
     const [editStatus, setEditStatus] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [lightboxImg, setLightboxImg] = useState(null); // URL gambar fullscreen
+    const [eligiblePetugas, setEligiblePetugas] = useState([]);
+    const [selectedPetugasId, setSelectedPetugasId] = useState('');
+
+    const getImageUrl = (path) => {
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:image')) {
+            return path;
+        }
+        if (path.startsWith('/storage')) {
+            const baseUrl = window.location.origin.includes('5173') ? 'http://127.0.0.1:8000' : '';
+            return `${baseUrl}${path}`;
+        }
+        return path;
+    };
 
     const statusList  = ['Semua', 'Laporan Diterima', 'Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak'];
     const kategoriList = ['Semua', 'Infrastruktur', 'Kebersihan', 'Penerangan', 'Sanitasi', 'Ketertiban', 'Lingkungan', 'Fasilitas Umum', 'Lainnya'];
@@ -74,7 +88,11 @@ export default function ManajemenLaporanPage() {
                 prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah'),
                 bukti_foto: item.bukti_foto,
                 gambar: Array.isArray(item.gambar) ? item.gambar : (item.gambar ? [item.gambar] : []),
-                deskripsi: item.deskripsi || ''
+                deskripsi: item.deskripsi || '',
+                id_petugas: item.id_petugas,
+                nama_petugas: item.nama_petugas,
+                id_dinas: item.id_dinas,
+                nama_dinas: item.nama_dinas
             }));
             setLaporan(formattedData);
             localStorage.setItem('laporwarga_cache_laporan', JSON.stringify(formattedData));
@@ -103,10 +121,20 @@ export default function ManajemenLaporanPage() {
     const toggleOne = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
     // Buka modal
-    const openModal = (laporanItem, mode = 'detail') => {
+    const openModal = async (laporanItem, mode = 'detail') => {
         setModalLaporan(laporanItem);
         setModalMode(mode);
         setEditStatus(laporanItem.status);
+        setSelectedPetugasId(laporanItem.id_petugas || '');
+        if (mode === 'edit' || mode === 'detail') {
+            try {
+                const response = await api.get(`/api/pengaduans/${laporanItem.id}/petugas-eligible`);
+                setEligiblePetugas(response.data);
+            } catch (err) {
+                console.error("Gagal memuat petugas yang eligible", err);
+                setEligiblePetugas([]);
+            }
+        }
     };
 
     const openBulkDeleteModal = () => {
@@ -116,18 +144,26 @@ export default function ManajemenLaporanPage() {
 
     // Aksi Modal
     const handleSaveStatus = async () => {
-        if (!modalLaporan || editStatus === modalLaporan.status) {
-            setModalLaporan(null);
-            return;
-        }
+        if (!modalLaporan) return;
 
         setIsSaving(true);
         try {
-            await api.put(`/api/pengaduans/${modalLaporan.id}`, { status: editStatus });
+            // 1. Update petugas assignment if changed
+            if (selectedPetugasId !== (modalLaporan.id_petugas || '')) {
+                if (selectedPetugasId) {
+                    await api.post(`/api/pengaduans/${modalLaporan.id}/assign`, { id_petugas: selectedPetugasId });
+                }
+            }
+
+            // 2. Update status if changed (and not already set to 'Sedang Diproses' by assign if assign was performed)
+            if (editStatus !== modalLaporan.status) {
+                await api.put(`/api/pengaduans/${modalLaporan.id}`, { status: editStatus });
+            }
+
             fetchData();
             setModalLaporan(null);
         } catch (error) {
-            alert('Gagal mengupdate status laporan.');
+            alert('Gagal menyimpan perubahan laporan.');
             console.error(error);
         } finally {
             setIsSaving(false);
@@ -293,7 +329,7 @@ export default function ManajemenLaporanPage() {
 
                 {/* Tabel */}
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[1000px] text-sm">
                         <thead>
                             <tr className="bg-slate-50 text-left">
                                 <th className="px-4 py-3">
@@ -457,8 +493,16 @@ export default function ManajemenLaporanPage() {
                                             <PrioritasBadge prioritas={modalLaporan.prioritas} />
                                         </div>
                                         <div>
-                            <p className="text-xs text-slate-400 mb-1">Tanggal Masuk</p>
+                                            <p className="text-xs text-slate-400 mb-1">Tanggal Masuk</p>
                                             <p className="text-slate-700">{modalLaporan.tanggal}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-slate-400 mb-1">Dinas Terkait</p>
+                                            <p className="font-semibold text-slate-800">{modalLaporan.nama_dinas || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-slate-400 mb-1">Petugas Ditugaskan</p>
+                                            <p className="font-semibold text-slate-850">{modalLaporan.nama_petugas || '-'}</p>
                                         </div>
                                     </div>
 
@@ -496,9 +540,9 @@ export default function ManajemenLaporanPage() {
                                                     /* 1 gambar */
                                                     <div
                                                         className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in group max-h-52"
-                                                        onClick={() => setLightboxImg(imgs[0])}
+                                                        onClick={() => setLightboxImg(getImageUrl(imgs[0]))}
                                                     >
-                                                        <img src={imgs[0]} alt="Bukti" className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                        <img src={getImageUrl(imgs[0])} alt="Bukti" className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300" />
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
                                                             <span className="material-symbols-outlined text-white text-3xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
                                                         </div>
@@ -515,9 +559,9 @@ export default function ManajemenLaporanPage() {
                                                             <div
                                                                 key={idx}
                                                                 className="relative group rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in aspect-square"
-                                                                onClick={() => setLightboxImg(src)}
+                                                                onClick={() => setLightboxImg(getImageUrl(src))}
                                                             >
-                                                                <img src={src} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                                <img src={getImageUrl(src)} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
                                                                     <span className="material-symbols-outlined text-white text-xl opacity-0 group-hover:opacity-100 drop-shadow transition-opacity">zoom_in</span>
                                                                 </div>
@@ -531,24 +575,50 @@ export default function ManajemenLaporanPage() {
                                         );
                                     })()}
 
-                                    {/* Edit Mode: Ubah status */}
+                                    {/* Edit Mode: Ubah status & Penugasan Petugas */}
                                     {modalMode === 'edit' && (
-                                        <div>
-                                            <label className="text-xs text-slate-500 font-semibold block mb-2">Ubah Status Menjadi</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {['Laporan Diterima', 'Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak'].map((s) => (
-                                                    <button
-                                                        key={s}
-                                                        onClick={() => setEditStatus(s)}
-                                                        className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all
-                                                            ${editStatus === s
-                                                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
-                                                            }`}
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="text-xs text-slate-500 font-semibold block mb-2">Ubah Status Menjadi</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {['Laporan Diterima', 'Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak'].map((s) => (
+                                                        <button
+                                                            type="button"
+                                                            key={s}
+                                                            onClick={() => setEditStatus(s)}
+                                                            className={`py-2 px-3 rounded-xl text-xs font-semibold border-2 transition-all
+                                                                ${editStatus === s
+                                                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
+                                                                }`}
+                                                        >
+                                                            {s}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t border-slate-100 pt-3">
+                                                <label className="text-xs text-slate-500 font-semibold block mb-1.5 flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-sm font-bold">badge</span>
+                                                    Tugaskan Petugas ({modalLaporan.nama_dinas || 'Dinas Terkait'})
+                                                </label>
+                                                {eligiblePetugas.length === 0 ? (
+                                                    <p className="text-xs text-slate-400 italic">Tidak ada petugas yang tersedia untuk dinas ini.</p>
+                                                ) : (
+                                                    <select
+                                                        value={selectedPetugasId}
+                                                        onChange={(e) => setSelectedPetugasId(e.target.value)}
+                                                        className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 bg-white focus:outline-none focus:border-blue-400"
                                                     >
-                                                        {s}
-                                                    </button>
-                                                ))}
+                                                        <option value="">-- Pilih Petugas --</option>
+                                                        {eligiblePetugas.map(p => (
+                                                            <option key={p.id_petugas} value={p.id_petugas}>
+                                                                {p.nama_petugas} (NIP: {p.NIP})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                )}
                                             </div>
                                         </div>
                                     )}

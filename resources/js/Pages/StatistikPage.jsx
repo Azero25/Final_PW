@@ -210,16 +210,24 @@ export default function StatistikPage() {
                                 <p className="text-sm text-slate-500 mt-1">Volume laporan yang masuk sepanjang tahun 2026</p>
                             </div>
                         </div>
-                        <div className="h-64 flex items-end justify-between gap-2 px-4">
+                        <div className="h-64 relative border-b border-slate-100 flex items-end justify-between gap-2 px-4 pb-2">
+                            {/* Gridlines Background */}
+                            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7 pt-2">
+                                <div className="w-full border-t border-slate-100/70"></div>
+                                <div className="w-full border-t border-slate-100/70"></div>
+                                <div className="w-full border-t border-slate-100/70"></div>
+                                <div className="w-full border-t border-slate-100/70"></div>
+                            </div>
+
                             {chartBulanan.map((item) => {
                                 const maxVal = Math.max(...chartBulanan.map(b => b.val), 1);
                                 return (
-                                    <div key={item.bulan} className="w-full flex flex-col items-center gap-2 group relative">
-                                        <div className="absolute -top-8 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                            {item.val} Lap
+                                    <div key={item.bulan} className="w-full flex flex-col items-center gap-2 group relative z-10 h-full justify-end">
+                                        <div className="absolute -top-10 bg-slate-800/90 text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 font-semibold">
+                                            {item.val} Laporan
                                         </div>
-                                        <div className={`w-full ${item.active ? 'bg-primary' : 'bg-blue-100 group-hover:bg-primary'} rounded-t-lg transition-all duration-700`} style={{ height: `${(item.val / maxVal) * 100}%` }}></div>
-                                        <span className={`text-[10px] font-label-bold ${item.active ? 'text-blue-700' : 'text-slate-400'}`}>{item.bulan}</span>
+                                        <div className={`w-full ${item.active ? 'bg-primary shadow-[0_4px_12px_rgba(0,102,204,0.3)] border-t border-blue-600' : 'bg-blue-100 group-hover:bg-primary/80 group-hover:shadow-[0_4px_12px_rgba(0,102,204,0.15)]'} rounded-t-lg transition-all duration-700`} style={{ height: `${(item.val / maxVal) * 85}%` }}></div>
+                                        <span className={`text-[10px] font-label-bold mt-1 ${item.active ? 'text-blue-700 font-extrabold' : 'text-slate-400'}`}>{item.bulan}</span>
                                     </div>
                                 );
                             })}

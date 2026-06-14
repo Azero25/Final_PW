@@ -9,12 +9,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
  *   Warga  : warga@email.com    / warga123
  */
 
-// Data dummy akun yang bisa login
-const DUMMY_ACCOUNTS = [
-    { email: 'admin@lapor.go.id', password: 'admin123', role: 'admin', nama: 'Admin Utama' },
-    { email: 'warga@email.com',   password: 'warga123', role: 'warga', nama: 'Budi Santoso' },
-];
-
 import api from '../axios';
 
 export default function LoginPage() {
@@ -37,24 +31,6 @@ export default function LoginPage() {
             return;
         }
 
-        // Bypass khusus login petugas via main login page
-        if (email.trim() === 'petugas@email.com' && password === 'petugas123') {
-            setIsLoading(true);
-            setTimeout(() => {
-                sessionStorage.setItem('petugas', JSON.stringify({
-                    id: 'PTG-001',
-                    nama: 'Ir. Hadi Susanto',
-                    dinas: 'Dinas Pekerjaan Umum',
-                    jabatan: 'Kepala Seksi Pemeliharaan Jalan',
-                    username: 'petugas_demo',
-                    telepon: '081234567890',
-                }));
-                navigate('/petugas/dashboard');
-                setIsLoading(false);
-            }, 600);
-            return;
-        }
-
         setIsLoading(true);
 
         try {
@@ -65,7 +41,7 @@ export default function LoginPage() {
 
             // Simpan sesi sederhana di sessionStorage
             const user = response.data.user;
-            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.nama_lengkap, role: user.role }));
+            sessionStorage.setItem('user', JSON.stringify({ email: user.email, nama: user.nama_lengkap, role: user.role, avatar: user.avatar }));
 
             // Arahkan berdasarkan role
             if (user.role === 'admin') {
@@ -170,13 +146,7 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {/* Info Akun Demo */}
-                <div className="mt-5 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                    <p className="text-xs text-blue-700 font-semibold mb-1.5">💡 Akun Demo</p>
-                    <p className="text-xs text-blue-600 font-mono">Admin&nbsp;&nbsp;&nbsp;: admin@lapor.go.id / admin123</p>
-                    <p className="text-xs text-blue-600 font-mono">Warga&nbsp;&nbsp;&nbsp;: warga@email.com / warga123</p>
-                    <p className="text-xs text-blue-600 font-mono">Petugas&nbsp;: petugas@email.com / petugas123</p>
-                </div>
+
 
                 {/* Tautan ke halaman Registrasi */}
                 <p className="mt-6 text-center font-body-sm text-on-surface-variant">

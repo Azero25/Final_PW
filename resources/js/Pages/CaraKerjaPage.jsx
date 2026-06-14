@@ -1,11 +1,21 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 
 export default function CaraKerjaPage() {
+    const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState(null);
+
     useEffect(() => {
         window.scrollTo(0, 0);
+        // Cek status login dari sessionStorage
+        try {
+            const sesi = sessionStorage.getItem('user');
+            if (sesi) setCurrentUser(JSON.parse(sesi));
+        } catch (e) {
+            setCurrentUser(null);
+        }
     }, []);
 
     return (
@@ -84,13 +94,54 @@ export default function CaraKerjaPage() {
                 </div>
 
                 {/* Call to action */}
-                <div className="mt-20 text-center bg-primary-container/5 py-12 rounded-3xl border border-primary/10">
-                    <h2 className="font-h2 text-3xl mb-4 text-on-background">Siap Melaporkan Masalah?</h2>
-                    <p className="font-body-md text-on-surface-variant mb-8 max-w-xl mx-auto">Satu laporan dari Anda bisa membawa perubahan besar bagi kenyamanan warga sekitar.</p>
-                    <Link to="/register" className="px-8 py-4 inline-flex items-center gap-2 bg-primary text-white rounded-xl font-label-bold text-lg hover:bg-primary/90 transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.3)] hover:-translate-y-1">
-                        <span className="material-symbols-outlined">how_to_reg</span>
-                        Daftar & Buat Laporan
-                    </Link>
+                <div className="mt-20 text-center bg-primary-container/5 py-12 px-6 rounded-3xl border border-primary/10">
+                    {currentUser ? (
+                        /* === SUDAH LOGIN: langsung ke buat laporan === */
+                        <>
+                            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-sm font-bold mb-4">
+                                <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+                                Login sebagai {currentUser.nama}
+                            </div>
+                            <h2 className="font-h2 text-3xl mb-3 text-on-background">Siap Melaporkan Masalah?</h2>
+                            <p className="font-body-md text-on-surface-variant mb-8 max-w-xl mx-auto">
+                                Akun Anda sudah aktif. Langsung buat laporan sekarang dan bantu warga sekitar!
+                            </p>
+                            <button
+                                onClick={() => navigate('/buat-pengaduan')}
+                                className="px-8 py-4 inline-flex items-center gap-2 bg-primary text-white rounded-xl font-label-bold text-lg hover:bg-primary/90 transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.3)] hover:-translate-y-1"
+                            >
+                                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
+                                Buat Laporan Sekarang
+                            </button>
+                        </>
+                    ) : (
+                        /* === BELUM LOGIN: ajak login atau daftar === */
+                        <>
+                            <span className="material-symbols-outlined text-5xl text-primary-container mb-4 block">campaign</span>
+                            <h2 className="font-h2 text-3xl mb-3 text-on-background">Siap Melaporkan Masalah?</h2>
+                            <p className="font-body-md text-on-surface-variant mb-8 max-w-xl mx-auto">
+                                Satu laporan dari Anda bisa membawa perubahan besar bagi kenyamanan warga sekitar. Masuk atau buat akun gratis untuk mulai.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Link
+                                    to="/login"
+                                    state={{ from: { pathname: '/buat-pengaduan' } }}
+                                    className="w-full sm:w-auto px-8 py-4 inline-flex items-center justify-center gap-2 bg-primary text-white rounded-xl font-label-bold text-lg hover:bg-primary/90 transition-all shadow-[0px_10px_30px_rgba(0,102,204,0.3)] hover:-translate-y-1"
+                                >
+                                    <span className="material-symbols-outlined">login</span>
+                                    Masuk &amp; Buat Laporan
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    className="w-full sm:w-auto px-8 py-4 inline-flex items-center justify-center gap-2 bg-white text-primary border-2 border-primary rounded-xl font-label-bold text-lg hover:bg-blue-50 transition-all hover:-translate-y-1"
+                                >
+                                    <span className="material-symbols-outlined">how_to_reg</span>
+                                    Daftar Akun Gratis
+                                </Link>
+                            </div>
+                            <p className="text-xs text-on-surface-variant mt-4 opacity-60">Gratis, cepat, dan tanpa biaya apapun.</p>
+                        </>
+                    )}
                 </div>
             </main>
 

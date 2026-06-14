@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
-import api from '../utils/api'; // Menggunakan instance axios api
+import api from '../axios';
 
 export default function RiwayatLaporanPage() {
     const navigate = useNavigate();
@@ -42,17 +42,12 @@ export default function RiwayatLaporanPage() {
         // Fetch user's report history
         const fetchRiwayat = async () => {
             try {
-                const response = await fetch('/api/pengaduans');
-                if (!response.ok) throw new Error('Gagal mengambil data pengaduan');
-                const data = await response.json();
+                const response = await api.get('/api/pengaduans');
+                const data = response.data;
 
-                // Cari profil kustom untuk memastikan pencocokan nama
-                const storedProfile = localStorage.getItem(`profile_${activeUser.email}`);
-                const profileName = storedProfile ? JSON.parse(storedProfile).nama : activeUser.nama;
-
-                // Filter pengaduan berdasarkan nama pembuat
+                // Filter pengaduan berdasarkan id_user atau email
                 const userLaporan = data.filter(item =>
-                    item.nama?.trim().toLowerCase() === profileName?.trim().toLowerCase() ||
+                    item.id_user === activeUser.id_user ||
                     item.email?.trim().toLowerCase() === activeUser.email?.trim().toLowerCase()
                 );
 
@@ -93,10 +88,9 @@ export default function RiwayatLaporanPage() {
         setSelectedLaporan(laporan);
         setLoadingDetail(true);
         try {
-            const response = await fetch(`/api/pengaduans/${laporan.id}`);
-            if (response.ok) {
-                const data = await response.json();
-                let timeline = data.timeline || [];
+            const response = await api.get(`/api/pengaduans/${laporan.id}`);
+            const data = response.data;
+            let timeline = data.timeline || [];
 
                 // Tambahkan step selesai di akhir jika status belum selesai
                 if (data.status !== 'Selesai' && timeline.length > 0) {
@@ -110,15 +104,14 @@ export default function RiwayatLaporanPage() {
                     });
                 }
                 setTimelineData(timeline);
-            } else {
-                // Fallback timeline default jika API khusus tiket error
-                setTimelineData([
-                    { tanggal: laporan.tanggal, status: 'Laporan Diterima', keterangan: 'Laporan berhasil terkirim dan masuk antrean sistem.', icon: 'assignment', color: 'text-blue-500' },
-                    { tanggal: '-', status: 'Verifikasi', keterangan: 'Tim admin sedang memeriksa kelengkapan berkas laporan.', icon: 'pending_actions', color: 'text-slate-300', pending: true }
-                ]);
-            }
+            setTimelineData(timeline);
         } catch (e) {
             console.error('Error fetching detail timeline:', e);
+            // Fallback timeline default jika API error
+            setTimelineData([
+                { tanggal: laporan.tanggal, status: 'Laporan Diterima', keterangan: 'Laporan berhasil terkirim dan masuk antrean sistem.', icon: 'assignment', color: 'text-blue-500' },
+                { tanggal: '-', status: 'Verifikasi', keterangan: 'Tim admin sedang memeriksa kelengkapan berkas laporan.', icon: 'pending_actions', color: 'text-slate-300', pending: true }
+            ]);
         } finally {
             setLoadingDetail(false);
         }

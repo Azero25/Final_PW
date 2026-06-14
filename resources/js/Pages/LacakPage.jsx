@@ -17,6 +17,18 @@ export default function LacakPage() {
     const [error, setError] = useState('');
     const [lightboxImg, setLightboxImg] = useState(null); // URL gambar fullscreen
 
+    const getImageUrl = (path) => {
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:image')) {
+            return path;
+        }
+        if (path.startsWith('/storage')) {
+            const baseUrl = window.location.origin.includes('5173') ? 'http://127.0.0.1:8000' : '';
+            return `${baseUrl}${path}`;
+        }
+        return path;
+    };
+
     const processLaporanData = (data) => {
         if (!data.timeline || !Array.isArray(data.timeline)) {
             data.timeline = [];
@@ -173,12 +185,10 @@ export default function LacakPage() {
                         </div>
                     )}
 
-                    {/* Contoh Nomor Tiket untuk Demo */}
-                    <p className="mt-4 text-sm text-slate-400">
-                        Coba tiket demo:{' '}
-                        <button onClick={() => setNomorTiket('LPW-2024-001234')} className="text-primary underline hover:text-blue-700 font-medium">LPW-2024-001234</button>
-                        {' '}atau{' '}
-                        <button onClick={() => setNomorTiket('LPW-2024-005678')} className="text-primary underline hover:text-blue-700 font-medium">LPW-2024-005678</button>
+                    {/* Tips cara mendapatkan nomor tiket */}
+                    <p className="mt-4 text-sm text-slate-400 flex items-center justify-center gap-1.5">
+                        <span className="material-symbols-outlined text-base text-slate-300">info</span>
+                        Nomor tiket dikirim ke email Anda saat laporan berhasil dibuat.
                     </p>
                 </div>
             </section>
@@ -228,9 +238,9 @@ export default function LacakPage() {
                                             /* ---- Tampilan 1 gambar ---- */
                                             <div
                                                 className="relative rounded-2xl overflow-hidden border border-slate-100 max-w-md shadow-sm group cursor-zoom-in"
-                                                onClick={() => setLightboxImg(imgs[0])}
+                                                onClick={() => setLightboxImg(getImageUrl(imgs[0]))}
                                             >
-                                                <img src={imgs[0]} alt="Bukti Lampiran" className="w-full object-cover max-h-72 group-hover:scale-105 transition-transform duration-300" />
+                                                <img src={getImageUrl(imgs[0])} alt="Bukti Lampiran" className="w-full object-cover max-h-72 group-hover:scale-105 transition-transform duration-300" />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                                     <span className="material-symbols-outlined text-white text-3xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
                                                 </div>
@@ -247,9 +257,9 @@ export default function LacakPage() {
                                                     <div
                                                         key={idx}
                                                         className="relative group rounded-xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in aspect-square"
-                                                        onClick={() => setLightboxImg(src)}
+                                                        onClick={() => setLightboxImg(getImageUrl(src))}
                                                     >
-                                                        <img src={src} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                        <img src={getImageUrl(src)} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                                                             <span className="material-symbols-outlined text-white text-2xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
                                                         </div>

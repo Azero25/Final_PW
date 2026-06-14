@@ -21,6 +21,8 @@ class PengaduanSeeder extends Seeder
      */
     public function run(): void
     {
+        Laporan::query()->delete();
+        Petugas::query()->delete();
         $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi D.I. Yogyakarta']);
         
         // Define ALL nine Dinas requested by the user
@@ -61,6 +63,97 @@ class PengaduanSeeder extends Seeder
             ['singkatan' => 'BPBD']
         );
 
+        // Seed 10 petugas for each Dinas
+        $dinasList = [
+            $dinasPUPR,
+            $dinasDLH,
+            $dinasKesehatan,
+            $dinasPerhubungan,
+            $dinasPerkim,
+            $dinasPendidikan,
+            $dinasSosial,
+            $dinasSatpolPP,
+            $dinasBPBD
+        ];
+
+        $jabatanDefault = Jabatan::firstOrCreate(['nama_jabatan' => 'Staff Lapangan']);
+
+        $indonesianNames = [
+            // PUPR
+            ['Ahmad Wijaya', 'ahmad.wijaya'],
+            ['Budi Setiawan', 'budi.setiawan'],
+            ['Chandra Kusuma', 'chandra.kusuma'],
+            ['Dedi Pratama', 'dedi.pratama'],
+            
+            // DLH
+            ['Andi Mulyono', 'andi.mulyono'],
+            ['Bambang Cahyono', 'bambang.cahyono'],
+            ['Edi Darsono', 'edi.darsono'],
+            ['Farhan Siregar', 'farhan.siregar'],
+
+            // Kesehatan
+            ['Siti Aminah', 'siti.aminah'],
+            ['Dewi Sartika', 'dewi.sartika'],
+            ['Rini Astuti', 'rini.astuti'],
+            ['Mega Utami', 'mega.utami'],
+
+            // Perhubungan
+            ['Rudi Hermawan', 'rudi.hermawan'],
+            ['Toni Sucipto', 'toni.sucipto'],
+            ['Heri Kartiko', 'heri.kartiko'],
+            ['Agus Rahardjo', 'agus.rahardjo'],
+
+            // Perkim
+            ['Eka Ramdani', 'eka.ramdani'],
+            ['Ferry Rotinsulu', 'ferry.rotinsulu'],
+            ['Gilang Dirga', 'gilang.dirga'],
+            ['Haris Maulana', 'haris.maulana'],
+
+            // Pendidikan
+            ['Omesh Ananda', 'omesh.ananda'],
+            ['Panji Petualang', 'panji.petualang'],
+            ['Qori Sandioriva', 'qori.sandioriva'],
+            ['Raffi Ahmad', 'raffi.ahmad'],
+
+            // Sosial
+            ['Zaskia Mecca', 'zaskia.mecca'],
+            ['Anang Hermansyah', 'anang.hermansyah'],
+            ['Ashanty Siddik', 'ashanty.siddik'],
+            ['Atta Halilintar', 'atta.halilintar'],
+
+            // Satpol PP
+            ['Gading Marten', 'gading.marten'],
+            ['Gisella Anastasia', 'gisella.anastasia'],
+            ['Rojali Saputra', 'rojali.saputra'],
+            ['Soleh Solihun', 'soleh.solihun'],
+
+            // BPBD
+            ['Bintang Emon', 'bintang.emon'],
+            ['Kiky Saputri', 'kiky.saputri'],
+            ['Marshel Widianto', 'marshel.widianto'],
+            ['Gilang Bhaskara', 'gilang.bhaskara']
+        ];
+
+        foreach ($dinasList as $index => $d) {
+            for ($k = 1; $k <= 4; $k++) {
+                $nameIndex = ($index * 4) + ($k - 1);
+                $petugasData = $indonesianNames[$nameIndex];
+                $seededUsername = str_replace('.', '', $petugasData[1]) . '@gmail.com';
+                
+                Petugas::firstOrCreate(
+                    ['username' => $seededUsername],
+                    [
+                        'nama_petugas' => $petugasData[0],
+                        'NIP' => '199' . mt_rand(0, 9) . str_pad(mt_rand(1, 12), 2, '0', STR_PAD_LEFT) . str_pad(mt_rand(1, 28), 2, '0', STR_PAD_LEFT) . '202' . mt_rand(0, 6) . mt_rand(1, 2) . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . str_pad($k, 2, '0', STR_PAD_LEFT),
+                        'password' => bcrypt('petugas123'),
+                        'no_hp' => '0812' . mt_rand(10000000, 99999999),
+                        'id_dinas' => $d->id_dinas,
+                        'id_jabatan' => $jabatanDefault->id_jabatan
+                    ]
+                );
+            }
+        }
+
         // Map categories to all nine Dinas
         $katInfras = Kategori::firstOrCreate(['nama_kategori' => 'infrastruktur'], ['id_dinas' => $dinasPUPR->id_dinas, 'icon' => 'construction', 'warna' => 'bg-blue-500']);
         $katKebersihan = Kategori::firstOrCreate(['nama_kategori' => 'kebersihan'], ['id_dinas' => $dinasDLH->id_dinas, 'icon' => 'delete', 'warna' => 'bg-green-500']);
@@ -83,7 +176,7 @@ class PengaduanSeeder extends Seeder
                 'id_jabatan' => $jab1->id_jabatan,
                 'id_dinas' => $dinasPUPR->id_dinas,
                 'NIP' => '198504122010011002',
-                'username' => 'ahmad_fauzi',
+                'username' => 'ahmadfauzi@gmail.com',
                 'password' => bcrypt('petugas123')
             ]
         );
@@ -121,7 +214,7 @@ class PengaduanSeeder extends Seeder
                 'id_jabatan' => $jab2->id_jabatan,
                 'id_dinas' => $dinasPerhubungan->id_dinas,
                 'NIP' => '199008202015032001',
-                'username' => 'sari_dewi',
+                'username' => 'saridewi@gmail.com',
                 'password' => bcrypt('petugas123')
             ]
         );

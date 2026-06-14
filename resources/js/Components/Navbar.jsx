@@ -25,7 +25,7 @@ export default function Navbar() {
                 setUser({
                     ...parsedUser,
                     nama: profile.nama || parsedUser.nama,
-                    avatar: profile.avatar || null
+                    avatar: profile.avatar || parsedUser.avatar || null
                 });
             } else {
                 setUser(parsedUser);
@@ -107,6 +107,16 @@ export default function Navbar() {
                     {/* Auth section (desktop) */}
                     {user ? (
                         <div className="hidden md:flex items-center gap-4 relative">
+                            {/* Tombol Buat Laporan — hanya untuk warga */}
+                            {user.role !== 'admin' && (
+                                <Link
+                                    to="/buat-pengaduan"
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                    <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
+                                    Buat Laporan
+                                </Link>
+                            )}
                             {/* User Avatar + Dropdown Trigger */}
                             <button 
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -230,6 +240,14 @@ export default function Navbar() {
                                 </div>
                                 <span className="material-symbols-outlined text-xs opacity-60">arrow_forward_ios</span>
                             </Link>
+                            {/* Buat Laporan link — hanya untuk warga */}
+                            {user.role !== 'admin' && (
+                                <Link to="/buat-pengaduan"
+                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                                    <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
+                                    Buat Laporan
+                                </Link>
+                            )}
                             {/* Edit Profil link */}
                             <Link to="/profile"
                                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700">
