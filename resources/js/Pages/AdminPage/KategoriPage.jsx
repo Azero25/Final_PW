@@ -11,6 +11,7 @@ export default function KategoriPage() {
     const [editData, setEditData] = useState({});
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [dinasList, setDinasList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const fetchKategoris = async () => {
         try {
@@ -32,8 +33,17 @@ export default function KategoriPage() {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        fetchKategoris();
-        fetchDinasList();
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                await Promise.all([fetchKategoris(), fetchDinasList()]);
+            } catch (error) {
+                console.error("Gagal memuat data kategori/dinas:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, []);
 
     const ICONS = ['construction','delete','lightbulb','water_drop','gavel','park','stadium','emergency','report','traffic','local_hospital','school'];
@@ -142,40 +152,51 @@ export default function KategoriPage() {
                 {/* ===== GRID VIEW ===== */}
                 {viewMode === 'grid' && (
                     <div className="p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                        {filtered.map(k => (
-                            <div key={k.id} className={`relative border rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer group ${k.aktif ? 'border-slate-100 bg-white' : 'border-slate-200 bg-slate-50 opacity-70'}`}
-                                onClick={() => openModal(k, 'detail')}>
-                                {/* Badge aktif/nonaktif */}
-                                <span className={`absolute top-4 right-4 text-xs font-semibold px-2 py-0.5 rounded-full ${k.aktif ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'}`}>
-                                    {k.aktif ? 'Aktif' : 'Nonaktif'}
-                                </span>
-                                {/* Icon */}
-                                <div className={`w-12 h-12 ${k.warna} rounded-2xl flex items-center justify-center mb-4`}>
-                                    <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>{k.icon}</span>
-                                </div>
-                                <h3 className="font-bold text-slate-800 mb-1">{k.nama}</h3>
-                                <p className="text-xs text-slate-400 mb-3 line-clamp-2">{k.deskripsi}</p>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">account_balance</span>{k.dinas}
-                                    </span>
-                                    <span className="text-xs font-bold text-blue-600">{k.totalLaporan} laporan</span>
-                                </div>
-                                {/* Hover action */}
-                                <div className="absolute bottom-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                                    <button onClick={() => openModal(k, 'edit')} className="p-1.5 bg-white text-green-500 hover:bg-green-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
-                                        <span className="material-symbols-outlined text-sm">edit</span>
-                                    </button>
-                                    <button onClick={() => handleDelete(k)} className="p-1.5 bg-white text-red-400 hover:bg-red-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
-                                        <span className="material-symbols-outlined text-sm">delete</span>
-                                    </button>
+                        {loading ? (
+                            <div className="col-span-4 text-center py-16 text-slate-400">
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Memuat data kategori...</span>
                                 </div>
                             </div>
-                        ))}
-                        {filtered.length === 0 && (
+                        ) : filtered.length === 0 ? (
                             <div className="col-span-4 text-center py-16 text-slate-400">
                                 <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>Kategori tidak ditemukan
                             </div>
+                        ) : (
+                            filtered.map(k => (
+                                <div key={k.id} className={`relative border rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer group ${k.aktif ? 'border-slate-100 bg-white' : 'border-slate-200 bg-slate-50 opacity-70'}`}
+                                    onClick={() => openModal(k, 'detail')}>
+                                    {/* Badge aktif/nonaktif */}
+                                    <span className={`absolute top-4 right-4 text-xs font-semibold px-2 py-0.5 rounded-full ${k.aktif ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'}`}>
+                                        {k.aktif ? 'Aktif' : 'Nonaktif'}
+                                    </span>
+                                    {/* Icon */}
+                                    <div className={`w-12 h-12 ${k.warna} rounded-2xl flex items-center justify-center mb-4`}>
+                                        <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>{k.icon}</span>
+                                    </div>
+                                    <h3 className="font-bold text-slate-800 mb-1">{k.nama}</h3>
+                                    <p className="text-xs text-slate-400 mb-3 line-clamp-2">{k.deskripsi}</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">account_balance</span>{k.dinas}
+                                        </span>
+                                        <span className="text-xs font-bold text-blue-600">{k.totalLaporan} laporan</span>
+                                    </div>
+                                    {/* Hover action */}
+                                    <div className="absolute bottom-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                        <button onClick={() => openModal(k, 'edit')} className="p-1.5 bg-white text-green-500 hover:bg-green-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
+                                            <span className="material-symbols-outlined text-sm">edit</span>
+                                        </button>
+                                        <button onClick={() => handleDelete(k)} className="p-1.5 bg-white text-red-400 hover:bg-red-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
+                                            <span className="material-symbols-outlined text-sm">delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
                         )}
                     </div>
                 )}
@@ -192,7 +213,19 @@ export default function KategoriPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filtered.length === 0 ? (
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-16 text-slate-400">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                <span>Memuat data kategori...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : filtered.length === 0 ? (
                                     <tr><td colSpan={6} className="text-center py-16 text-slate-400">
                                         <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>Kategori tidak ditemukan
                                     </td></tr>
