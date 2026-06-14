@@ -114,11 +114,11 @@ export default function PetugasDashboardPage() {
     const [tugasList, setTugasList] = useState([]);
 
     const fetchLaporan = async () => {
-        if (!petugas?.dinas) return;
+        if (!petugas) return;
         try {
             const response = await api.get('/api/pengaduans');
             const filtered = response.data
-                .filter(l => matchesDinas(l.kategori, petugas.dinas))
+                .filter(l => l.id_petugas === petugas.original_id)
                 .map(formatLaporanToTugas);
             setTugasList(filtered);
         } catch (error) {

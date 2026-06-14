@@ -26,15 +26,25 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
 
     // Profil modal states
     const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [activeProfileTab, setActiveProfileTab] = useState('detail'); // 'detail' | 'password'
     const [profileData, setProfileData] = useState({
         nama: '',
         nip: '',
         telp: '',
         avatar: ''
     });
+    const [passwordData, setPasswordData] = useState({
+        passwordLama: '',
+        passwordBaru: '',
+        konfirmasiPassword: ''
+    });
     const [profileErrors, setProfileErrors] = useState({});
     const [savingProfile, setSavingProfile] = useState(false);
     const [showProfileToast, setShowProfileToast] = useState(false);
+    const [profileToastMsg, setProfileToastMsg] = useState('Profil berhasil diperbarui!');
+    const [showPassLama, setShowPassLama] = useState(false);
+    const [showPassBaru, setShowPassBaru] = useState(false);
+    const [showPassKonf, setShowPassKonf] = useState(false);
 
     const openProfileModal = () => {
         setProfileData({
@@ -43,6 +53,15 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
             telp: petugas?.telepon || '',
             avatar: petugas?.avatar || ''
         });
+        setPasswordData({
+            passwordLama: '',
+            passwordBaru: '',
+            konfirmasiPassword: ''
+        });
+        setShowPassLama(false);
+        setShowPassBaru(false);
+        setShowPassKonf(false);
+        setActiveProfileTab('detail');
         setProfileErrors({});
         setProfileModalOpen(true);
     };
@@ -89,12 +108,56 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
             if (response.data && response.data.status === 'success') {
                 sessionStorage.setItem('petugas', JSON.stringify(response.data.petugas));
                 setPetugas(response.data.petugas);
+                setProfileToastMsg('Profil berhasil diperbarui!');
                 setProfileModalOpen(false);
                 setShowProfileToast(true);
                 setTimeout(() => setShowProfileToast(false), 3000);
             }
         } catch (err) {
             setProfileErrors(err.response?.data?.errors || { general: err.response?.data?.message || 'Gagal memperbarui profil' });
+        } finally {
+            setSavingProfile(false);
+        }
+    };
+
+    const handleSavePassword = async (e) => {
+        e.preventDefault();
+        setProfileErrors({});
+
+        if (!passwordData.passwordLama || !passwordData.passwordBaru || !passwordData.konfirmasiPassword) {
+            setProfileErrors({ general: 'Semua kolom password wajib diisi.' });
+            return;
+        }
+        if (passwordData.passwordBaru.length < 8) {
+            setProfileErrors({ passwordBaru: 'Password baru minimal harus 8 karakter.' });
+            return;
+        }
+        if (passwordData.passwordBaru !== passwordData.konfirmasiPassword) {
+            setProfileErrors({ konfirmasiPassword: 'Konfirmasi password baru tidak cocok.' });
+            return;
+        }
+
+        setSavingProfile(true);
+
+        try {
+            const response = await api.put(`/api/petugas/profile/${petugas.original_id}/password`, {
+                password_lama: passwordData.passwordLama,
+                password_baru: passwordData.passwordBaru
+            });
+
+            if (response.data && response.data.status === 'success') {
+                setPasswordData({
+                    passwordLama: '',
+                    passwordBaru: '',
+                    konfirmasiPassword: ''
+                });
+                setProfileToastMsg('Kata sandi berhasil diubah!');
+                setProfileModalOpen(false);
+                setShowProfileToast(true);
+                setTimeout(() => setShowProfileToast(false), 3000);
+            }
+        } catch (err) {
+            setProfileErrors(err.response?.data?.errors || { general: err.response?.data?.message || 'Gagal mengubah kata sandi' });
         } finally {
             setSavingProfile(false);
         }
@@ -469,70 +532,167 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/40">
                                 <div>
                                     <h2 className="font-bold text-slate-800 text-lg">Edit Profil Petugas</h2>
-                                    <p className="text-xs text-slate-400 mt-0.5">Perbarui informasi detail dan foto profil Anda</p>
+                                    <p className="text-xs text-slate-400 mt-0.5">Perbarui informasi detail dan keamanan akun Anda</p>
                                 </div>
                                 <button onClick={() => setProfileModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
 
+                            {/* Tabs Navigation */}
+                            <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setActiveProfileTab('detail'); setProfileErrors({}); }}
+                                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeProfileTab === 'detail' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                                >
+                                    Informasi Profil
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setActiveProfileTab('password'); setProfileErrors({}); }}
+                                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeProfileTab === 'password' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                                >
+                                    Ubah Password
+                                </button>
+                            </div>
+
                             {/* Form Body */}
-                            <form onSubmit={handleSaveProfile}>
+                            <form onSubmit={activeProfileTab === 'detail' ? handleSaveProfile : handleSavePassword}>
                                 <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
-                                    {/* Upload Foto */}
-                                    <div className="flex flex-col items-center gap-3 pb-3 border-b border-slate-100">
-                                        <div className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500 shadow-md">
-                                            {profileData.avatar ? (
-                                                <img src={profileData.avatar} alt="Preview Avatar" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl">
-                                                    {profileData.nama?.charAt(0) || 'P'}
+                                    {activeProfileTab === 'detail' ? (
+                                        <>
+                                            {/* Upload Foto */}
+                                            <div className="flex flex-col items-center gap-3 pb-3 border-b border-slate-100">
+                                                <div className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500 shadow-md">
+                                                    {profileData.avatar ? (
+                                                        <img src={profileData.avatar} alt="Preview Avatar" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl">
+                                                            {profileData.nama?.charAt(0) || 'P'}
+                                                        </div>
+                                                    )}
+                                                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white text-xs font-semibold">
+                                                        Ubah
+                                                        <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                                                    </label>
                                                 </div>
-                                            )}
-                                            <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white text-xs font-semibold">
-                                                Ubah
-                                                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                                            </label>
-                                        </div>
-                                        <span className="text-xs text-slate-400">Rekomendasi rasio 1:1, Maksimal 5MB</span>
-                                        {profileErrors.avatar && <p className="text-xs text-red-500 font-medium">{profileErrors.avatar}</p>}
-                                    </div>
+                                                <span className="text-xs text-slate-400">Rekomendasi rasio 1:1, Maksimal 5MB</span>
+                                                {profileErrors.avatar && <p className="text-xs text-red-500 font-medium">{profileErrors.avatar}</p>}
+                                            </div>
 
-                                    {/* Nama Lengkap */}
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Nama Lengkap</label>
-                                        <input
-                                            type="text"
-                                            value={profileData.nama}
-                                            onChange={(e) => setProfileData(prev => ({ ...prev, nama: e.target.value }))}
-                                            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
-                                        />
-                                        {profileErrors.nama && <p className="text-xs text-red-500 font-medium">{profileErrors.nama}</p>}
-                                    </div>
+                                            {/* Nama Lengkap */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Nama Lengkap</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileData.nama}
+                                                    onChange={(e) => setProfileData(prev => ({ ...prev, nama: e.target.value }))}
+                                                    className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
+                                                />
+                                                {profileErrors.nama && <p className="text-xs text-red-500 font-medium">{profileErrors.nama}</p>}
+                                            </div>
 
-                                    {/* NIP */}
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">NIP (Nomor Induk Pegawai)</label>
-                                        <input
-                                            type="text"
-                                            value={profileData.nip}
-                                            onChange={(e) => setProfileData(prev => ({ ...prev, nip: e.target.value }))}
-                                            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
-                                        />
-                                        {profileErrors.nip && <p className="text-xs text-red-500 font-medium">{profileErrors.nip}</p>}
-                                    </div>
+                                            {/* NIP */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">NIP (Nomor Induk Pegawai)</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileData.nip}
+                                                    onChange={(e) => setProfileData(prev => ({ ...prev, nip: e.target.value }))}
+                                                    className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
+                                                />
+                                                {profileErrors.nip && <p className="text-xs text-red-500 font-medium">{profileErrors.nip}</p>}
+                                            </div>
 
-                                    {/* No. Telepon */}
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Nomor Telepon / HP</label>
-                                        <input
-                                            type="text"
-                                            value={profileData.telp}
-                                            onChange={(e) => setProfileData(prev => ({ ...prev, telp: e.target.value }))}
-                                            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
-                                        />
-                                        {profileErrors.telp && <p className="text-xs text-red-500 font-medium">{profileErrors.telp}</p>}
-                                    </div>
+                                            {/* No. Telepon */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Nomor Telepon / HP</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileData.telp}
+                                                    onChange={(e) => setProfileData(prev => ({ ...prev, telp: e.target.value }))}
+                                                    className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
+                                                />
+                                                {profileErrors.telp && <p className="text-xs text-red-500 font-medium">{profileErrors.telp}</p>}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* Password Lama */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Kata Sandi Saat Ini</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPassLama ? "text" : "password"}
+                                                        value={passwordData.passwordLama}
+                                                        onChange={(e) => setPasswordData(prev => ({ ...prev, passwordLama: e.target.value }))}
+                                                        placeholder="••••••••"
+                                                        className="w-full pl-4 pr-10 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassLama(!showPassLama)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg select-none">
+                                                            {showPassLama ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                                {profileErrors.password_lama && <p className="text-xs text-red-500 font-medium">{profileErrors.password_lama}</p>}
+                                            </div>
+
+                                            {/* Password Baru */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Kata Sandi Baru</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPassBaru ? "text" : "password"}
+                                                        value={passwordData.passwordBaru}
+                                                        onChange={(e) => setPasswordData(prev => ({ ...prev, passwordBaru: e.target.value }))}
+                                                        placeholder="Minimal 8 karakter"
+                                                        className="w-full pl-4 pr-10 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassBaru(!showPassBaru)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg select-none">
+                                                            {showPassBaru ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                                {profileErrors.passwordBaru && <p className="text-xs text-red-500 font-medium">{profileErrors.passwordBaru}</p>}
+                                                {profileErrors.password_baru && <p className="text-xs text-red-500 font-medium">{profileErrors.password_baru}</p>}
+                                            </div>
+
+                                            {/* Konfirmasi Password Baru */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Ulangi Kata Sandi Baru</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPassKonf ? "text" : "password"}
+                                                        value={passwordData.konfirmasiPassword}
+                                                        onChange={(e) => setPasswordData(prev => ({ ...prev, konfirmasiPassword: e.target.value }))}
+                                                        placeholder="Ulangi Sandi Baru"
+                                                        className="w-full pl-4 pr-10 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-800"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassKonf(!showPassKonf)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg select-none">
+                                                            {showPassKonf ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                                {profileErrors.konfirmasiPassword && <p className="text-xs text-red-500 font-medium">{profileErrors.konfirmasiPassword}</p>}
+                                            </div>
+                                        </>
+                                    )}
 
                                     {profileErrors.general && (
                                         <p className="text-xs text-red-500 text-center font-bold">{profileErrors.general}</p>
@@ -565,7 +725,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                 {showProfileToast && (
                     <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl bg-emerald-50 border border-emerald-200 text-emerald-800 animate-in fade-in slide-in-from-top-3 duration-300">
                         <span className="material-symbols-outlined text-2xl flex-shrink-0 text-emerald-600">check_circle</span>
-                        <p className="text-sm font-semibold">Profil berhasil diperbarui!</p>
+                        <p className="text-sm font-semibold">{profileToastMsg}</p>
                     </div>
                 )}
             </div>

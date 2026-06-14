@@ -198,11 +198,41 @@ class PetugasController extends Controller
 
         $petugas = Petugas::findOrFail($id);
 
+        $avatarPath = $request->avatar;
+
+        if ($request->avatar && preg_match('/^data:image\/(\w+);base64,/', $request->avatar, $type)) {
+            $data = substr($request->avatar, strpos($request->avatar, ',') + 1);
+            $data = base64_decode($data);
+            if ($data !== false) {
+                $extension = strtolower($type[1]) ?: 'webp';
+                $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.' . $extension;
+
+                \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/petugas/' . $fileName, $data);
+
+                if ($petugas->avatar && str_starts_with($petugas->avatar, '/storage/')) {
+                    $oldPath = substr($petugas->avatar, 9);
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                    }
+                }
+
+                $avatarPath = '/storage/avatars/petugas/' . $fileName;
+            }
+        } elseif ($request->avatar === null) {
+            if ($petugas->avatar && str_starts_with($petugas->avatar, '/storage/')) {
+                $oldPath = substr($petugas->avatar, 9);
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                }
+            }
+            $avatarPath = null;
+        }
+
         $petugas->update([
             'nama_petugas' => $request->nama,
             'NIP' => $request->nip,
             'no_hp' => $request->telp,
-            'avatar' => $request->avatar,
+            'avatar' => $avatarPath,
         ]);
 
         $dinas = Dinas::find($petugas->id_dinas);
@@ -222,6 +252,32 @@ class PetugasController extends Controller
                 'telepon' => $petugas->no_hp ?? '-',
                 'avatar' => $petugas->avatar,
             ]
+        ]);
+    }
+
+    public function updatePassword(Request $request, $id)
+    {
+        $petugas = Petugas::findOrFail($id);
+
+        $request->validate([
+            'password_lama' => 'required|string',
+            'password_baru' => 'required|string|min:8',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->password_lama, $petugas->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Kata sandi saat ini salah.'
+            ], 422);
+        }
+
+        $petugas->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password_baru)
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Kata sandi berhasil diubah.'
         ]);
     }
 }

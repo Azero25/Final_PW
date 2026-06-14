@@ -11,6 +11,10 @@ const StatusBadge = ({ status }) => {
     );
 };
 
+const isImageUrl = (avatar) => {
+    return avatar && (avatar.startsWith('/storage') || avatar.startsWith('http') || avatar.startsWith('data:image'));
+};
+
 export default function PetugasDinasPage() {
     const [tab, setTab] = useState('petugas'); // 'petugas' | 'dinas'
     const [search, setSearch] = useState('');
@@ -328,8 +332,12 @@ export default function PetugasDinasPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center shrink-0`}>
-                                                    <span className="text-white text-xs font-bold">{p.nama.charAt(0)}</span>
+                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center shrink-0 overflow-hidden`}>
+                                                    {isImageUrl(p.avatar) ? (
+                                                        <img src={p.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-white text-xs font-bold">{p.nama.charAt(0)}</span>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-slate-800 text-sm">{p.nama}</p>
@@ -460,6 +468,22 @@ export default function PetugasDinasPage() {
                         <div className="px-6 py-5 space-y-4">
                             {tab === 'petugas' ? (
                                 <>
+                                    {modalMode !== 'tambah' && (
+                                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                                            <div className={`w-14 h-14 ${getDinasColor(modal.dinas)} rounded-2xl flex items-center justify-center overflow-hidden`}>
+                                                {isImageUrl(modal.avatar) ? (
+                                                    <img src={modal.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-white text-xl font-bold">{modal.nama?.charAt(0)}</span>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800">{modal.nama}</p>
+                                                <p className="text-xs text-slate-400 font-mono">{modal.id}</p>
+                                                <StatusBadge status={modal.status || 'Aktif'} />
+                                            </div>
+                                        </div>
+                                    )}
                                     {['nama', 'nip', 'jabatan', 'telp'].map(field => (
                                         <div key={field}>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">
