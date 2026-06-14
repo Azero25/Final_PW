@@ -29,7 +29,7 @@ class UserController extends Controller
                 'totalLaporan' => $totalLaporan, 
                 'status' => $user->status ?? 'Aktif',
                 'bergabung' => $user->tanggal_bergabung ? \Carbon\Carbon::parse($user->tanggal_bergabung)->format('d M Y') : '-',
-                'avatar' => strtoupper(substr($user->nama_lengkap, 0, 1)),
+                'avatar' => $user->avatar ?? strtoupper(substr($user->nama_lengkap, 0, 1)),
                 'role' => $user->role,
                 'original_id' => $user->id_user,
             ];
@@ -49,6 +49,8 @@ class UserController extends Controller
             'telp' => 'nullable|string|max:20',
             'kecamatan' => 'nullable|string|max:255',
             'status' => 'nullable|string',
+            'role' => 'required|string|in:warga,admin',
+            'password' => 'required|string|min:8',
         ]);
 
         $kelurahanId = null;
@@ -71,8 +73,8 @@ class UserController extends Controller
             'no_hp' => $request->telp,
             'id_kelurahan' => $kelurahanId,
             'status' => $request->status ?? 'Aktif',
-            'password' => Hash::make('password123'),
-            'role' => 'warga',
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
         ]);
 
         return response()->json([

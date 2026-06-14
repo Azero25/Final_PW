@@ -51,6 +51,7 @@ Route::prefix('api')->group(function () {
     Route::delete('/petugas/{id}', [PetugasController::class, 'destroy']);
     Route::post('/petugas/login', [PetugasController::class, 'login']);
     Route::put('/petugas/profile/{id}', [PetugasController::class, 'updateProfile']);
+    Route::put('/petugas/profile/{id}/password', [PetugasController::class, 'updatePassword']);
 
 
     // Notification Routes

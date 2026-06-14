@@ -106,6 +106,37 @@ class AuthController extends Controller
             'avatar' => 'nullable|string',
         ]);
 
+        $avatarPath = $request->avatar;
+
+        if ($request->avatar && preg_match('/^data:image\/(\w+);base64,/', $request->avatar, $type)) {
+            $data = substr($request->avatar, strpos($request->avatar, ',') + 1);
+            $data = base64_decode($data);
+            if ($data !== false) {
+                $folder = $user->role === 'admin' ? 'admin' : 'warga';
+                $extension = strtolower($type[1]) ?: 'webp';
+                $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.' . $extension;
+
+                \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/' . $folder . '/' . $fileName, $data);
+
+                if ($user->avatar && str_starts_with($user->avatar, '/storage/')) {
+                    $oldPath = substr($user->avatar, 9);
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                    }
+                }
+
+                $avatarPath = '/storage/avatars/' . $folder . '/' . $fileName;
+            }
+        } elseif ($request->avatar === null) {
+            if ($user->avatar && str_starts_with($user->avatar, '/storage/')) {
+                $oldPath = substr($user->avatar, 9);
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                }
+            }
+            $avatarPath = null;
+        }
+
         $user->update([
             'nama_lengkap' => $request->nama_lengkap,
             'nik' => $request->nik,
@@ -116,7 +147,7 @@ class AuthController extends Controller
             'kecamatan' => $request->kecamatan,
             'kabupaten' => $request->kabupaten,
             'provinsi' => $request->provinsi,
-            'avatar' => $request->avatar,
+            'avatar' => $avatarPath,
         ]);
 
         return response()->json([
