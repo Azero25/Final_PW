@@ -7,23 +7,27 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Kelurahan;
+use App\Models\Laporan;
+use Carbon\Carbon;
+use App\Models\Provinsi;
+use App\Models\Kecamatan;
 
 class UserController extends Controller
 {
     public function index()
     {
         $users = User::all();
-        
-        $laporanCounts = \App\Models\Laporan::selectRaw('id_user, count(*) as count')
+
+        $laporanCounts = Laporan::selectRaw('id_user, count(*) as count')
             ->groupBy('id_user')
             ->pluck('count', 'id_user');
-            
+
         $kelurahanIds = $users->pluck('id_kelurahan')->filter()->unique();
         $kelurahans = Kelurahan::whereIn('id_kelurahan', $kelurahanIds)->get()->keyBy('id_kelurahan');
 
         $mappedUsers = $users->map(function ($user) use ($laporanCounts, $kelurahans) {
             $totalLaporan = $laporanCounts->get($user->id_user, 0);
-            
+
             $kelurahanName = '-';
             if ($user->id_kelurahan && $kelurahans->has($user->id_kelurahan)) {
                 $kelurahanName = $kelurahans->get($user->id_kelurahan)->nama_kelurahan;
@@ -33,11 +37,11 @@ class UserController extends Controller
                 'id' => 'USR-' . str_pad($user->id_user, 3, '0', STR_PAD_LEFT),
                 'nama' => $user->nama_lengkap,
                 'email' => $user->email,
-                'telp' => $user->no_hp ?? '-', 
-                'kecamatan' => $kelurahanName, 
-                'totalLaporan' => $totalLaporan, 
+                'telp' => $user->no_hp ?? '-',
+                'kecamatan' => $kelurahanName,
+                'totalLaporan' => $totalLaporan,
                 'status' => $user->status ?? 'Aktif',
-                'bergabung' => $user->tanggal_bergabung ? \Carbon\Carbon::parse($user->tanggal_bergabung)->format('d M Y') : '-',
+                'bergabung' => $user->tanggal_bergabung ? Carbon::parse($user->tanggal_bergabung)->format('d M Y') : '-',
                 'avatar' => $user->avatar ?? strtoupper(substr($user->nama_lengkap, 0, 1)),
                 'role' => $user->role,
                 'original_id' => $user->id_user,
@@ -64,8 +68,8 @@ class UserController extends Controller
 
         $kelurahanId = null;
         if ($request->kecamatan) {
-            $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
-            $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+            $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+            $kecamatanDb = Kecamatan::firstOrCreate(
                 ['nama_kecamatan' => 'Kecamatan Default'],
                 ['id_provinsi' => $provinsi->id_provinsi]
             );
@@ -107,8 +111,8 @@ class UserController extends Controller
 
         $kelurahanId = null;
         if ($request->kecamatan) {
-            $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
-            $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+            $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+            $kecamatanDb = Kecamatan::firstOrCreate(
                 ['nama_kecamatan' => 'Kecamatan Default'],
                 ['id_provinsi' => $provinsi->id_provinsi]
             );

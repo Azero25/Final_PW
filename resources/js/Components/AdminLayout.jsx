@@ -182,7 +182,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
         if (!adminProfile.kecamatan?.trim()) errors.kecamatan = 'Kecamatan wajib diisi';
         if (!adminProfile.kabupaten?.trim()) errors.kabupaten = 'Kabupaten wajib diisi';
         if (!adminProfile.provinsi?.trim()) errors.provinsi = 'Provinsi wajib diisi';
-        
+
         if (!adminProfile.nik?.trim()) {
             errors.nik = 'NIK wajib diisi';
         } else if (!/^\d+$/.test(adminProfile.nik)) {
@@ -201,10 +201,10 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
 
         setSaving(true);
         setTimeout(() => {
-            const updatedUser = { 
-                ...user, 
-                nama: adminProfile.nama, 
-                email: adminProfile.email 
+            const updatedUser = {
+                ...user,
+                nama: adminProfile.nama,
+                email: adminProfile.email
             };
             sessionStorage.setItem('user', JSON.stringify(updatedUser));
             setUser(updatedUser);
@@ -247,7 +247,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
             {/* ====== SIDEBAR ====== */}
             <aside className={`
                 ${sidebarWidth}
-                bg-slate-900 text-white flex flex-col flex-shrink-0 z-40
+                bg-slate-900 text-white flex flex-col shrink-0 z-40
                 transition-all duration-300 ease-in-out
                 ${isDesktop
                     ? 'relative'                                          // desktop: dalam flow normal
@@ -255,8 +255,8 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                 }
             `}>
                 {/* Logo */}
-                <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700 flex-shrink-0">
-                    <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700 shrink-0">
+                    <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center shrink-0">
                         <span className="material-symbols-outlined text-white text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
                     </div>
                     {(!collapsed || !isDesktop) && (
@@ -275,7 +275,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                 </div>
 
                 {/* Menu Navigasi */}
-                <nav className="flex-grow px-3 py-4 space-y-1 overflow-y-auto">
+                <nav className="grow px-3 py-4 space-y-1 overflow-y-auto">
                     {menuItems.map((item) => (
                         <Link
                             key={item.id}
@@ -286,7 +286,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
                                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                         >
-                            <span className="material-symbols-outlined text-xl flex-shrink-0"
+                            <span className="material-symbols-outlined text-xl shrink-0"
                                 style={{ fontVariationSettings: isActive(item.path) ? "'FILL' 1" : "'FILL' 0" }}>
                                 {item.icon}
                             </span>
@@ -296,21 +296,21 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                 </nav>
 
                 {/* Profil Admin */}
-                <div className="border-t border-slate-700 p-4 flex-shrink-0">
+                <div className="border-t border-slate-700 p-4 shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shrink-0">
                             <span className="text-white font-bold text-sm">{user?.nama?.charAt(0) || 'A'}</span>
                         </div>
                         {(!collapsed || !isDesktop) && (
-                            <div className="overflow-hidden flex-grow">
+                            <div className="overflow-hidden grow">
                                 <p className="text-sm font-semibold leading-tight">{user?.nama || 'Admin Utama'}</p>
                                 <p className="text-slate-400 text-xs truncate">{user?.email || 'admin@lapor.go.id'}</p>
                             </div>
                         )}
                         {(!collapsed || !isDesktop) && (
-                            <button 
+                            <button
                                 onClick={openProfileModal}
-                                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors flex-shrink-0"
+                                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors shrink-0"
                                 title="Edit Profil Admin"
                             >
                                 <span className="material-symbols-outlined text-sm">edit</span>
@@ -326,12 +326,12 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                     )}
                 </div>
             </aside>
- 
+
             {/* ====== MAIN CONTENT ====== */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
- 
+
                 {/* Topbar */}
-                <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0">
+                <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         {/* Toggle sidebar */}
                         <button
@@ -357,7 +357,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
                                 className="relative text-slate-500 hover:text-slate-800 hover:bg-slate-100 p-2 rounded-lg transition-colors focus:outline-none"
                             >
@@ -368,7 +368,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                     </span>
                                 )}
                             </button>
-                            
+
                             {notifDropdownOpen && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setNotifDropdownOpen(false)} />
@@ -383,7 +383,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                                 )}
                                             </div>
                                             {unreadCount > 0 && (
-                                                <button 
+                                                <button
                                                     onClick={markAllAsRead}
                                                     className="text-xs text-blue-600 hover:underline font-semibold"
                                                 >
@@ -391,7 +391,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                                 </button>
                                             )}
                                         </div>
-                                        <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-50">
+                                        <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
                                             {notifications.length === 0 ? (
                                                 <div className="py-8 text-center text-slate-400">
                                                     <span className="material-symbols-outlined text-3xl block mb-1">notifications_off</span>
@@ -401,13 +401,13 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                                 notifications.map(n => {
                                                     const cfg = TIPE_CONFIG[n.tipe] || TIPE_CONFIG.sistem;
                                                     return (
-                                                        <div 
-                                                            key={n.id} 
+                                                        <div
+                                                            key={n.id}
                                                             onClick={() => markAsRead(n.id)}
                                                             className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${!n.dibaca ? 'bg-blue-50/20' : ''}`}
                                                         >
                                                             {/* Dot */}
-                                                            <div className="flex-shrink-0 mt-1.5">
+                                                            <div className="shrink-0 mt-1.5">
                                                                 {!n.dibaca ? (
                                                                     <span className={`block w-2 h-2 rounded-full ${cfg.dot}`}></span>
                                                                 ) : (
@@ -415,7 +415,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                                                 )}
                                                             </div>
                                                             {/* Icon */}
-                                                            <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
+                                                            <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center shrink-0`}>
                                                                 <span className={`material-symbols-outlined text-base ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                                                                     {cfg.icon}
                                                                 </span>
@@ -432,8 +432,8 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                             )}
                                         </div>
                                         <div className="px-4 py-2 border-t border-slate-100 text-center bg-slate-50 rounded-b-2xl">
-                                            <Link 
-                                                to="/admin/notifikasi" 
+                                            <Link
+                                                to="/admin/notifikasi"
                                                 onClick={() => setNotifDropdownOpen(false)}
                                                 className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline inline-flex items-center gap-1"
                                             >
@@ -445,15 +445,15 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                 </>
                             )}
                         </div>
-                        
+
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                                className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center cursor-pointer focus:outline-none hover:ring-2 hover:ring-blue-500/30 transition-all"
+                                className="w-8 h-8 sm:w-9 sm:h-9 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center cursor-pointer focus:outline-none hover:ring-2 hover:ring-blue-500/30 transition-all"
                             >
                                 <span className="text-white font-bold text-sm">{user?.nama?.charAt(0) || 'A'}</span>
                             </button>
-                            
+
                             {dropdownOpen && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
@@ -462,7 +462,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LOGGED IN AS</p>
                                             <p className="text-sm font-bold text-slate-800 truncate">{user?.nama || 'Admin Utama'}</p>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setDropdownOpen(false);
                                                 openProfileModal();
@@ -472,7 +472,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                                             <span className="material-symbols-outlined text-lg text-slate-400">person</span>
                                             Edit Profil
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={handleLogout}
                                             className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors font-semibold border-t border-slate-100"
                                         >
@@ -485,7 +485,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
                         </div>
                     </div>
                 </header>
- 
+
                 {/* Konten Scrollable */}
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6">
                     {children}
@@ -651,7 +651,7 @@ export default function AdminLayout({ children, pageTitle = 'Admin', pageSubtitl
             {/* ====== SUCCESS TOAST ====== */}
             {showToast && (
                 <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl bg-emerald-50 border border-emerald-200 text-emerald-800 animate-in fade-in slide-in-from-top-3 duration-300">
-                    <span className="material-symbols-outlined text-2xl flex-shrink-0 text-emerald-600">check_circle</span>
+                    <span className="material-symbols-outlined text-2xl shrink-0 text-emerald-600">check_circle</span>
                     <p className="text-sm font-semibold">Profil Admin berhasil diperbarui!</p>
                 </div>
             )}

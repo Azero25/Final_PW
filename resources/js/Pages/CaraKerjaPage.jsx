@@ -24,10 +24,10 @@ export default function CaraKerjaPage() {
             <Navbar />
 
             {/* Main Content */}
-            <main className="flex-grow pt-32 pb-24 px-6 max-w-5xl mx-auto w-full">
+            <main className="grow pt-32 pb-24 px-6 max-w-5xl mx-auto w-full">
                 <div className="text-center mb-16">
                     <span className="inline-block py-1 px-3 rounded-full bg-primary-container/10 text-primary font-label-bold text-sm tracking-widest uppercase mb-4 border border-primary/20">Panduan Lengkap</span>
-                    <h1 className="font-h1 text-on-background text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">Alur Pengaduan <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">Masyarakat</span></h1>
+                    <h1 className="font-h1 text-on-background text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">Alur Pengaduan <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-blue-400">Masyarakat</span></h1>
                     <p className="font-body-lg text-on-surface-variant max-w-3xl mx-auto text-lg leading-relaxed">Kami memastikan setiap laporan yang Anda kirimkan ditangani secara profesional, transparan, dan dapat dilacak setiap saat.</p>
                 </div>
 

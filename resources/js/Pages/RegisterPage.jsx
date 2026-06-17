@@ -79,7 +79,7 @@ export default function RegisterPage() {
         <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col items-center justify-center p-6 relative z-0">
             {/* Efek latar belakang blur */}
             <div className="absolute inset-0 bg-primary-container/5 blur-3xl -z-10"></div>
-            
+
             {/* Navigasi kembali ke beranda */}
             <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-primary hover:text-primary-container transition-colors font-label-bold">
                 <span className="material-symbols-outlined">arrow_back</span>
@@ -88,7 +88,7 @@ export default function RegisterPage() {
 
             {/* Kotak utama form registrasi */}
             <div className="w-full max-w-md bg-surface-container-lowest p-8 rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.1)] border border-outline-variant/30">
-                
+
                 {/* Judul dan Logo */}
                 <div className="flex flex-col items-center mb-8">
                     <span className="material-symbols-outlined text-5xl text-primary-container mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
@@ -101,7 +101,7 @@ export default function RegisterPage() {
                 {/* Pesan Error */}
                 {error && (
                     <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm">
-                        <span className="material-symbols-outlined text-base flex-shrink-0">error</span>
+                        <span className="material-symbols-outlined text-base shrink-0">error</span>
                         {error}
                     </div>
                 )}
@@ -204,7 +204,7 @@ export default function RegisterPage() {
                             </p>
                         )}
                     </div>
-                    
+
                     {/* Tombol aksi daftar */}
                     <button
                         disabled={isLoading || passwordMismatch}

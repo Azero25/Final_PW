@@ -61,7 +61,7 @@ export default function LoginPage() {
         }
     };
 
-   
+
 
     return (
         <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col items-center justify-center p-6 relative z-0">
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 {/* Pesan Error */}
                 {error && (
                     <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm">
-                        <span className="material-symbols-outlined text-base flex-shrink-0">error</span>
+                        <span className="material-symbols-outlined text-base shrink-0">error</span>
                         {error}
                     </div>
                 )}

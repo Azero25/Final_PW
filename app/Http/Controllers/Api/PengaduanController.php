@@ -10,6 +10,12 @@ use App\Models\Kelurahan;
 use App\Models\User;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use App\Models\Dinas;
+use App\Models\Petugas;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Provinsi;
+use App\Models\Kecamatan;
 
 class PengaduanController extends Controller
 {
@@ -41,7 +47,7 @@ class PengaduanController extends Controller
         // Fallback untuk data lama yang belum punya log: bangun dari status saat ini
         $log = [$this->buildLogEntry('Laporan Diterima')];
         // Koreksi waktu ke created_at yang sebenarnya
-        $log[0]['tanggal'] = \Carbon\Carbon::parse($laporan->created_at)->format('d M Y, H:i');
+        $log[0]['tanggal'] = Carbon::parse($laporan->created_at)->format('d M Y, H:i');
 
         $current = $laporan->status_laporan;
         if (in_array($current, ['Verifikasi', 'Sedang Diproses', 'Selesai', 'Ditolak']) && $current !== 'Laporan Diterima') {
@@ -53,12 +59,12 @@ class PengaduanController extends Controller
         }
         if ($current === 'Selesai') {
             $entry = $this->buildLogEntry('Selesai');
-            $entry['tanggal'] = \Carbon\Carbon::parse($laporan->updated_at)->format('d M Y, H:i');
+            $entry['tanggal'] = Carbon::parse($laporan->updated_at)->format('d M Y, H:i');
             $log[] = $entry;
         }
         if ($current === 'Ditolak') {
             $entry = $this->buildLogEntry('Ditolak');
-            $entry['tanggal'] = \Carbon\Carbon::parse($laporan->updated_at)->format('d M Y, H:i');
+            $entry['tanggal'] = Carbon::parse($laporan->updated_at)->format('d M Y, H:i');
             $log[] = $entry;
         }
         return $log;
@@ -79,10 +85,10 @@ class PengaduanController extends Controller
 
         $kategoriObj = Kategori::find($laporan->id_kategori);
         $kategoriName = $kategoriObj?->nama_kategori ?? 'Umum';
-        $dinasName = $kategoriObj && $kategoriObj->id_dinas ? (\App\Models\Dinas::find($kategoriObj->id_dinas)?->nama_dinas ?? '-') : '-';
+        $dinasName = $kategoriObj && $kategoriObj->id_dinas ? (Dinas::find($kategoriObj->id_dinas)?->nama_dinas ?? '-') : '-';
         $dinasId = $kategoriObj ? $kategoriObj->id_dinas : null;
 
-        $petugas = $laporan->id_petugas ? \App\Models\Petugas::find($laporan->id_petugas) : null;
+        $petugas = $laporan->id_petugas ? Petugas::find($laporan->id_petugas) : null;
         $petugasName = $petugas ? $petugas->nama_petugas : '-';
         $petugasId = $petugas ? $petugas->id_petugas : null;
 
@@ -119,7 +125,7 @@ class PengaduanController extends Controller
             'created_at' => $laporan->created_at,
             'updated_at' => $laporan->updated_at,
             'statusColor' => $statusColors[$laporan->status_laporan] ?? 'bg-slate-100 text-slate-800 border-slate-200',
-            'tanggalDibuat' => \Carbon\Carbon::parse($laporan->tanggal_laporan)->format('d M Y'),
+            'tanggalDibuat' => Carbon::parse($laporan->tanggal_laporan)->format('d M Y'),
             'prioritas' => ucfirst($laporan->prioritas),
             'nomorTiket' => $laporan->no_ticket,
         ];
@@ -140,10 +146,10 @@ class PengaduanController extends Controller
         $kategoris = Kategori::whereIn('id_kategori', $kategoriIds)->get()->keyBy('id_kategori');
 
         $dinasIds = $kategoris->pluck('id_dinas')->filter()->unique();
-        $dinasList = \App\Models\Dinas::whereIn('id_dinas', $dinasIds)->get()->keyBy('id_dinas');
+        $dinasList = Dinas::whereIn('id_dinas', $dinasIds)->get()->keyBy('id_dinas');
 
         $petugasIds = $laporans->pluck('id_petugas')->filter()->unique();
-        $petugasList = \App\Models\Petugas::whereIn('id_petugas', $petugasIds)->get()->keyBy('id_petugas');
+        $petugasList = Petugas::whereIn('id_petugas', $petugasIds)->get()->keyBy('id_petugas');
 
         $kelurahanIds = $laporans->pluck('id_kelurahan')->filter()->unique();
         $kelurahans = Kelurahan::whereIn('id_kelurahan', $kelurahanIds)->get()->keyBy('id_kelurahan');
@@ -204,7 +210,7 @@ class PengaduanController extends Controller
                 'created_at' => $laporan->created_at,
                 'updated_at' => $laporan->updated_at,
                 'statusColor' => $statusColors[$laporan->status_laporan] ?? 'bg-slate-100 text-slate-800 border-slate-200',
-                'tanggalDibuat' => \Carbon\Carbon::parse($laporan->tanggal_laporan)->format('d M Y'),
+                'tanggalDibuat' => Carbon::parse($laporan->tanggal_laporan)->format('d M Y'),
                 'prioritas' => ucfirst($laporan->prioritas),
                 'nomorTiket' => $laporan->no_ticket,
             ];
@@ -235,15 +241,15 @@ class PengaduanController extends Controller
         }
 
         // Auto Create Hierarchy for Kategori
-        $dinas = \App\Models\Dinas::firstOrCreate(['nama_dinas' => 'Dinas Umum Pusat']);
+        $dinas = Dinas::firstOrCreate(['nama_dinas' => 'Dinas Umum Pusat']);
         $kategori = Kategori::firstOrCreate(
             ['nama_kategori' => $request->kategori],
             ['id_dinas' => $dinas->id_dinas]
         );
 
         // Auto Create Hierarchy for Kelurahan
-        $provinsi = \App\Models\Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
-        $kecamatanDb = \App\Models\Kecamatan::firstOrCreate(
+        $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+        $kecamatanDb = Kecamatan::firstOrCreate(
             ['nama_kecamatan' => 'Kecamatan Default'],
             ['id_provinsi' => $provinsi->id_provinsi]
         );
@@ -253,8 +259,8 @@ class PengaduanController extends Controller
         );
 
         $userId = null;
-        if (\Illuminate\Support\Facades\Auth::check()) {
-            $userId = \Illuminate\Support\Facades\Auth::id();
+        if (Auth::check()) {
+            $userId = Auth::id();
         }
 
         $prioritasMap = [
@@ -463,7 +469,7 @@ class PengaduanController extends Controller
             return response()->json([], 200); // Return empty array if category or dinas is not found
         }
 
-        $petugas = \App\Models\Petugas::where('id_dinas', $kategori->id_dinas)->get();
+        $petugas = Petugas::where('id_dinas', $kategori->id_dinas)->get();
 
         return response()->json($petugas);
     }
@@ -479,7 +485,7 @@ class PengaduanController extends Controller
             'id_petugas' => 'required|exists:petugas,id_petugas'
         ]);
 
-        $petugas = \App\Models\Petugas::findOrFail($request->id_petugas);
+        $petugas = Petugas::findOrFail($request->id_petugas);
 
         $laporan->id_petugas = $petugas->id_petugas;
         $laporan->status_laporan = 'Sedang Diproses';

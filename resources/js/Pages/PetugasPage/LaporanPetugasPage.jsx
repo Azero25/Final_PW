@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PetugasLayout from '../../Components/PetugasLayout';
-import { getTasksForDinas } from './petugasData';
 import api from '../../axios';
 
 const mapStatusToPetugas = (backendStatus) => {
@@ -81,18 +80,18 @@ const formatLaporanToTugas = (laporan) => {
 
 /**
  * Halaman Daftar Laporan Petugas
- * Menampilkan tabel laporan lengkap milik dinas petugas, 
+ * Menampilkan tabel laporan lengkap milik dinas petugas,
  * lengkap dengan pencarian, pemfilteran, modal detail, dan pembaruan status.
  */
 export default function LaporanPetugasPage() {
     const [petugas, setPetugas] = useState(null);
     const [tugasList, setTugasList] = useState([]);
-    
+
     // Filter state
     const [filterStatus, setFilterStatus] = useState('Semua');
     const [filterPrioritas, setFilterPrioritas] = useState('Semua');
     const [searchQuery, setSearchQuery] = useState('');
-    
+
     // Modal state
     const [modalTugas, setModalTugas] = useState(null);
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'updateStatus'
@@ -132,9 +131,9 @@ export default function LaporanPetugasPage() {
         return tugasList.filter(t => {
             const matchStatus = filterStatus === 'Semua' || t.status === filterStatus;
             const matchPrioritas = filterPrioritas === 'Semua' || t.prioritas === filterPrioritas;
-            const matchSearch = !searchQuery || 
-                t.judul.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            const matchSearch = !searchQuery ||
+                t.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.lokasi.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.pelapor.toLowerCase().includes(searchQuery.toLowerCase());
             return matchStatus && matchPrioritas && matchSearch;
@@ -159,7 +158,7 @@ export default function LaporanPetugasPage() {
         try {
             const backendStatus = mapStatusToBackend(editStatus);
             await api.put(`/api/pengaduans/${modalTugas.id}`, { status: backendStatus });
-            
+
             // Refetch data agar terupdate secara real-time
             await fetchLaporan();
 
@@ -224,7 +223,7 @@ export default function LaporanPetugasPage() {
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-md p-6">
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
                         {/* Search Input */}
-                        <div className="relative flex-1 min-w-[280px]">
+                        <div className="relative flex-1 min-w-70">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
                             <input
                                 type="text"
@@ -244,7 +243,7 @@ export default function LaporanPetugasPage() {
                                     onClick={() => setFilterStatus(s)}
                                     className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all
                                         ${filterStatus === s
-                                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/15'
+                                            ? 'bg-linear-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/15'
                                             : 'text-slate-600 hover:bg-slate-50 border border-slate-200/80 bg-white'
                                         }`}
                                 >
@@ -311,12 +310,12 @@ export default function LaporanPetugasPage() {
                                             <td className="px-6 py-4 font-mono text-xs text-blue-600 font-bold">{tugas.id}</td>
                                             <td className="px-6 py-4 font-medium text-slate-800">{tugas.pelapor}</td>
                                             <td className="px-6 py-4">
-                                                <p className="font-semibold text-slate-800 max-w-[200px] truncate" title={tugas.judul}>{tugas.judul}</p>
+                                                <p className="font-semibold text-slate-800 max-w-50 truncate" title={tugas.judul}>{tugas.judul}</p>
                                             </td>
                                             <td className="px-6 py-4 hidden md:table-cell">
                                                 <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium">{tugas.kategori}</span>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-500 hidden lg:table-cell max-w-[150px] truncate" title={tugas.lokasi}>{tugas.lokasi}</td>
+                                            <td className="px-6 py-4 text-slate-500 hidden lg:table-cell max-w-37.5 truncate" title={tugas.lokasi}>{tugas.lokasi}</td>
                                             <td className="px-6 py-4 text-slate-400 text-xs whitespace-nowrap hidden sm:table-cell">
                                                 {new Date(tugas.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </td>
@@ -485,7 +484,7 @@ export default function LaporanPetugasPage() {
                                 <button
                                     disabled={isSaving}
                                     onClick={handleUpdateStatus}
-                                    className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-400 hover:to-indigo-500 transition-all font-bold flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-500/15"
+                                    className="px-5 py-2.5 text-sm bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-400 hover:to-indigo-500 transition-all font-bold flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-500/15"
                                 >
                                     {isSaving ? (
                                         <>
@@ -506,7 +505,7 @@ export default function LaporanPetugasPage() {
             {/* ====== SUCCESS TOAST ====== */}
             {showToast && (
                 <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl bg-emerald-50 border border-emerald-100 text-emerald-800 animate-in fade-in slide-in-from-top-3 duration-300">
-                    <span className="material-symbols-outlined text-2xl flex-shrink-0 text-emerald-600">check_circle</span>
+                    <span className="material-symbols-outlined text-2xl shrink-0 text-emerald-600">check_circle</span>
                     <p className="text-sm font-semibold">{toastMessage}</p>
                 </div>
             )}

@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Notification;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -16,10 +20,10 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
-        $user = \App\Models\User::create([
+        $user = User::create([
             'nama_lengkap' => $request->name,
             'email' => $request->email,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'password' => Hash::make($request->password),
             'role' => 'warga',
         ]);
 
@@ -33,7 +37,7 @@ class AuthController extends Controller
             'target_role' => 'admin',
         ]);
 
-        \Illuminate\Support\Facades\Auth::login($user);
+        Auth::login($user);
 
         return response()->json([
             'status' => 'success',
@@ -48,12 +52,12 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (\Illuminate\Support\Facades\Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
             return response()->json([
                 'status' => 'success',
-                'user' => \Illuminate\Support\Facades\Auth::user(),
+                'user' => Auth::user(),
             ]);
         }
 
@@ -65,7 +69,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        \Illuminate\Support\Facades\Auth::logout();
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -75,12 +79,12 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        if (\Illuminate\Support\Facades\Auth::check()) {
+        if (Auth::check()) {
             return response()->json([
-                'user' => \Illuminate\Support\Facades\Auth::user()
+                'user' => Auth::user()
             ]);
         }
-        
+
         return response()->json([
             'user' => null
         ], 401);
@@ -88,7 +92,7 @@ class AuthController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -116,12 +120,12 @@ class AuthController extends Controller
                 $extension = strtolower($type[1]) ?: 'webp';
                 $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.' . $extension;
 
-                \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/' . $folder . '/' . $fileName, $data);
+                Storage::disk('public')->put('avatars/' . $folder . '/' . $fileName, $data);
 
                 if ($user->avatar && str_starts_with($user->avatar, '/storage/')) {
                     $oldPath = substr($user->avatar, 9);
-                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                    if (Storage::disk('public')->exists($oldPath)) {
+                        Storage::disk('public')->delete($oldPath);
                     }
                 }
 
@@ -130,8 +134,8 @@ class AuthController extends Controller
         } elseif ($request->avatar === null) {
             if ($user->avatar && str_starts_with($user->avatar, '/storage/')) {
                 $oldPath = substr($user->avatar, 9);
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
                 }
             }
             $avatarPath = null;
@@ -159,7 +163,8 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request)
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = Auth
+::user();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -169,7 +174,7 @@ class AuthController extends Controller
             'password_baru' => 'required|string|min:8',
         ]);
 
-        if (!\Illuminate\Support\Facades\Hash::check($request->password_lama, $user->password)) {
+        if (!Hash::check($request->password_lama, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Kata sandi saat ini salah.'
@@ -177,7 +182,7 @@ class AuthController extends Controller
         }
 
         $user->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password_baru)
+            'password' => Hash::make($request->password_baru)
         ]);
 
         return response()->json([

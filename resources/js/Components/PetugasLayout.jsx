@@ -294,7 +294,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
             {/* ====== SIDEBAR ====== */}
             <aside className={`
                 ${sidebarWidth}
-                bg-slate-900 text-white flex flex-col flex-shrink-0 z-40
+                bg-slate-900 text-white flex flex-col shrink-0 z-40
                 transition-all duration-300 ease-in-out
                 ${isDesktop
                     ? 'relative'
@@ -302,8 +302,8 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                 }
             `}>
                 {/* Logo */}
-                <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700 flex-shrink-0">
-                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700 shrink-0">
+                    <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shrink-0">
                         <span className="material-symbols-outlined text-white text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
                     </div>
                     {(!collapsed || !isDesktop) && (
@@ -322,7 +322,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                 </div>
 
                 {/* Menu Navigasi */}
-                <nav className="flex-grow px-3 py-4 space-y-1 overflow-y-auto">
+                <nav className="grow px-3 py-4 space-y-1 overflow-y-auto">
                     {menuItems.map((item) => (
                         <Link
                             key={item.id}
@@ -333,7 +333,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
                                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                         >
-                            <span className="material-symbols-outlined text-xl flex-shrink-0"
+                            <span className="material-symbols-outlined text-xl shrink-0"
                                 style={{ fontVariationSettings: isActive(item.path) ? "'FILL' 1" : "'FILL' 0" }}>
                                 {item.icon}
                             </span>
@@ -343,9 +343,9 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                 </nav>
 
                 {/* Profil Petugas */}
-                <div className="border-t border-slate-700 p-4 flex-shrink-0">
+                <div className="border-t border-slate-700 p-4 shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                             {petugas?.avatar ? (
                                 <img src={petugas.avatar} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -353,7 +353,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                             )}
                         </div>
                         {(!collapsed || !isDesktop) && (
-                            <div className="overflow-hidden flex-grow">
+                            <div className="overflow-hidden grow">
                                 <p className="text-sm font-semibold leading-tight truncate">{petugas?.nama || 'Petugas'}</p>
                                 <p className="text-blue-400 text-xs truncate">{petugas?.dinas || 'Dinas'}</p>
                             </div>
@@ -373,7 +373,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
                 {/* Topbar */}
-                <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0">
+                <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         {/* Toggle sidebar */}
                         <button
@@ -431,7 +431,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                                                 </button>
                                             )}
                                         </div>
-                                        <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-50">
+                                        <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
                                             {notifications.length === 0 ? (
                                                 <div className="py-8 text-center text-slate-400">
                                                     <span className="material-symbols-outlined text-3xl block mb-1">notifications_off</span>
@@ -446,14 +446,14 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                                                             onClick={() => markAsRead(n.id)}
                                                             className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${!n.dibaca ? 'bg-blue-50/30' : ''}`}
                                                         >
-                                                            <div className="flex-shrink-0 mt-1.5">
+                                                            <div className="shrink-0 mt-1.5">
                                                                 {!n.dibaca ? (
                                                                     <span className={`block w-2 h-2 rounded-full ${cfg.dot}`}></span>
                                                                 ) : (
                                                                     <span className="block w-2 h-2 rounded-full bg-transparent"></span>
                                                                 )}
                                                             </div>
-                                                            <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
+                                                            <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center shrink-0`}>
                                                                 <span className={`material-symbols-outlined text-base ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                                                                     {cfg.icon}
                                                                 </span>
@@ -477,7 +477,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                         <div className="relative">
                             <button
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                                className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center cursor-pointer focus:outline-none hover:ring-2 hover:ring-blue-500/30 transition-all overflow-hidden"
+                                className="w-8 h-8 sm:w-9 sm:h-9 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center cursor-pointer focus:outline-none hover:ring-2 hover:ring-blue-500/30 transition-all overflow-hidden"
                             >
                                 {petugas?.avatar ? (
                                     <img src={petugas.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -568,7 +568,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                                                     {profileData.avatar ? (
                                                         <img src={profileData.avatar} alt="Preview Avatar" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl">
+                                                        <div className="w-full h-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl">
                                                             {profileData.nama?.charAt(0) || 'P'}
                                                         </div>
                                                     )}
@@ -711,7 +711,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                                     <button
                                         type="submit"
                                         disabled={savingProfile}
-                                        className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-400 hover:to-indigo-500 transition-all font-bold flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-500/15"
+                                        className="px-5 py-2.5 text-sm bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-400 hover:to-indigo-500 transition-all font-bold flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-500/15"
                                     >
                                         {savingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
                                     </button>
@@ -724,7 +724,7 @@ export default function PetugasLayout({ children, pageTitle = 'Petugas', pageSub
                 {/* ====== SUCCESS PROFILE TOAST ====== */}
                 {showProfileToast && (
                     <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl bg-emerald-50 border border-emerald-200 text-emerald-800 animate-in fade-in slide-in-from-top-3 duration-300">
-                        <span className="material-symbols-outlined text-2xl flex-shrink-0 text-emerald-600">check_circle</span>
+                        <span className="material-symbols-outlined text-2xl shrink-0 text-emerald-600">check_circle</span>
                         <p className="text-sm font-semibold">{profileToastMsg}</p>
                     </div>
                 )}

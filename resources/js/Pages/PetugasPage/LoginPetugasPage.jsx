@@ -51,9 +51,9 @@ export default function LoginPetugasPage() {
         <div className="bg-slate-950 min-h-screen flex flex-col items-center justify-center p-6 relative z-0 overflow-hidden font-[Inter,sans-serif]">
             {/* Animated background */}
             <div className="absolute inset-0 -z-10">
-                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] animate-pulse"></div>
-                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/8 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"></div>
+                <div className="absolute top-[-20%] left-[-10%] w-125 h-125 bg-blue-500/10 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[-20%] right-[-10%] w-150 h-150 bg-indigo-500/8 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-100 h-100 bg-blue-500/5 rounded-full blur-[100px]"></div>
             </div>
 
             {/* Grid pattern overlay */}
@@ -83,7 +83,7 @@ export default function LoginPetugasPage() {
             <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 rounded-3xl border border-slate-700/50 shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_40px_rgba(20,184,166,0.05)]">
                 {/* Header */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
+                    <div className="w-16 h-16 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
                         <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
                     </div>
                     <h1 className="text-2xl font-bold text-white font-[Public_Sans,sans-serif]">Login Petugas</h1>
@@ -93,7 +93,7 @@ export default function LoginPetugasPage() {
                 {/* Pesan Error */}
                 {error && (
                     <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-5 text-sm backdrop-blur-sm">
-                        <span className="material-symbols-outlined text-base flex-shrink-0">error</span>
+                        <span className="material-symbols-outlined text-base shrink-0">error</span>
                         {error}
                     </div>
                 )}
@@ -141,7 +141,7 @@ export default function LoginPetugasPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-base hover:from-blue-400 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
+                        className="w-full py-4 bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-base hover:from-blue-400 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
                     >
                         {isLoading ? (
                             <>

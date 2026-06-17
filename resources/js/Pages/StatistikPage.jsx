@@ -24,7 +24,7 @@ export default function StatistikPage() {
                 const total = data.length;
                 const proses = data.filter(i => i.status === 'Laporan Diterima' || i.status === 'Verifikasi' || i.status === 'Sedang Diproses').length;
                 const selesai = data.filter(i => i.status === 'Selesai').length;
-                
+
                 setStats({
                     total,
                     proses,
@@ -57,7 +57,7 @@ export default function StatistikPage() {
                 const monthNames = ["JAN", "FEB", "MAR", "APR", "MEI", "JUN", "JUL", "AGS", "SEP", "OKT", "NOV", "DES"];
                 const currentMonth = new Date().getMonth();
                 const currentYear = new Date().getFullYear();
-                
+
                 let monthlyCounts = {};
                 for (let i = 6; i >= 0; i--) {
                     let d = new Date(currentYear, currentMonth - i, 1);
@@ -107,7 +107,7 @@ export default function StatistikPage() {
             {/* Navbar Bersama */}
             <Navbar />
 
-            <main className="pt-24 pb-12 max-w-7xl mx-auto px-6 flex-grow">
+            <main className="pt-24 pb-12 max-w-7xl mx-auto px-6 grow">
                 {/* Header Section */}
                 <header className="mb-10 relative overflow-hidden rounded-xl bg-primary-container p-10 text-white">
                     <div className="absolute inset-0 batik-pattern opacity-10"></div>
@@ -144,7 +144,7 @@ export default function StatistikPage() {
                         <p className="text-xs text-green-600 font-label-bold mt-2">↓ 2 jam lebih cepat</p>
                     </div>
                     {/* Main Map Section */}
-                    <div className="md:col-span-8 bg-white p-6 rounded-xl card-shadow border border-slate-100 min-h-[500px] flex flex-col">
+                    <div className="md:col-span-8 bg-white p-6 rounded-xl card-shadow border border-slate-100 min-h-125 flex flex-col">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="font-h3 text-h3 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary">map</span>
@@ -153,13 +153,13 @@ export default function StatistikPage() {
                             <div className="flex gap-2">
                             </div>
                         </div>
-                        <div className="flex-grow bg-slate-50 rounded-lg relative overflow-hidden group">
-                            <iframe 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126492.65158652427!2d110.3013898687786!3d-7.80324846462788!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a5787bd5b6bc5%3A0x21723fd4d3684f71!2sYogyakarta%2C%20Yogyakarta%20City%2C%20Special%20Region%20of%20Yogyakarta!5e0!3m2!1sen!2sid!4v1715872856000!5m2!1sen!2sid" 
-                                className="w-full border-0 pointer-events-none" 
+                        <div className="grow bg-slate-50 rounded-lg relative overflow-hidden group">
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126492.65158652427!2d110.3013898687786!3d-7.80324846462788!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a5787bd5b6bc5%3A0x21723fd4d3684f71!2sYogyakarta%2C%20Yogyakarta%20City%2C%20Special%20Region%20of%20Yogyakarta!5e0!3m2!1sen!2sid!4v1715872856000!5m2!1sen!2sid"
+                                className="w-full border-0 pointer-events-none"
                                 style={{ height: 'calc(100% + 100px)', marginTop: '-100px' }}
-                                allowFullScreen="" 
-                                loading="lazy" 
+                                allowFullScreen=""
+                                loading="lazy"
                                 referrerPolicy="no-referrer-when-downgrade">
                             </iframe>
                             <div className="absolute inset-0 p-8 flex flex-col justify-end pointer-events-none">
@@ -176,7 +176,7 @@ export default function StatistikPage() {
                             <div className="absolute top-[55%] left-[48%] w-4 h-4 bg-tertiary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.5s' }}></div>
                             <div className="absolute top-[60%] left-[58%] w-4 h-4 bg-primary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.8s' }}></div>
                             <div className="absolute top-[48%] left-[62%] w-4 h-4 bg-secondary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '1.1s' }}></div>
-                           
+
                         </div>
                     </div>
                     {/* Categories Card */}
@@ -185,7 +185,7 @@ export default function StatistikPage() {
                             <span className="material-symbols-outlined text-primary">pie_chart</span>
                             Kategori Laporan
                         </h3>
-                        <div className="space-y-6 flex-grow flex flex-col justify-center">
+                        <div className="space-y-6 grow flex flex-col justify-center">
                             {chartKategori.map(item => (
                                 <div key={item.label}>
                                     <div className="flex justify-between mb-2">

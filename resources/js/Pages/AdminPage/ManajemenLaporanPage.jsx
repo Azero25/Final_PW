@@ -329,7 +329,7 @@ export default function ManajemenLaporanPage() {
 
                 {/* Tabel */}
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1000px] text-sm">
+                    <table className="w-full min-w-250 text-sm">
                         <thead>
                             <tr className="bg-slate-50 text-left">
                                 <th className="px-4 py-3">
@@ -599,7 +599,7 @@ export default function ManajemenLaporanPage() {
                                             </div>
 
                                             <div className="border-t border-slate-100 pt-3">
-                                                <label className="text-xs text-slate-500 font-semibold block mb-1.5 flex items-center gap-1">
+                                                <label className="text-xs text-slate-500 font-semibold block mb-1.5 items-center gap-1">
                                                     <span className="material-symbols-outlined text-sm font-bold">badge</span>
                                                     Tugaskan Petugas ({modalLaporan.nama_dinas || 'Dinas Terkait'})
                                                 </label>

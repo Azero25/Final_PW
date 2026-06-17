@@ -329,7 +329,7 @@ export default function BuatPengaduanPage() {
                         : 'bg-red-50 border-red-200 text-red-800'
                     }`}
                 >
-                    <span className="material-symbols-outlined text-2xl flex-shrink-0">
+                    <span className="material-symbols-outlined text-2xl shrink-0">
                         {toast.type === 'success' ? 'check_circle' : 'error'}
                     </span>
                     <p className="text-sm font-semibold">{toast.message}</p>
@@ -337,13 +337,13 @@ export default function BuatPengaduanPage() {
             )}
 
             {/* Main Content */}
-            <main className="flex-grow pt-32 pb-24 px-6 md:px-margin max-w-4xl mx-auto w-full flex flex-col gap-8">
+            <main className="grow pt-32 pb-24 px-6 md:px-margin max-w-4xl mx-auto w-full flex flex-col gap-8">
 
                 {!isComplete ? (
                     /* ===== TAMPILAN ALERT BLOKING: PROFIL BELUM LENGKAP ===== */
                     <div className="bg-white rounded-3xl border border-red-100 shadow-[0px_15px_50px_rgba(239,68,68,0.06)] p-8 md:p-12 text-center max-w-2xl mx-auto my-8 relative overflow-hidden animate-in fade-in zoom-in duration-300">
                         {/* Red Top Stripe Banner */}
-                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 to-amber-500"></div>
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-red-500 to-amber-500"></div>
 
                         {/* Icon */}
                         <div className="w-20 h-20 bg-red-50 border border-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
@@ -365,7 +365,7 @@ export default function BuatPengaduanPage() {
                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {missingFields.map((field, idx) => (
                                     <li key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                                        <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 animate-pulse"></span>
+                                        <span className="w-2 h-2 bg-red-500 rounded-full shrink-0 animate-pulse"></span>
                                         {field}
                                     </li>
                                 ))}
@@ -489,7 +489,7 @@ export default function BuatPengaduanPage() {
                                         <label className="font-label-bold text-sm font-semibold text-on-surface-variant" htmlFor="lokasi">Lokasi Kejadian</label>
                                         <div className="flex gap-2">
                                             <input
-                                                className="flex-grow bg-[#F1F5F9] border border-outline-variant focus:border-primary-container rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 transition-colors outline-none"
+                                                className="grow bg-[#F1F5F9] border border-outline-variant focus:border-primary-container rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary-container/20 transition-colors outline-none"
                                                 id="lokasi"
                                                 placeholder="Alamat lengkap atau detail lokasi"
                                                 type="text"
@@ -591,7 +591,7 @@ export default function BuatPengaduanPage() {
                                                     />
 
                                                     {/* Overlay info */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                                                    <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                                                         <p className="text-white text-[10px] font-semibold truncate leading-tight">{img.file.name}</p>
                                                         <p className="text-slate-300 text-[9px]">
                                                             <span className="line-through">{formatSize(img.originalSize)}</span>
@@ -632,7 +632,7 @@ export default function BuatPengaduanPage() {
                                 </div>
 
                                 {/* Submit Action */}
-                                <div className="pt-8 flex flex-col-reverse md:flex-row justify-end gap-4 border-t border-surface-variant mt-4 pt-6">
+                                <div className="pt-8 flex flex-col-reverse md:flex-row justify-end gap-4 border-t border-surface-variant mt-4">
                                     <Link to="/" className="px-6 py-3 rounded-lg border border-primary-container text-primary-container font-label-bold text-center font-semibold hover:bg-primary-container/5 transition-colors">
                                         Batal
                                     </Link>
@@ -665,7 +665,7 @@ export default function BuatPengaduanPage() {
 
             {/* Modal Peta */}
             {mapOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                         <div className="flex items-center justify-between p-4 border-b border-slate-100">
                             <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -677,7 +677,7 @@ export default function BuatPengaduanPage() {
                             </button>
                         </div>
 
-                        <div className="h-[400px] w-full bg-slate-100 relative">
+                        <div className="h-100 w-full bg-slate-100 relative">
                             <MapContainer center={[mapPosition.lat, mapPosition.lng]} zoom={13} style={{ height: '100%', width: '100%' }}>
                                 <TileLayer
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -685,13 +685,13 @@ export default function BuatPengaduanPage() {
                                 />
                                 <LocationMarker position={mapPosition} setPosition={setMapPosition} />
                             </MapContainer>
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] bg-white px-4 py-2 rounded-full shadow-md text-xs font-bold text-slate-600 pointer-events-none">
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-400 bg-white px-4 py-2 rounded-full shadow-md text-xs font-bold text-slate-600 pointer-events-none">
                                 Klik di area peta untuk memindahkan pin lokasi
                             </div>
                         </div>
 
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
-                            <div className="flex-grow">
+                            <div className="grow">
                                 <p className="text-xs text-slate-500 font-medium">Koordinat Terpilih:</p>
                                 <p className="font-mono text-sm font-bold text-slate-700">{mapPosition.lat.toFixed(6)}, {mapPosition.lng.toFixed(6)}</p>
                             </div>

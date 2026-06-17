@@ -7,6 +7,8 @@ use App\Models\Petugas;
 use App\Models\Dinas;
 use App\Models\Jabatan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class PetugasController extends Controller
 {
@@ -161,7 +163,7 @@ class PetugasController extends Controller
             ->orWhere('NIP', $request->username)
             ->first();
 
-        if ($petugas && \Illuminate\Support\Facades\Hash::check($request->password, $petugas->password)) {
+        if ($petugas && Hash::check($request->password, $petugas->password)) {
             $dinas = Dinas::find($petugas->id_dinas);
             $jabatan = Jabatan::find($petugas->id_jabatan);
 
@@ -207,12 +209,12 @@ class PetugasController extends Controller
                 $extension = strtolower($type[1]) ?: 'webp';
                 $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.' . $extension;
 
-                \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/petugas/' . $fileName, $data);
+                Storage::disk('public')->put('avatars/petugas/' . $fileName, $data);
 
                 if ($petugas->avatar && str_starts_with($petugas->avatar, '/storage/')) {
                     $oldPath = substr($petugas->avatar, 9);
-                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                    if (Storage::disk('public')->exists($oldPath)) {
+                        Storage::disk('public')->delete($oldPath);
                     }
                 }
 
@@ -221,8 +223,8 @@ class PetugasController extends Controller
         } elseif ($request->avatar === null) {
             if ($petugas->avatar && str_starts_with($petugas->avatar, '/storage/')) {
                 $oldPath = substr($petugas->avatar, 9);
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
                 }
             }
             $avatarPath = null;
@@ -264,7 +266,7 @@ class PetugasController extends Controller
             'password_baru' => 'required|string|min:8',
         ]);
 
-        if (!\Illuminate\Support\Facades\Hash::check($request->password_lama, $petugas->password)) {
+        if (!Hash::check($request->password_lama, $petugas->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Kata sandi saat ini salah.'
@@ -272,7 +274,7 @@ class PetugasController extends Controller
         }
 
         $petugas->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password_baru)
+            'password' => Hash::make($request->password_baru)
         ]);
 
         return response()->json([

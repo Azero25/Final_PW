@@ -85,7 +85,6 @@ const formatLaporanToTugas = (laporan) => {
  * Data dummy di-generate berdasarkan dinas petugas yang login.
  * Ketika backend siap, tinggal ganti ke api.get(...)
  */
-import { getTasksForDinas } from './petugasData';
 
 export default function PetugasDashboardPage() {
     const [petugas, setPetugas] = useState(null);
@@ -203,7 +202,7 @@ export default function PetugasDashboardPage() {
         try {
             const backendStatus = mapStatusToBackend(editStatus);
             await api.put(`/api/pengaduans/${modalTugas.id}`, { status: backendStatus });
-            
+
             await fetchLaporan();
 
             setToastMessage(`Status ${modalTugas.id} diperbarui menjadi "${editStatus}"`);
@@ -275,7 +274,7 @@ export default function PetugasDashboardPage() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200
                             ${activeTab === tab.id
-                                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                                ? 'bg-linear-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                             }`}
                     >
@@ -325,7 +324,7 @@ export default function PetugasDashboardPage() {
                                         <div key={item.bulan} className="flex flex-col items-center gap-2 flex-1">
                                             <span className="text-xs font-bold text-slate-700">{item.val}</span>
                                             <div
-                                                className={`w-full rounded-t-lg transition-all duration-500 ${item.active ? 'bg-gradient-to-t from-blue-500 to-indigo-400' : 'bg-slate-200 hover:bg-blue-300'}`}
+                                                className={`w-full rounded-t-lg transition-all duration-500 ${item.active ? 'bg-linear-to-t from-blue-500 to-indigo-400' : 'bg-slate-200 hover:bg-blue-300'}`}
                                                 style={{ height: `${Math.max((item.val / maxVal) * 130, 8)}px` }}
                                             ></div>
                                             <span className={`text-xs ${item.active ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>{item.bulan}</span>
@@ -402,7 +401,7 @@ export default function PetugasDashboardPage() {
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                             {/* Search */}
-                            <div className="relative flex-grow w-full sm:w-auto">
+                            <div className="relative grow w-full sm:w-auto">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
                                 <input
                                     type="text"
@@ -483,7 +482,7 @@ export default function PetugasDashboardPage() {
                                         <tr key={tugas.id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="px-6 py-4 font-mono text-xs text-blue-600 font-semibold">{tugas.id}</td>
                                             <td className="px-6 py-4">
-                                                <p className="font-medium text-slate-800 max-w-[200px] truncate">{tugas.judul}</p>
+                                                <p className="font-medium text-slate-800 max-w-50 truncate">{tugas.judul}</p>
                                             </td>
                                             <td className="px-6 py-4 hidden md:table-cell">
                                                 <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">{tugas.kategori}</span>
@@ -624,7 +623,7 @@ export default function PetugasDashboardPage() {
                                 <button
                                     disabled={isSaving}
                                     onClick={handleUpdateStatus}
-                                    className="px-5 py-2 text-sm bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-400 hover:to-indigo-500 transition-all font-semibold flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-500/15"
+                                    className="px-5 py-2 text-sm bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-400 hover:to-indigo-500 transition-all font-semibold flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-500/15"
                                 >
                                     {isSaving ? (
                                         <>
@@ -645,7 +644,7 @@ export default function PetugasDashboardPage() {
             {/* ====== SUCCESS TOAST ====== */}
             {showToast && (
                 <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl bg-emerald-50 border border-emerald-200 text-emerald-800 animate-in fade-in slide-in-from-top-3 duration-300">
-                    <span className="material-symbols-outlined text-2xl flex-shrink-0 text-emerald-600">check_circle</span>
+                    <span className="material-symbols-outlined text-2xl shrink-0 text-emerald-600">check_circle</span>
                     <p className="text-sm font-semibold">{toastMessage}</p>
                 </div>
             )}

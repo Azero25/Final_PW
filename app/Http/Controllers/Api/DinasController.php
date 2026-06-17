@@ -7,6 +7,7 @@ use App\Models\Dinas;
 use App\Models\Petugas;
 use App\Models\Laporan;
 use Illuminate\Http\Request;
+use App\Models\Kategori;
 
 class DinasController extends Controller
 {
@@ -17,7 +18,7 @@ class DinasController extends Controller
             $totalPetugas = Petugas::where('id_dinas', $d->id_dinas)->count();
 
             // Count total reports handled by categories related to this dinas
-            $katIds = \App\Models\Kategori::where('id_dinas', $d->id_dinas)->pluck('id_kategori');
+            $katIds = Kategori::where('id_dinas', $d->id_dinas)->pluck('id_kategori');
             $totalLaporan = Laporan::whereIn('id_kategori', $katIds)->count();
 
             $colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-red-500', 'bg-teal-500'];
@@ -28,7 +29,7 @@ class DinasController extends Controller
                 'original_id' => $d->id_dinas,
                 'nama' => $d->nama_dinas,
                 'singkatan' => $d->singkatan ?? strtoupper(substr($d->nama_dinas, 0, 3)),
-                'kategori' => \App\Models\Kategori::where('id_dinas', $d->id_dinas)->first()?->nama_kategori ?? 'Umum',
+                'kategori' => Kategori::where('id_dinas', $d->id_dinas)->first()?->nama_kategori ?? 'Umum',
                 'totalPetugas' => $totalPetugas,
                 'totalLaporan' => $totalLaporan,
                 'color' => $colors[$idx],
@@ -52,7 +53,7 @@ class DinasController extends Controller
         ]);
 
         if ($request->kategori) {
-            \App\Models\Kategori::firstOrCreate(
+            Kategori::firstOrCreate(
                 ['nama_kategori' => $request->kategori],
                 ['id_dinas' => $d->id_dinas]
             );
@@ -93,7 +94,7 @@ class DinasController extends Controller
                 'original_id' => $d->id_dinas,
                 'nama' => $d->nama_dinas,
                 'singkatan' => $d->singkatan,
-                'kategori' => \App\Models\Kategori::where('id_dinas', $d->id_dinas)->first()?->nama_kategori ?? 'Umum',
+                'kategori' => Kategori::where('id_dinas', $d->id_dinas)->first()?->nama_kategori ?? 'Umum',
                 'totalPetugas' => Petugas::where('id_dinas', $d->id_dinas)->count(),
                 'totalLaporan' => 0,
                 'color' => 'bg-blue-500',

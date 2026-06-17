@@ -83,7 +83,7 @@ export default function Navbar() {
             <div className="flex justify-between items-center px-4 sm:px-6 lg:px-12 py-3 max-w-screen-2xl mx-auto w-full">
 
                 {/* Logo */}
-                <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+                <Link to="/" className="flex items-center gap-2 shrink-0">
                     <span className="material-symbols-outlined text-3xl text-blue-700" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
                     <span className="text-lg sm:text-xl font-bold tracking-tight text-blue-700">LaporWarga</span>
                 </Link>
@@ -118,18 +118,18 @@ export default function Navbar() {
                                 </Link>
                             )}
                             {/* User Avatar + Dropdown Trigger */}
-                            <button 
+                            <button
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
                                 className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/20"
                             >
-                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden border border-blue-500/10">
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shrink-0 shadow-sm overflow-hidden border border-blue-500/10">
                                     {user.avatar ? (
                                         <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="text-white text-sm font-bold">{user.nama?.charAt(0).toUpperCase()}</span>
                                     )}
                                 </div>
-                                <div className="flex flex-col items-start max-w-[120px]">
+                                <div className="flex flex-col items-start max-w-30">
                                     <span className="text-slate-800 text-sm font-bold leading-tight truncate w-full text-left">{user.nama}</span>
                                     <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider">{user.role === 'admin' ? 'Admin' : 'Warga'}</span>
                                 </div>
@@ -142,16 +142,16 @@ export default function Navbar() {
                                     <div className="px-4 py-1.5 border-b border-slate-50">
                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aktivitas</p>
                                     </div>
-                                    <Link 
-                                        to="/profile" 
+                                    <Link
+                                        to="/profile"
                                         onClick={() => setDropdownOpen(false)}
                                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
                                     >
                                         <span className="material-symbols-outlined text-lg text-slate-400">manage_accounts</span>
                                         Edit Profil
                                     </Link>
-                                    <Link 
-                                        to="/profile/riwayat" 
+                                    <Link
+                                        to="/profile/riwayat"
                                         onClick={() => setDropdownOpen(false)}
                                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
                                     >
@@ -159,8 +159,8 @@ export default function Navbar() {
                                         Riwayat Laporan
                                     </Link>
                                     {user.role === 'admin' && (
-                                        <Link 
-                                            to="/admin/dashboard" 
+                                        <Link
+                                            to="/admin/dashboard"
                                             onClick={() => setDropdownOpen(false)}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
                                         >
@@ -169,7 +169,7 @@ export default function Navbar() {
                                         </Link>
                                     )}
                                     <div className="border-t border-slate-100 my-1"></div>
-                                    <button 
+                                    <button
                                         onClick={() => { setDropdownOpen(false); handleLogout(); }}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium cursor-pointer"
                                     >
@@ -227,7 +227,7 @@ export default function Navbar() {
                         <div className="space-y-1">
                             {/* Info user */}
                             <Link to="/profile" className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-100 ${user.role === 'admin' ? 'bg-slate-800 text-white hover:bg-slate-750' : 'bg-blue-50 hover:bg-blue-100/50'}`}>
-                                <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden border border-blue-600/10">
+                                <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center shrink-0 shadow-sm overflow-hidden border border-blue-600/10">
                                     {user.avatar ? (
                                         <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                     ) : (
