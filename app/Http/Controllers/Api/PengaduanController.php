@@ -139,6 +139,11 @@ class PengaduanController extends Controller
             $query->where('judul_laporan', 'LIKE', '%' . $request->judul . '%');
         }
 
+        if ($request->has('id_dinas')) {
+            $kategoriIds = Kategori::where('id_dinas', $request->id_dinas)->pluck('id_kategori');
+            $query->whereIn('id_kategori', $kategoriIds);
+        }
+        
         $laporans = $query->get();
 
         // Manual Eager Loading to fix N+1 in MySQL

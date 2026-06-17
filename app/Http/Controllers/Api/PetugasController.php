@@ -174,6 +174,7 @@ class PetugasController extends Controller
                     'original_id' => $petugas->id_petugas,
                     'nama' => $petugas->nama_petugas,
                     'dinas' => $dinas ? $dinas->nama_dinas : 'Tidak ada dinas',
+                    'original_dinas_id' => $petugas->id_dinas,
                     'jabatan' => $jabatan ? $jabatan->nama_jabatan : 'Staf',
                     'username' => $petugas->username,
                     'email' => $petugas->username . '@laporwarga.go.id',

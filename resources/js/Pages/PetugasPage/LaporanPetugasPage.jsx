@@ -109,10 +109,8 @@ export default function LaporanPetugasPage() {
     const fetchLaporan = async () => {
         if (!petugas) return;
         try {
-            const response = await api.get('/api/pengaduans');
-            const filtered = response.data
-                .filter(l => l.id_petugas === petugas.original_id)
-                .map(formatLaporanToTugas);
+            const response = await api.get(`/api/pengaduans?id_dinas=${petugas.original_dinas_id}`);
+            const filtered = response.data.map(formatLaporanToTugas);
             setTugasList(filtered);
         } catch (error) {
             console.error("Error fetching reports:", error);
