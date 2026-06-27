@@ -11,4 +11,20 @@ class Laporan extends Model {
     protected $casts = [
         'timeline_log' => 'array',
     ];
+
+    public function kategori() {
+        return $this->belongsTo(Kategori::class, 'id_kategori', 'id_kategori');
+    }
+
+    public function kelurahan() {
+        return $this->belongsTo(Kelurahan::class, 'id_kelurahan', 'id_kelurahan');
+    }
+
+    public function user() {
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
+
+    public function petugas() {
+        return $this->belongsTo(User::class, 'id_petugas', 'id_user');
+    }
 }
