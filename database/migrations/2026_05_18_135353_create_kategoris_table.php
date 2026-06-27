@@ -9,8 +9,14 @@ return new class extends Migration {
             $table->id('id_kategori');
             $table->string('nama_kategori');
             $table->text('desc_kategori')->nullable();
-            $table->foreignId('id_dinas')->constrained('dinas', 'id_dinas')->cascadeOnDelete();
+            $table->string('icon')->default('construction');
+            $table->string('warna_kategori')->default('bg-blue-500');
+            $table->boolean('aktif')->default(true);
+
+            $table->unsignedBigInteger('id_dinas')->nullable();
             $table->timestamps();
+
+            $table->foreign('id_dinas')->references('id_dinas')->on('dinas')->nullOnDelete();
         });
     }
     public function down(): void {

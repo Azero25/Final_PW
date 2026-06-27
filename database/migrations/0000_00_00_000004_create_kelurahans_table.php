@@ -8,8 +8,10 @@ return new class extends Migration {
         Schema::create('kelurahans', function (Blueprint $table) {
             $table->id('id_kelurahan');
             $table->string('nama_kelurahan');
-            $table->foreignId('id_kecamatan')->constrained('kecamatans', 'id_kecamatan')->cascadeOnDelete();
+            $table->unsignedBigInteger('id_kecamatan');
+
             $table->timestamps();
+            $table->foreign('id_kecamatan')->references('id_kecamatan')->on('kecamatans')->cascadeOnDelete();
         });
     }
     public function down(): void {
