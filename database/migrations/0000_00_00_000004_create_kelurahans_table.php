@@ -9,8 +9,9 @@ return new class extends Migration {
             $table->id('id_kelurahan');
             $table->string('nama_kelurahan');
             $table->unsignedBigInteger('id_kecamatan');
-
             $table->timestamps();
+
+            $table->unique(['nama_kelurahan', 'id_kecamatan']);
             $table->foreign('id_kecamatan')->references('id_kecamatan')->on('kecamatans')->cascadeOnDelete();
         });
     }
