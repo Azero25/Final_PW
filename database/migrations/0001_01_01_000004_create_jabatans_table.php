@@ -8,7 +8,7 @@ return new class extends Migration {
         Schema::create('jabatans', function (Blueprint $table) {
             $table->id('id_jabatan');
             $table->string('nama_jabatan');
-            $table->string('level_jabatan');
+            $table->integer('level_jabatan');
             $table->timestamps();
         });
     }
