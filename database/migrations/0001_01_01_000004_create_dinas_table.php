@@ -10,9 +10,10 @@ return new class extends Migration {
             $table->string('nama_dinas');
             $table->string('singkatan')->nullable();
             $table->string('warna_dinas')->default('bg-slate-600');
+            $table->unsignedBigInteger('id_kategori');
             $table->timestamps();
 
-
+            $table->foreign('id_kategori')->references('id_kategori')->on('kategoris')->cascadeOnDelete();
         });
     }
     public function down(): void {

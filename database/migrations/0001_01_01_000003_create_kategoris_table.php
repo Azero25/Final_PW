@@ -13,10 +13,7 @@ return new class extends Migration {
             $table->string('warna_kategori')->default('bg-blue-500');
             $table->boolean('aktif')->default(true);
 
-            $table->unsignedBigInteger('id_dinas')->nullable();
             $table->timestamps();
-
-            $table->foreign('id_dinas')->references('id_dinas')->on('dinas')->nullOnDelete();
         });
     }
     public function down(): void {
