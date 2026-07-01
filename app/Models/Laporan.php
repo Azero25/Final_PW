@@ -27,4 +27,9 @@ class Laporan extends Model {
     public function petugas() {
         return $this->belongsTo(User::class, 'id_petugas', 'id_user');
     }
+
+    public function timelines()
+    {
+        return $this->hasMany(LaporanTimeline::class, 'no_ticket', 'no_ticket')->orderBy('created_at', 'asc');
+    }
 }

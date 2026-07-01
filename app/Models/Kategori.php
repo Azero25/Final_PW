@@ -8,7 +8,7 @@ class Kategori extends Model {
     protected $guarded = [];
 
     public function dinas() {
-        return $this->belongsTo(Dinas::class, 'id_dinas', 'id_dinas');
+        return $this->belongsToMany(Dinas::class, 'kategori_dinas', 'id_kategori', 'id_dinas');
     }
 
     public function laporans() {

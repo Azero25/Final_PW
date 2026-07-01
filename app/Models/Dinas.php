@@ -12,6 +12,6 @@ class Dinas extends Model {
     }
 
     public function kategoris() {
-        return $this->hasMany(Kategori::class, 'id_dinas', 'id_dinas');
+        return $this->belongsToMany(Kategori::class, 'kategori_dinas', 'id_dinas', 'id_kategori');
     }
 }
