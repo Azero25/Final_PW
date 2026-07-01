@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::create('laporans', function (Blueprint $table) {
-            $table->string('no_ticket');
+            $table->string('no_ticket')->primary();
             $table->string('judul_laporan');
             $table->text('isi_laporan')->nullable();
             $table->dateTime('tanggal_laporan')->useCurrent();
