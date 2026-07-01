@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Petugas;
+use App\Models\User;
 use App\Models\Dinas;
 use App\Models\Jabatan;
 use Illuminate\Http\Request;
@@ -14,19 +14,20 @@ class PetugasController extends Controller
 {
     public function index()
     {
-        $petugas = Petugas::all()->map(function($p) {
+        $petugas = User::where('role', 'petugas')->get()->map(function($p) {
             return [
-                'id' => 'PTG-' . str_pad($p->id_petugas, 3, '0', STR_PAD_LEFT),
-                'original_id' => $p->id_petugas,
-                'nama' => $p->nama_petugas,
-                'nip' => $p->NIP,
+                'id' => 'PTG-' . str_pad($p->id_user, 3, '0', STR_PAD_LEFT),
+                'original_id' => $p->id_user,
+                'nama' => $p->nama_lengkap,
+                'nip' => $p->nip,
                 'dinas' => $p->id_dinas ? 'DNS-' . str_pad($p->id_dinas, 3, '0', STR_PAD_LEFT) : null,
                 'original_dinas_id' => $p->id_dinas,
                 'dinas_nama' => Dinas::find($p->id_dinas)?->nama_dinas ?? '-',
+                'id_jabatan' => $p->id_jabatan,
                 'jabatan' => Jabatan::find($p->id_jabatan)?->nama_jabatan ?? 'Staf',
                 'telp' => $p->no_hp ?? '-',
-                'status' => 'Aktif', // Default
-                'bebanKerja' => $p->beban_kerja ?? 0,
+                'status' => $p->status ?? 'Aktif',
+                'bebanKerja' => $p->count_laporan ?? 0,
                 'avatar' => $p->avatar,
             ];
         });
@@ -38,9 +39,9 @@ class PetugasController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
-            'nip' => 'required|string|unique:petugas,NIP',
+            'nip' => 'required|string|unique:users,nip',
             'dinas' => 'required',
-            'jabatan' => 'required|string|max:255',
+            'jabatan' => 'required',
             'telp' => 'nullable|string|max:20',
         ]);
 
@@ -51,36 +52,40 @@ class PetugasController extends Controller
             $dinasId = (int) $dinasId;
         }
 
-        $jabatan = Jabatan::firstOrCreate(['nama_jabatan' => $request->jabatan]);
+        $jabatanId = $request->jabatan;
+        $jabatanId = (int) $jabatanId;
+
+        $jabatan = Jabatan::find($jabatanId);
 
         $base = strtolower(str_replace([' ', '.'], '', $request->nama));
-        $username = $base . '@gmail.com';
+        $email = $base . '@gmail.com';
         $counter = 1;
-        while (Petugas::where('username', $username)->exists()) {
-            $username = $base . $counter . '@gmail.com';
+        while (User::where('email', $email)->exists()) {
+            $email = $base . $counter . '@gmail.com';
             $counter++;
         }
         $password = bcrypt('petugas123');
 
-        $p = Petugas::create([
-            'nama_petugas' => $request->nama,
-            'NIP' => $request->nip,
-            'username' => $username,
+        $p = User::create([
+            'nama_lengkap' => $request->nama,
+            'nip' => $request->nip,
+            'email' => $email,
             'password' => $password,
             'no_hp' => $request->telp,
             'id_dinas' => $dinasId,
-            'id_jabatan' => $jabatan->id_jabatan,
-            'beban_kerja' => 0,
+            'id_jabatan' => $jabatanId,
+            'role' => 'petugas',
+            'count_laporan' => 0,
         ]);
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'id' => 'PTG-' . str_pad($p->id_petugas, 3, '0', STR_PAD_LEFT),
-                'original_id' => $p->id_petugas,
-                'nama' => $p->nama_petugas,
-                'nip' => $p->NIP,
-                'username' => $p->username,
+                'id' => 'PTG-' . str_pad($p->id_user, 3, '0', STR_PAD_LEFT),
+                'original_id' => $p->id_user,
+                'nama' => $p->nama_lengkap,
+                'nip' => $p->nip,
+                'username' => $p->email,
                 'dinas' => 'DNS-' . str_pad($p->id_dinas, 3, '0', STR_PAD_LEFT),
                 'original_dinas_id' => $p->id_dinas,
                 'dinas_nama' => Dinas::find($p->id_dinas)?->nama_dinas ?? '-',
@@ -97,13 +102,13 @@ class PetugasController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
-            'nip' => 'required|string|unique:petugas,NIP,' . $id . ',id_petugas',
+            'nip' => 'required|string|unique:users,nip,' . $id . ',id_user',
             'dinas' => 'required',
-            'jabatan' => 'required|string|max:255',
+            'jabatan' => 'required',
             'telp' => 'nullable|string|max:20',
         ]);
 
-        $p = Petugas::findOrFail($id);
+        $p = User::where('role', 'petugas')->findOrFail($id);
 
         $dinasId = $request->dinas;
         if (is_string($dinasId) && str_starts_with($dinasId, 'DNS-')) {
@@ -112,30 +117,31 @@ class PetugasController extends Controller
             $dinasId = (int) $dinasId;
         }
 
-        $jabatan = Jabatan::firstOrCreate(['nama_jabatan' => $request->jabatan]);
+        $jabatanId = (int) $request->jabatan;
+        $jabatan = Jabatan::find($jabatanId);
 
         $p->update([
-            'nama_petugas' => $request->nama,
-            'NIP' => $request->nip,
+            'nama_lengkap' => $request->nama,
+            'nip' => $request->nip,
             'no_hp' => $request->telp,
             'id_dinas' => $dinasId,
-            'id_jabatan' => $jabatan->id_jabatan,
+            'id_jabatan' => $jabatanId,
         ]);
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'id' => 'PTG-' . str_pad($p->id_petugas, 3, '0', STR_PAD_LEFT),
-                'original_id' => $p->id_petugas,
-                'nama' => $p->nama_petugas,
-                'nip' => $p->NIP,
+                'id' => 'PTG-' . str_pad($p->id_user, 3, '0', STR_PAD_LEFT),
+                'original_id' => $p->id_user,
+                'nama' => $p->nama_lengkap,
+                'nip' => $p->nip,
                 'dinas' => 'DNS-' . str_pad($p->id_dinas, 3, '0', STR_PAD_LEFT),
                 'original_dinas_id' => $p->id_dinas,
                 'dinas_nama' => Dinas::find($p->id_dinas)?->nama_dinas ?? '-',
                 'jabatan' => $jabatan->nama_jabatan,
                 'telp' => $p->no_hp ?? '-',
                 'status' => 'Aktif',
-                'bebanKerja' => $p->beban_kerja ?? 0,
+                'bebanKerja' => $p->count_laporan ?? 0,
                 'avatar' => $p->avatar,
             ]
         ]);
@@ -143,7 +149,7 @@ class PetugasController extends Controller
 
     public function destroy($id)
     {
-        $p = Petugas::findOrFail($id);
+        $p = User::where('role', 'petugas')->findOrFail($id);
         $p->delete();
 
         return response()->json([
@@ -159,8 +165,11 @@ class PetugasController extends Controller
             'password' => 'required|string',
         ]);
 
-        $petugas = Petugas::where('username', $request->username)
-            ->orWhere('NIP', $request->username)
+        $petugas = User::where('role', 'petugas')
+            ->where(function ($q) use ($request) {
+                $q->where('email', $request->username)
+                  ->orWhere('nip', $request->username);
+            })
             ->first();
 
         if ($petugas && Hash::check($request->password, $petugas->password)) {
@@ -170,14 +179,14 @@ class PetugasController extends Controller
             return response()->json([
                 'status' => 'success',
                 'petugas' => [
-                    'id' => 'PTG-' . str_pad($petugas->id_petugas, 3, '0', STR_PAD_LEFT),
-                    'original_id' => $petugas->id_petugas,
-                    'nama' => $petugas->nama_petugas,
+                    'id' => 'PTG-' . str_pad($petugas->id_user, 3, '0', STR_PAD_LEFT),
+                    'original_id' => $petugas->id_user,
+                    'nama' => $petugas->nama_lengkap,
                     'dinas' => $dinas ? $dinas->nama_dinas : 'Tidak ada dinas',
                     'original_dinas_id' => $petugas->id_dinas,
                     'jabatan' => $jabatan ? $jabatan->nama_jabatan : 'Staf',
-                    'username' => $petugas->username,
-                    'email' => $petugas->username . '@laporwarga.go.id',
+                    'username' => $petugas->email,
+                    'email' => $petugas->email,
                     'telepon' => $petugas->no_hp ?? '-',
                     'avatar' => $petugas->avatar,
                 ]
@@ -194,24 +203,17 @@ class PetugasController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
-            'nip' => 'required|string|unique:petugas,NIP,' . $id . ',id_petugas',
+            'nip' => 'required|string|unique:users,nip,' . $id . ',id_user',
             'telp' => 'nullable|string|max:20',
             'avatar' => 'nullable|string',
         ]);
 
-        $petugas = Petugas::findOrFail($id);
+        $petugas = User::where('role', 'petugas')->findOrFail($id);
 
         $avatarPath = $request->avatar;
 
-        if ($request->avatar && preg_match('/^data:image\/(\w+);base64,/', $request->avatar, $type)) {
-            $data = substr($request->avatar, strpos($request->avatar, ',') + 1);
-            $data = base64_decode($data);
-            if ($data !== false) {
-                $extension = strtolower($type[1]) ?: 'webp';
-                $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.' . $extension;
-
-                Storage::disk('public')->put('avatars/petugas/' . $fileName, $data);
-
+        if ($request->avatar && preg_match('/^data:image\/(\w+);base64,/', $request->avatar)) {
+            try {
                 if ($petugas->avatar && str_starts_with($petugas->avatar, '/storage/')) {
                     $oldPath = substr($petugas->avatar, 9);
                     if (Storage::disk('public')->exists($oldPath)) {
@@ -219,8 +221,18 @@ class PetugasController extends Controller
                     }
                 }
 
-                $avatarPath = '/storage/avatars/petugas/' . $fileName;
+                $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.webp';
+                $subPath = 'avatars/petugas/' . $fileName;
+
+                $imgEncoded = Image::decode($request->avatar)->encode(new WebpEncoder(quality: 80));
+                Storage::disk('public')->put($subPath, (string) $imgEncoded);
+
+                $avatarPath = '/storage/' . $subPath;
+
+            } catch (\Exception $e) {
+                Log::error('Gagal memproses avatar V3: ' . $e->getMessage());
             }
+
         } elseif ($request->avatar === null) {
             if ($petugas->avatar && str_starts_with($petugas->avatar, '/storage/')) {
                 $oldPath = substr($petugas->avatar, 9);
@@ -232,8 +244,8 @@ class PetugasController extends Controller
         }
 
         $petugas->update([
-            'nama_petugas' => $request->nama,
-            'NIP' => $request->nip,
+            'nama_lengkap' => $request->nama,
+            'nip' => $request->nip,
             'no_hp' => $request->telp,
             'avatar' => $avatarPath,
         ]);
@@ -245,13 +257,13 @@ class PetugasController extends Controller
             'status' => 'success',
             'message' => 'Profil berhasil diperbarui',
             'petugas' => [
-                'id' => 'PTG-' . str_pad($petugas->id_petugas, 3, '0', STR_PAD_LEFT),
-                'original_id' => $petugas->id_petugas,
-                'nama' => $petugas->nama_petugas,
+                'id' => 'PTG-' . str_pad($petugas->id_user, 3, '0', STR_PAD_LEFT),
+                'original_id' => $petugas->id_user,
+                'nama' => $petugas->nama_lengkap,
                 'dinas' => $dinas ? $dinas->nama_dinas : 'Tidak ada dinas',
                 'jabatan' => $jabatan ? $jabatan->nama_jabatan : 'Staf',
-                'username' => $petugas->username,
-                'email' => $petugas->username . '@laporwarga.go.id',
+                'username' => $petugas->email,
+                'email' => $petugas->email,
                 'telepon' => $petugas->no_hp ?? '-',
                 'avatar' => $petugas->avatar,
             ]
@@ -260,7 +272,7 @@ class PetugasController extends Controller
 
     public function updatePassword(Request $request, $id)
     {
-        $petugas = Petugas::findOrFail($id);
+        $petugas = User::where('role', 'petugas')->findOrFail($id);
 
         $request->validate([
             'password_lama' => 'required|string',
@@ -284,4 +296,3 @@ class PetugasController extends Controller
         ]);
     }
 }
-

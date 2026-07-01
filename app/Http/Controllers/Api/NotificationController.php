@@ -36,7 +36,7 @@ class NotificationController extends Controller
 
         $mapped = $notifications->map(function ($notif) {
             return [
-                'id' => $notif->id,
+                'id' => $notif->id_notification,
                 'judul' => $notif->judul,
                 'isi' => $notif->isi,
                 'tipe' => $notif->tipe,
