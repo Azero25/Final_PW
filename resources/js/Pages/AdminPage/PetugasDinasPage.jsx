@@ -2,6 +2,28 @@ import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../Components/AdminLayout';
 import api from '../../axios';
 
+const DINAS_COLORS = [
+    { value: 'bg-blue-600',   label: 'Biru',    hex: '#2563eb' },
+    { value: 'bg-green-600',  label: 'Hijau',   hex: '#16a34a' },
+    { value: 'bg-red-600',    label: 'Merah',   hex: '#dc2626' },
+    { value: 'bg-yellow-500', label: 'Kuning',  hex: '#eab308' },
+    { value: 'bg-pink-600',   label: 'Merah Muda', hex: '#db2777' },
+    { value: 'bg-indigo-600', label: 'Indigo',  hex: '#4f46e5' },
+    { value: 'bg-purple-600', label: 'Ungu',    hex: '#9333ea' },
+    { value: 'bg-orange-600', label: 'Oranye',  hex: '#ea580c' },
+    { value: 'bg-teal-600',   label: 'Teal',    hex: '#0d9488' },
+    { value: 'bg-slate-600',  label: 'Abu-abu', hex: '#475569' },
+];
+
+const LEVEL_JABATAN_MAP = {
+    1: { label: 'Level Tertinggi (1)', badge: 'bg-red-50 text-red-700 border-red-200' },
+    2: { label: 'Level Menengah (2)', badge: 'bg-orange-50 text-orange-700 border-orange-200' },
+    3: { label: 'Level Terendah (3)', badge: 'bg-green-50 text-green-700 border-green-200' },
+};
+
+// Map bg-* class to usable hex for inline styles
+const colorHex = Object.fromEntries(DINAS_COLORS.map(c => [c.value, c.hex]));
+
 const StatusBadge = ({ status }) => {
     const cfg = { 'Aktif': 'bg-green-100 text-green-700 border border-green-200', 'Nonaktif': 'bg-slate-100 text-slate-500 border border-slate-200' };
     return (
@@ -34,6 +56,8 @@ export default function PetugasDinasPage() {
 
     const [dinasList, setDinasList] = useState([]);
     const [petugasList, setPetugasList] = useState([]);
+    const [jabatanList, setJabatanList] = useState([]);
+    const [kategoriList, setKategoriList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -41,14 +65,18 @@ export default function PetugasDinasPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [dinasRes, petugasRes] = await Promise.all([
+            const [dinasRes, petugasRes, jabatanRes, kategoriRes] = await Promise.all([
                 api.get('/api/dinas'),
-                api.get('/api/petugas')
+                api.get('/api/petugas'),
+                api.get('/api/jabatans'),
+                api.get('/api/kategoris'),
             ]);
-            setDinasList(dinasRes.data);
-            setPetugasList(petugasRes.data);
+            setDinasList(dinasRes.data.data || dinasRes.data);
+            setPetugasList(petugasRes.data.data || petugasRes.data);
+            setJabatanList(jabatanRes.data.data || []);
+            setKategoriList(kategoriRes.data.data || kategoriRes.data || []);
         } catch (error) {
-            console.error("Error fetching dinas and petugas:", error);
+            console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
@@ -60,7 +88,8 @@ export default function PetugasDinasPage() {
     }, []);
 
     const getDinasNama = (id) => dinasList.find(d => d.id === id)?.singkatan || id;
-    const getDinasColor = (id) => dinasList.find(d => d.id === id)?.color || 'bg-slate-500';
+    const getDinasColor = (id) => dinasList.find(d => d.id === id)?.color || 'bg-slate-600';
+    const getDinasHex   = (id) => colorHex[getDinasColor(id)] || '#475569';
 
     const filteredPetugas = petugasList.filter(p => {
         const q = search.toLowerCase();
@@ -75,10 +104,25 @@ export default function PetugasDinasPage() {
         return d.nama.toLowerCase().includes(q) || d.singkatan.toLowerCase().includes(q);
     });
 
+    const filteredJabatan = jabatanList.filter(j => {
+        const q = search.toLowerCase();
+        return j.nama_jabatan?.toLowerCase().includes(q) || String(j.level_jabatan).includes(q);
+    });
+
     const openModal = (item, mode = 'detail') => {
         setModal(item);
         setModalMode(mode);
-        setEditData({ ...item });
+
+        const nomorKategori = Array.isArray(item.kategori_ids)
+            ? item.kategori_ids.map(Number)
+            : [];
+
+        console.log("openModal - item.kategori_ids:", item.kategori_ids, "parsed:", nomorKategori);
+
+        setEditData({
+            ...item,
+            kategoris: nomorKategori,
+            color: item.color || 'bg-slate-600' });
     };
 
     const openTambah = () => {
@@ -89,17 +133,52 @@ export default function PetugasDinasPage() {
                 nama: '',
                 nip: '',
                 dinas: dinasList[0]?.id || '',
-                jabatan: '',
+                jabatan: jabatanList[0]?.original_id || jabatanList[0]?.id || '',
                 telp: '',
                 status: 'Aktif'
             });
-        } else {
+        } else if(tab === 'dinas') {
             setEditData({
                 nama: '',
                 singkatan: '',
-                kategori: ''
+                kategoris: [],
+                color: 'bg-slate-600'
+            });
+        } else {
+            setEditData({
+                nama_jabatan: '',
+                level_jabatan: 3,
             });
         }
+    };
+
+    const handleKategoriFormToggle = (idKategori) => {
+        const targetId = Number(idKategori);
+        console.log("handleKategoriFormToggle called with ID:", targetId);
+
+        setEditData(prev => {
+            // 1. Ambil data kategori lama di dalam state form, pastikan tipenya array angka
+            const currentSelected = Array.isArray(prev.kategoris)
+                ? prev.kategoris.map(Number).filter(id => !isNaN(id))
+                : [];
+            console.log("currentSelected:", currentSelected);
+
+            let nextSelected;
+            if (currentSelected.includes(targetId)) {
+                // Jika sudah tercentang, hapus dari array
+                nextSelected = currentSelected.filter(id => id !== targetId);
+            } else {
+                // Jika belum tercentang, tambahkan ke array
+                nextSelected = [...currentSelected, targetId];
+            }
+            console.log("nextSelected:", nextSelected);
+
+            // 2. Return objek state baru secara utuh agar React mendeteksi perubahan
+            return {
+                ...prev,
+                kategoris: nextSelected
+            };
+        });
     };
 
     const handleSave = async () => {
@@ -111,7 +190,7 @@ export default function PetugasDinasPage() {
                         nama: editData.nama,
                         nip: editData.nip,
                         dinas: editData.dinas,
-                        jabatan: editData.jabatan,
+                        jabatan: editData.id_jabatan,
                         telp: editData.telp,
                     });
                     if (res.data && res.data.status === 'success') {
@@ -128,7 +207,7 @@ export default function PetugasDinasPage() {
                         nama: editData.nama,
                         nip: editData.nip,
                         dinas: editData.dinas,
-                        jabatan: editData.jabatan,
+                        jabatan: editData.id_jabatan,
                         telp: editData.telp,
                     });
                     if (res.data && res.data.status === 'success') {
@@ -136,12 +215,17 @@ export default function PetugasDinasPage() {
                         await fetchData();
                     }
                 }
-            } else {
+            } else if(tab === 'dinas') {
+                const kategoriIds = Array.isArray(editData.kategoris)
+                    ? editData.kategoris
+                    : [];
+
                 if (modalMode === 'tambah') {
                     const res = await api.post('/api/dinas', {
                         nama: editData.nama,
                         singkatan: editData.singkatan,
-                        kategori: editData.kategori,
+                        kategoris: kategoriIds,
+                        color: editData.color || 'bg-slate-600',
                     });
                     if (res.data && res.data.status === 'success') {
                         setModal(null);
@@ -151,6 +235,28 @@ export default function PetugasDinasPage() {
                     const res = await api.put(`/api/dinas/${modal.original_id}`, {
                         nama: editData.nama,
                         singkatan: editData.singkatan,
+                        kategoris: kategoriIds,
+                        color: editData.color || modal.color || 'bg-slate-600',
+                    });
+                    if (res.data && res.data.status === 'success') {
+                        setModal(null);
+                        await fetchData();
+                    }
+                }
+            } else if(tab === 'jabatan') {
+                if (modalMode === 'tambah') {
+                    const res = await api.post('/api/jabatans', {
+                        nama_jabatan: editData.nama_jabatan,
+                        level_jabatan: parseInt(editData.level_jabatan),
+                    });
+                    if (res.data && res.data.status === 'success') {
+                        setModal(null);
+                        await fetchData();
+                    }
+                } else if (modalMode === 'edit') {
+                    const res = await api.put(`/api/jabatans/${modal.original_id}`, {
+                        nama_jabatan: editData.nama_jabatan,
+                        level_jabatan: parseInt(editData.level_jabatan),
                     });
                     if (res.data && res.data.status === 'success') {
                         setModal(null);
@@ -175,18 +281,14 @@ export default function PetugasDinasPage() {
         setIsDeleting(true);
         try {
             if (tab === 'petugas') {
-                const res = await api.delete(`/api/petugas/${deleteTarget.original_id}`);
-                if (res.data && res.data.status === 'success') {
-                    setDeleteTarget(null);
-                    await fetchData();
-                }
-            } else {
-                const res = await api.delete(`/api/dinas/${deleteTarget.original_id}`);
-                if (res.data && res.data.status === 'success') {
-                    setDeleteTarget(null);
-                    await fetchData();
-                }
+                await api.delete(`/api/petugas/${deleteTarget.original_id}`);
+            } else if (tab === 'dinas') {
+                await api.delete(`/api/dinas/${deleteTarget.original_id}`);
+            } else if (tab === 'jabatan') {
+                await api.delete(`/api/jabatans/${deleteTarget.original_id}`);
             }
+            setDeleteTarget(null);
+            await fetchData();
         } catch (error) {
             console.error(`Gagal menghapus ${tab}:`, error);
             alert(`Gagal menghapus ${tab} dari database.`);
@@ -223,8 +325,8 @@ export default function PetugasDinasPage() {
     const ringkasan = [
         { label: 'Total Dinas',    value: dinasList.length,                                         bg: 'bg-indigo-50',  color: 'text-indigo-600',  border: 'border-indigo-100', icon: 'account_balance' },
         { label: 'Total Petugas',  value: petugasList.length,                                       bg: 'bg-blue-50',    color: 'text-blue-600',    border: 'border-blue-100',   icon: 'badge' },
+        { label: 'Total Jabatan',  value: jabatanList.length,                                       bg: 'bg-purple-50',  color: 'text-purple-600',  border: 'border-purple-100', icon: 'balance' },
         { label: 'Petugas Aktif',  value: petugasList.filter(p => p.status === 'Aktif').length,      bg: 'bg-green-50',   color: 'text-green-600',   border: 'border-green-100',  icon: 'check_circle' },
-        { label: 'Sedang Bertugas', value: petugasList.filter(p => p.bebanKerja > 0).length,         bg: 'bg-orange-50',  color: 'text-orange-600',  border: 'border-orange-100', icon: 'engineering' },
     ];
 
     return (
@@ -248,7 +350,7 @@ export default function PetugasDinasPage() {
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         {/* Tabs */}
                         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                            {[{ id: 'petugas', label: 'Data Petugas', icon: 'badge' }, { id: 'dinas', label: 'Data Dinas', icon: 'account_balance' }].map(t => (
+                            {[{ id: 'petugas', label: 'Data Petugas', icon: 'badge' }, { id: 'dinas', label: 'Data Dinas', icon: 'account_balance' }, {id: 'jabatan', label: 'Data Jabatan', icon: 'balance'}].map(t => (
                                 <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); setSelectedIds([]); }}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t.id ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                     <span className="material-symbols-outlined text-base">{t.icon}</span>{t.label}
@@ -332,11 +434,14 @@ export default function PetugasDinasPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 ${getDinasColor(p.dinas)} rounded-lg flex items-center justify-center shrink-0 overflow-hidden`}>
+                                                <div
+                                                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm"
+                                                    style={{ background: `linear-gradient(135deg, ${getDinasHex(p.dinas)}cc, ${getDinasHex(p.dinas)})` }}
+                                                >
                                                     {isImageUrl(p.avatar) ? (
                                                         <img src={p.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <span className="text-white text-xs font-bold">{p.nama.charAt(0)}</span>
+                                                        <span className="text-white text-xs font-bold drop-shadow">{p.nama.charAt(0)}</span>
                                                     )}
                                                 </div>
                                                 <div>
@@ -347,7 +452,10 @@ export default function PetugasDinasPage() {
                                         </td>
                                         <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.nip}</td>
                                         <td className="px-4 py-3">
-                                            <span className={`text-xs font-semibold px-2 py-1 rounded-md text-white ${getDinasColor(p.dinas)}`}>{getDinasNama(p.dinas)}</span>
+                                            <span
+                                                className="text-xs font-semibold px-2.5 py-1 rounded-full text-white shadow-sm"
+                                                style={{ backgroundColor: getDinasHex(p.dinas) }}
+                                            >{getDinasNama(p.dinas)}</span>
                                         </td>
                                         <td className="px-4 py-3 text-slate-600 text-xs">{p.jabatan}</td>
                                         <td className="px-4 py-3 text-slate-500 text-xs">{p.telp}</td>
@@ -400,34 +508,63 @@ export default function PetugasDinasPage() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {filteredDinas.map(d => (
-                                    <div key={d.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white relative group">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-11 h-11 ${d.color} rounded-xl flex items-center justify-center shrink-0`}>
-                                                    <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-800 text-sm leading-tight">{d.nama}</p>
-                                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-md text-white ${d.color} mt-1 inline-block`}>{d.singkatan}</span>
+                                {filteredDinas.map(d => {
+                                    const hex = colorHex[d.color] || '#475569';
+                                    return (
+                                    <div key={d.id} className="rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white border border-slate-100 relative group">
+                                        {/* Colored header strip */}
+                                        <div
+                                            className="h-2 w-full"
+                                            style={{ background: `linear-gradient(90deg, ${hex}, ${hex}99)` }}
+                                        />
+                                        <div className="p-5">
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md"
+                                                        style={{ background: `linear-gradient(135deg, ${hex}dd, ${hex})` }}
+                                                    >
+                                                        <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-800 text-sm leading-tight">{d.nama}</p>
+                                                        <span
+                                                            className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white mt-1 inline-block shadow-sm"
+                                                            style={{ backgroundColor: hex }}
+                                                        >{d.singkatan}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <p className="text-xs text-slate-500 mb-4 flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-sm">category</span>{d.kategori}
-                                        </p>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="bg-slate-50 rounded-xl p-3 text-center">
-                                                <p className="text-xl font-bold text-slate-800">{d.totalPetugas}</p>
-                                                <p className="text-xs text-slate-400">Petugas</p>
-                                            </div>
-                                            <div className="bg-blue-50 rounded-xl p-3 text-center">
-                                                <p className="text-xl font-bold text-blue-700">{d.totalLaporan}</p>
-                                                <p className="text-xs text-blue-400">Laporan</p>
+                                            <p className="text-xs text-slate-500 mb-4 flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-sm" style={{ color: hex }}>category</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {Array.isArray(d.kategoris) && d.kategoris.length > 0 ? (
+                                                        d.kategoris.map((kat) => (
+                                                            <span
+                                                                key={kat.id_kategori}
+                                                                className="px-2 py-0.5 rounded-md text-[10px] font-medium border capitalize bg-slate-50 text-slate-600 border-slate-200"
+                                                            >
+                                                                {kat.nama_kategori}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-slate-400 italic text-[11px]">Belum mengampu kategori</span>
+                                                    )}
+                                                </div>
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: `${hex}18` }}>
+                                                    <p className="text-xl font-bold" style={{ color: hex }}>{d.totalPetugas}</p>
+                                                    <p className="text-xs mt-0.5" style={{ color: `${hex}cc` }}>Petugas</p>
+                                                </div>
+                                                <div className="bg-slate-50 rounded-xl p-3 text-center">
+                                                    <p className="text-xl font-bold text-slate-700">{d.totalLaporan}</p>
+                                                    <p className="text-xs text-slate-400 mt-0.5">Laporan</p>
+                                                </div>
                                             </div>
                                         </div>
                                         {/* Hover actions */}
-                                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                             <button onClick={() => openModal(d, 'edit')} className="p-1.5 bg-white text-green-500 hover:bg-green-50 rounded-lg shadow-sm border border-slate-100 transition-colors">
                                                 <span className="material-symbols-outlined text-sm">edit</span>
                                             </button>
@@ -436,9 +573,47 @@ export default function PetugasDinasPage() {
                                             </button>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* ===== TAB: DATA JABATAN ===== */}
+                {tab === 'jabatan' && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 text-left">
+                                    {['Nama Jabatan', 'Tingkat Level', 'Aksi'].map(h => (
+                                        <th key={h} className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <tr><td colSpan={4} className="text-center py-16 text-slate-400">Memuat data jabatan...</td></tr>
+                                ) : filteredJabatan.length === 0 ? (
+                                    <tr><td colSpan={4} className="text-center py-16 text-slate-400">Tidak ada jabatan ditemukan</td></tr>
+                                ) : filteredJabatan.map(j => (
+                                    <tr key={j.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 font-semibold text-slate-800">{j.nama_jabatan}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${LEVEL_JABATAN_MAP[j.level_jabatan]?.badge || 'bg-slate-100 text-slate-500'}`}>
+                                                {LEVEL_JABATAN_MAP[j.level_jabatan]?.label || `Level ${j.level_jabatan}`}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-1">
+                                                <button onClick={() => openModal(j, 'edit')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg" title="Edit"><span className="material-symbols-outlined text-base">edit</span></button>
+                                                <button onClick={() => setDeleteTarget(j)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg" title="Hapus"><span className="material-symbols-outlined text-base">delete</span></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
@@ -458,24 +633,20 @@ export default function PetugasDinasPage() {
             {/* ===== EDIT/DETAIL/ADD MODAL ===== */}
             {modal !== null && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setModal(null)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                             <h2 className="font-bold text-slate-800 text-lg">
-                                {modalMode === 'detail' ? 'Detail Petugas' : modalMode === 'edit' ? 'Edit Data Petugas' : tab === 'petugas' ? 'Tambah Petugas' : 'Tambah Dinas'}
+                                {modalMode === 'detail' ? 'Detail Data' : modalMode === 'edit' ? 'Edit Data' : `Tambah ${tab.charAt(0).toUpperCase() + tab.slice(1)}`}
                             </h2>
                             <button onClick={() => setModal(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400"><span className="material-symbols-outlined">close</span></button>
                         </div>
                         <div className="px-6 py-5 space-y-4">
-                            {tab === 'petugas' ? (
+                            {tab === 'petugas' && (
                                 <>
                                     {modalMode !== 'tambah' && (
                                         <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                                            <div className={`w-14 h-14 ${getDinasColor(modal.dinas)} rounded-2xl flex items-center justify-center overflow-hidden`}>
-                                                {isImageUrl(modal.avatar) ? (
-                                                    <img src={modal.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <span className="text-white text-xl font-bold">{modal.nama?.charAt(0)}</span>
-                                                )}
+                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden shadow-md" style={{ background: `linear-gradient(135deg, ${getDinasHex(modal.dinas)}cc, ${getDinasHex(modal.dinas)})` }}>
+                                                {isImageUrl(modal.avatar) ? <img src={modal.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <span className="text-white text-xl font-bold">{modal.nama?.charAt(0)}</span>}
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-800">{modal.nama}</p>
@@ -484,82 +655,143 @@ export default function PetugasDinasPage() {
                                             </div>
                                         </div>
                                     )}
-                                    {['nama', 'nip', 'jabatan', 'telp'].map(field => (
+                                    {['nama', 'nip', 'telp'].map(field => (
                                         <div key={field}>
-                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">
-                                                {field === 'nip' ? 'NIP' : field === 'telp' ? 'No. Telepon' : field}
-                                            </label>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field === 'nip' ? 'NIP' : field === 'telp' ? 'No. Telepon' : field}</label>
                                             {modalMode === 'detail' ? (
                                                 <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{modal[field] || '-'}</p>
                                             ) : (
-                                                <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })}
-                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
+                                                <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400" />
                                             )}
                                         </div>
                                     ))}
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Jabatan</label>
+                                        {modalMode === 'detail' ? (
+                                            <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{modal.jabatan || '-'}</p>
+                                        ) : (
+                                            <select
+                                                value={editData.id_jabatan || ''}
+                                                onChange={e => setEditData({ ...editData, id_jabatan: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400"
+                                            >
+                                                <option value="" disabled>-- Pilih Jabatan --</option>
+                                                {jabatanList.map(d => (
+                                                    <option key={d.id || d.original_id} value={d.original_id || d.id}>
+                                                        {d.nama_jabatan}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
                                     <div>
                                         <label className="text-xs text-slate-500 font-semibold block mb-1.5">Dinas</label>
                                         {modalMode === 'detail' ? (
                                             <p className="text-sm text-slate-800 font-medium px-3 py-2 bg-slate-50 rounded-lg">{modal.dinas_nama || '-'}</p>
                                         ) : (
-                                            <select value={editData.dinas || ''} onChange={e => setEditData({ ...editData, dinas: e.target.value })}
-                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white">
+                                            <select value={editData.dinas || ''} onChange={e => setEditData({ ...editData, dinas: e.target.value })} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400">
                                                 {dinasList.map(d => <option key={d.id} value={d.id}>{d.nama}</option>)}
                                             </select>
                                         )}
                                     </div>
-                                    {modalMode === 'detail' && (
-                                        <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 flex items-center gap-4">
-                                            <span className="material-symbols-outlined text-orange-500 text-3xl">engineering</span>
-                                            <div>
-                                                <p className="text-2xl font-bold text-orange-700">{modal.bebanKerja}</p>
-                                                <p className="text-xs text-orange-500">Laporan sedang ditangani</p>
-                                            </div>
-                                        </div>
-                                    )}
                                     {modalMode === 'edit' && (
                                         <div>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5">Status</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {['Aktif', 'Nonaktif'].map(s => (
-                                                    <button key={s} type="button" onClick={() => setEditData({ ...editData, status: s })}
-                                                        className={`py-2 rounded-xl text-sm font-semibold border-2 transition-all ${editData.status === s ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}>
-                                                        {s}
-                                                    </button>
+                                                    <button key={s} type="button" onClick={() => setEditData({ ...editData, status: s })} className={`py-2 rounded-xl text-sm font-semibold border-2 transition-all ${editData.status === s ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}>{s}</button>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
                                 </>
-                            ) : (
-                                // Form Dinas
+                            )}
+
+                            {tab === 'dinas' && (
                                 <>
                                     {['nama', 'singkatan'].map(field => (
                                         <div key={field}>
-                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field === 'nama' ? 'Nama Dinas' : 'Singkatan'}</label>
-                                            <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })}
-                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">
+                                                {field === 'nama' ? 'Nama Dinas' : 'Singkatan'}
+                                            </label>
+                                            <input type="text" value={editData[field] || ''} onChange={e => setEditData({ ...editData, [field]: e.target.value })} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400" />
                                         </div>
                                     ))}
-                                    {modalMode === 'tambah' && (
-                                        <div>
-                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">Kategori Bawaan</label>
-                                            <input type="text" value={editData.kategori || ''} onChange={e => setEditData({ ...editData, kategori: e.target.value })}
-                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 bg-white" />
+
+{/* INPUT MULTI-SELECT BERDASARKAN DATA DATABASE */}
+<div>
+    <label className="text-xs text-slate-500 font-semibold block mb-2">
+        Kategori Terkait (Bisa Pilih Lebih dari 1)
+    </label>
+    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 max-h-40 overflow-y-auto">
+        {kategoriList.length === 0 ? (
+            <p className="text-xs text-slate-400 col-span-2 py-2 text-center">Tidak ada opsi kategori di database.</p>
+        ) : (
+            kategoriList.map((kat, index) => {
+                const masterId = Number(kat.original_id);
+                const namaKategori = kat.nama || "Kategori " + masterId;
+
+                // Evaluasi status check secara presisi
+                const isChecked = Array.isArray(editData.kategoris) &&
+                                  editData.kategoris.includes(masterId);
+
+                return (
+                    <div
+                        key={masterId + "-" + index}
+                        onClick={() => handleKategoriFormToggle(masterId)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                            isChecked
+                                ? "bg-blue-50 border-blue-200 text-blue-700 font-semibold"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                        }`}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={isChecked}
+                            readOnly
+                            className="rounded text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer pointer-events-none"
+                        />
+                        <span className="capitalize select-none pointer-events-none">{namaKategori}</span>
+                    </div>
+                );
+            })
+        )}
+    </div>
+</div>
+
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-2">Warna Identitas Dinas</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {DINAS_COLORS.map(c => (
+                                                <button key={c.value} type="button" title={c.label} onClick={() => setEditData({ ...editData, color: c.value })} className={`w-8 h-8 rounded-lg transition-all ${editData.color === c.value ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`} style={{ backgroundColor: c.hex }} />
+                                            ))}
                                         </div>
-                                    )}
+                                    </div>
+                                </>
+                            )}
+
+                            {tab === 'jabatan' && (
+                                <>
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Nama Jabatan</label>
+                                        <input type="text" value={editData.nama_jabatan || ''} onChange={e => setEditData({ ...editData, nama_jabatan: e.target.value })} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400" placeholder="Contoh: Kepala Dinas, Staff Teknis" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 font-semibold block mb-1.5">Tingkat Level Jabatan</label>
+                                        <select value={editData.level_jabatan || 1} onChange={e => setEditData({ ...editData, level_jabatan: parseInt(e.target.value) })} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-blue-400">
+                                            <option value={1}>Level Tertinggi (1)</option>
+                                            <option value={2}>Level Menengah (2)</option>
+                                            <option value={3}>Level Terendah (3)</option>
+                                        </select>
+                                    </div>
                                 </>
                             )}
                         </div>
-                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-2xl">
-                            <button disabled={isSaving} onClick={() => setModal(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
-                                {modalMode === 'detail' ? 'Tutup' : 'Batal'}
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+                            <button disabled={isSaving} onClick={() => setModal(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white font-semibold bg-transparent">Batal</button>
+                            <button disabled={isSaving} onClick={handleSave} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold">
+                                {isSaving ? 'Menyimpan...' : modalMode === 'tambah' ? 'Tambahkan' : 'Simpan'}
                             </button>
-                            {modalMode !== 'detail' && (
-                                <button disabled={isSaving} onClick={handleSave} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold">
-                                    {isSaving ? 'Menyimpan...' : modalMode === 'tambah' ? 'Tambahkan' : 'Simpan'}
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -584,7 +816,7 @@ export default function PetugasDinasPage() {
                                 Apakah Anda yakin ingin menghapus {tab === 'petugas' ? 'petugas' : 'dinas'} <span className="text-red-600 font-bold">{deleteTarget.nama}</span>?
                             </p>
                             <p className="text-xs text-slate-500 max-w-xs px-2 leading-relaxed">
-                                {tab === 'petugas' 
+                                {tab === 'petugas'
                                     ? 'Tindakan ini tidak dapat dibatalkan dan seluruh penugasan kerja petugas ini di database akan dihapus secara permanen.'
                                     : 'Tindakan ini tidak dapat dibatalkan dan seluruh kategori terkait dinas ini di database akan terpengaruh.'}
                             </p>
@@ -601,48 +833,45 @@ export default function PetugasDinasPage() {
                 </div>
             )}
 
-            {/* ===== PREMIUM RED KUSTOM BULK DELETE CONFIRMATION MODAL ===== */}
-            {showBulkDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowBulkDeleteModal(false)}>
+            {/* ===== PREMIUM RED KUSTOM DELETE CONFIRMATION MODAL ===== */}
+            {deleteTarget !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between px-6 py-5 border-b border-red-50 bg-red-50/10">
                             <div>
-                                <h2 className="font-bold text-red-600 text-lg">Konfirmasi Hapus Masal</h2>
-                                <p className="text-xs text-red-500 mt-0.5">{selectedIds.length} Petugas Terpilih</p>
-                            </div>
-                            <button onClick={() => setShowBulkDeleteModal(false)} className="p-2 hover:bg-red-50 rounded-xl text-red-400 hover:text-red-600"><span className="material-symbols-outlined">close</span></button>
-                        </div>
-                        <div className="px-6 py-6 space-y-4">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3 text-red-500 border border-red-100">
-                                    <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
-                                </div>
-                                <p className="text-sm font-semibold text-slate-800 mb-2 px-2">
-                                    Apakah Anda yakin ingin menghapus <span className="text-red-600 font-bold">{selectedIds.length} petugas</span> terpilih?
+                                <h2 className="font-bold text-red-600 text-lg">
+                                    Konfirmasi Hapus {tab === 'petugas' ? 'Petugas' : tab === 'dinas' ? 'Dinas' : 'Jabatan'}
+                                </h2>
+                                <p className="text-xs text-red-500 mt-0.5">
+                                    ID: {deleteTarget.id || deleteTarget.original_id}
                                 </p>
                             </div>
-
-                            <div className="max-h-36 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-wrap gap-1.5 justify-center">
-                                {selectedIds.map(id => {
-                                    const p = petugasList.find(x => x.original_id === id);
-                                    return p ? (
-                                        <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                                            {p.nama}
-                                        </span>
-                                    ) : null;
-                                })}
+                            <button onClick={() => setDeleteTarget(null)} className="p-2 hover:bg-red-50 rounded-xl text-red-400 hover:text-red-600">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="px-6 py-8 flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-500 border border-red-100">
+                                <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
                             </div>
-
-                            <p className="text-xs text-slate-500 text-center leading-relaxed px-4">
-                                Tindakan ini tidak dapat dibatalkan dan seluruh data pekerjaan serta akun petugas terpilih akan dihapus secara permanen dari sistem.
+                            <p className="text-sm font-semibold text-slate-800 mb-2 px-2">
+                                Apakah Anda yakin ingin menghapus {tab === 'petugas' ? 'petugas' : tab === 'dinas' ? 'dinas' : 'jabatan'}{' '}
+                                <span className="text-red-600 font-bold">
+                                    {deleteTarget.nama || deleteTarget.nama_jabatan}
+                                </span>?
+                            </p>
+                            <p className="text-xs text-slate-500 max-w-xs px-2 leading-relaxed">
+                                {tab === 'petugas' && 'Tindakan ini tidak dapat dibatalkan dan seluruh penugasan kerja petugas ini di database akan dihapus secara permanen.'}
+                                {tab === 'dinas' && 'Tindakan ini tidak dapat dibatalkan dan seluruh kategori terkait dinas ini di database akan terpengaruh.'}
+                                {tab === 'jabatan' && 'Tindakan ini tidak dapat dibatalkan. Petugas yang saat ini menggunakan jabatan ini mungkin akan kehilangan referensi jabatannya.'}
                             </p>
                         </div>
                         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
-                            <button disabled={isDeleting} onClick={() => setShowBulkDeleteModal(false)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
+                            <button disabled={isDeleting} onClick={() => setDeleteTarget(null)} className="px-5 py-2 text-sm text-slate-600 border border-slate-200 rounded-xl hover:bg-white transition-colors font-semibold bg-transparent">
                                 Batal
                             </button>
-                            <button disabled={isDeleting} onClick={handleBulkDeleteConfirm} className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold shadow-sm shadow-red-100">
-                                {isDeleting ? 'Menghapus...' : `Ya, Hapus ${selectedIds.length} Petugas`}
+                            <button disabled={isDeleting} onClick={handleDelete} className="px-5 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold shadow-sm shadow-red-100">
+                                {isDeleting ? 'Menghapus...' : `Ya, Hapus ${tab === 'petugas' ? 'Petugas' : tab === 'dinas' ? 'Dinas' : 'Jabatan'}`}
                             </button>
                         </div>
                     </div>
@@ -665,11 +894,8 @@ export default function PetugasDinasPage() {
                                 <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-3 text-green-500 border border-green-100">
                                     <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                                 </div>
-                                <p className="text-sm font-semibold text-slate-800 mb-1">
-                                    Kredensial login petugas berhasil digenerate:
-                                </p>
+                                <p className="text-sm font-semibold text-slate-800 mb-1">Kredensial login petugas berhasil digenerate:</p>
                             </div>
-
                             <div className="border border-slate-100 rounded-xl p-4 bg-slate-50 space-y-2.5 font-mono text-sm">
                                 <div className="flex justify-between border-b border-slate-200/60 pb-2">
                                     <span className="text-slate-400">Username</span>
@@ -680,23 +906,16 @@ export default function PetugasDinasPage() {
                                     <span className="font-semibold text-slate-800 select-all">{successAccount.password}</span>
                                 </div>
                             </div>
-
-                            <p className="text-xs text-slate-500 text-center leading-relaxed px-4">
-                                Petugas dapat login menggunakan NIP atau Username di atas, dengan password default <span className="font-bold text-slate-700">{successAccount.password}</span>.
-                            </p>
                         </div>
                         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
                             <button onClick={() => {
                                 const text = `Kredensial Petugas Baru:\nNama: ${successAccount.nama}\nUsername: ${successAccount.username}\nPassword: ${successAccount.password}`;
                                 navigator.clipboard.writeText(text);
                                 alert("Kredensial disalin ke clipboard!");
-                            }} className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-xl transition-colors font-semibold flex items-center gap-1.5 bg-transparent">
-                                <span className="material-symbols-outlined text-base">content_copy</span>
-                                Salin Kredensial
+                            }} className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-xl font-semibold flex items-center gap-1.5 bg-transparent">
+                                <span className="material-symbols-outlined text-base">content_copy</span>Salin Kredensial
                             </button>
-                            <button onClick={() => setSuccessAccount(null)} className="px-5 py-2 text-sm bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold">
-                                Selesai
-                            </button>
+                            <button onClick={() => setSuccessAccount(null)} className="px-5 py-2 text-sm bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold">Selesai</button>
                         </div>
                     </div>
                 </div>
