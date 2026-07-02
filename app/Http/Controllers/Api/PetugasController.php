@@ -173,6 +173,7 @@ class PetugasController extends Controller
             ->first();
 
         if ($petugas && Hash::check($request->password, $petugas->password)) {
+            auth()->login($petugas);
             $dinas = Dinas::find($petugas->id_dinas);
             $jabatan = Jabatan::find($petugas->id_jabatan);
 

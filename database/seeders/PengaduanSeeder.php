@@ -129,7 +129,7 @@ class PengaduanSeeder extends Seeder
             for ($k = 1; $k <= 4; $k++) {
                 $nameIndex   = ($index * 4) + ($k - 1);
                 $petugasData = $indonesianNames[$nameIndex];
-                $email       = $petugasData[1] . '@petugas.go.id';
+                $email       = $petugasData[1] . '@gmail.com';
 
                 User::firstOrCreate(
                     ['email' => $email],

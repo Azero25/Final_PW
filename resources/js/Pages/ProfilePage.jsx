@@ -38,6 +38,11 @@ export default function ProfilePage() {
         konfirmasiPassword: ''
     });
 
+    // State toggle visibilitas password
+    const [showOldPass, setShowOldPass] = useState(false);
+    const [showNewPass, setShowNewPass] = useState(false);
+    const [showConfPass, setShowConfPass] = useState(false);
+
     // State notifikasi/toast
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
@@ -975,40 +980,73 @@ export default function ProfilePage() {
                                             {/* Current Password */}
                                             <div className="space-y-2">
                                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-oldpass">Kata Sandi Saat Ini</label>
-                                                <input
-                                                    id="p-oldpass"
-                                                    type="password"
-                                                    value={passwordData.passwordLama}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, passwordLama: e.target.value })}
-                                                    placeholder="••••••••"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        id="p-oldpass"
+                                                        type={showOldPass ? "text" : "password"}
+                                                        value={passwordData.passwordLama}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, passwordLama: e.target.value })}
+                                                        placeholder="••••••••"
+                                                        className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowOldPass(!showOldPass)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl select-none">
+                                                            {showOldPass ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* New Password */}
                                             <div className="space-y-2">
                                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-newpass">Kata Sandi Baru</label>
-                                                <input
-                                                    id="p-newpass"
-                                                    type="password"
-                                                    value={passwordData.passwordBaru}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, passwordBaru: e.target.value })}
-                                                    placeholder="Minimal 6 karakter"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        id="p-newpass"
+                                                        type={showNewPass ? "text" : "password"}
+                                                        value={passwordData.passwordBaru}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, passwordBaru: e.target.value })}
+                                                        placeholder="Minimal 6 karakter"
+                                                        className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowNewPass(!showNewPass)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl select-none">
+                                                            {showNewPass ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Confirm New Password */}
                                             <div className="space-y-2">
                                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-confpass">Ulangi Kata Sandi Baru</label>
-                                                <input
-                                                    id="p-confpass"
-                                                    type="password"
-                                                    value={passwordData.konfirmasiPassword}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, konfirmasiPassword: e.target.value })}
-                                                    placeholder="Ulangi Sandi Baru"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        id="p-confpass"
+                                                        type={showConfPass ? "text" : "password"}
+                                                        value={passwordData.konfirmasiPassword}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, konfirmasiPassword: e.target.value })}
+                                                        placeholder="Ulangi Sandi Baru"
+                                                        className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfPass(!showConfPass)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl select-none">
+                                                            {showConfPass ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
