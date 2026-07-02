@@ -4,6 +4,7 @@ import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import api from '../axios';
 
+
 export default function ProfilePage() {
     const navigate = useNavigate();
 
@@ -21,7 +22,6 @@ export default function ProfilePage() {
         nik: '',
         telepon: '',
         alamat: '',
-        desa: '',
         kelurahan: '',
         kecamatan: '',
         kabupaten: '',
@@ -38,8 +38,30 @@ export default function ProfilePage() {
         konfirmasiPassword: ''
     });
 
+    // State toggle visibilitas password
+    const [showOldPass, setShowOldPass] = useState(false);
+    const [showNewPass, setShowNewPass] = useState(false);
+    const [showConfPass, setShowConfPass] = useState(false);
+
     // State notifikasi/toast
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+    // State wilayah cascading
+    const [suggestions, setSuggestions] = useState({ provinsi: [], kabupaten: [], kecamatan: [], kelurahan: [] });
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [selectedIds, setSelectedIds] = useState({
+        id_provinsi: null,
+        id_kabupaten: null,
+        id_kecamatan: null,
+        id_kelurahan: null
+    });
+
+    // Click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = () => setActiveDropdown(null);
+        window.addEventListener('click', handleClickOutside);
+        return () => window.removeEventListener('click', handleClickOutside);
+    }, []);
 
     // Efek inisialisasi halaman
     useEffect(() => {
@@ -55,6 +77,11 @@ export default function ProfilePage() {
                     return;
                 }
                 setUser(activeUser);
+ 
+                const kel = activeUser.kelurahan;
+                const kec = kel?.kecamatan;
+                const kab = kec?.kabupaten;
+                const prov = kab?.provinsi;
 
                 setProfile({
                     nama: activeUser.nama_lengkap || '',
@@ -63,14 +90,20 @@ export default function ProfilePage() {
                     nik: activeUser.nik || '',
                     telepon: activeUser.no_hp || '',
                     alamat: activeUser.alamat_lengkap || '',
-                    desa: activeUser.desa || '',
-                    kelurahan: activeUser.kelurahan || '',
-                    kecamatan: activeUser.kecamatan || '',
-                    kabupaten: activeUser.kabupaten || '',
-                    provinsi: activeUser.provinsi || '',
+                    kelurahan: kel?.nama_kelurahan || '',
+                    kecamatan: kec?.nama_kecamatan || '',
+                    kabupaten: kab?.nama_kabupaten || '',
+                    provinsi: prov?.nama_provinsi || '',
                     avatar: activeUser.avatar || null,
                     tglDaftar: activeUser.tanggal_bergabung ? new Date(activeUser.tanggal_bergabung).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '18 Maret 2024',
                     status: activeUser.status || 'Terverifikasi'
+                });
+
+                setSelectedIds({
+                    id_provinsi: prov?.id_provinsi || null,
+                    id_kabupaten: kab?.id_kabupaten || null,
+                    id_kecamatan: kec?.id_kecamatan || null,
+                    id_kelurahan: kel?.id_kelurahan || null
                 });
             } catch (err) {
                 showToast('Gagal memuat profil dari server.', 'error');
@@ -120,7 +153,6 @@ export default function ProfilePage() {
                     nik: profile.nik,
                     no_hp: profile.telepon,
                     alamat_lengkap: profile.alamat,
-                    desa: profile.desa,
                     kelurahan: profile.kelurahan,
                     kecamatan: profile.kecamatan,
                     kabupaten: profile.kabupaten,
@@ -135,6 +167,19 @@ export default function ProfilePage() {
                     sesi.avatar = updatedUser.avatar;
                     sessionStorage.setItem('user', JSON.stringify(sesi));
                 }
+
+                localStorage.setItem(`profile_${updatedUser.email}`, JSON.stringify({
+                    nama: updatedUser.nama_lengkap,
+                    email: updatedUser.email,
+                    avatar: updatedUser.avatar,
+                    nik: updatedUser.nik,
+                    telepon: updatedUser.no_hp,
+                    alamat: updatedUser.alamat_lengkap,
+                    kelurahan: updatedUser.kelurahan?.nama_kelurahan || '',
+                    kecamatan: updatedUser.kelurahan?.kecamatan?.nama_kecamatan || '',
+                    kabupaten: updatedUser.kelurahan?.kecamatan?.kabupaten?.nama_kabupaten || '',
+                    provinsi: updatedUser.kelurahan?.kecamatan?.kabupaten?.provinsi?.nama_provinsi || ''
+                }));
 
                 // Kirim event agar Navbar tahu foto profil diperbarui
                 window.dispatchEvent(new Event('profileUpdated'));
@@ -157,7 +202,6 @@ export default function ProfilePage() {
                 nik: profile.nik,
                 no_hp: profile.telepon,
                 alamat_lengkap: profile.alamat,
-                desa: profile.desa,
                 kelurahan: profile.kelurahan,
                 kecamatan: profile.kecamatan,
                 kabupaten: profile.kabupaten,
@@ -173,10 +217,116 @@ export default function ProfilePage() {
                 sessionStorage.setItem('user', JSON.stringify(sesi));
             }
 
+            localStorage.setItem(`profile_${updatedUser.email}`, JSON.stringify({
+                nama: updatedUser.nama_lengkap,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+                nik: updatedUser.nik,
+                telepon: updatedUser.no_hp,
+                alamat: updatedUser.alamat_lengkap,
+                kelurahan: updatedUser.kelurahan?.nama_kelurahan || '',
+                kecamatan: updatedUser.kelurahan?.kecamatan?.nama_kecamatan || '',
+                kabupaten: updatedUser.kelurahan?.kecamatan?.kabupaten?.nama_kabupaten || '',
+                provinsi: updatedUser.kelurahan?.kecamatan?.kabupaten?.provinsi?.nama_provinsi || ''
+            }));
+
             window.dispatchEvent(new Event('profileUpdated'));
             showToast('Foto profil telah dihapus.', 'success');
         } catch (err) {
             showToast('Gagal menghapus foto profil di server.', 'error');
+        }
+    };
+
+    const handleManualSearch = async (type, query) => {
+        setProfile(prev => ({ ...prev, [type]: query }));
+
+        // Lepas ID kuncian agar box mendeteksi aktivitas pengetikan baru
+        setSelectedIds(prev => ({ ...prev, [`id_${type}`]: null }));
+
+        let parentId = null;
+        if (type === 'kabupaten') parentId = selectedIds.id_provinsi;
+        if (type === 'kecamatan') parentId = selectedIds.id_kabupaten;
+        if (type === 'kelurahan') parentId = selectedIds.id_kecamatan;
+
+        if (query.trim().length < 2) {
+            setSuggestions(prev => ({ ...prev, [type]: [] }));
+            return;
+        }
+
+        try {
+            const response = await api.get(`/api/wilayah/search-cascading?type=${type}&q=${query}&parent_id=${parentId}`);
+            setSuggestions(prev => ({ ...prev, [type]: response.data }));
+            setActiveDropdown(type);
+        } catch (error) {
+            console.error(`Gagal memuat search ${type}:`, error);
+        }
+    };
+
+    const handleSelectManual = (type, item) => {
+        if (type === 'provinsi') {
+            setProfile(prev => ({ ...prev, provinsi: item.nama_provinsi, kabupaten: '', kecamatan: '', kelurahan: '' }));
+            setSelectedIds({ id_provinsi: item.id_provinsi, id_kabupaten: null, id_kecamatan: null, id_kelurahan: null });
+        } else if (type === 'kabupaten') {
+            setProfile(prev => ({ ...prev, kabupaten: item.nama_kabupaten, kecamatan: '', kelurahan: '' }));
+            setSelectedIds(prev => ({ ...prev, id_kabupaten: item.id_kabupaten, id_kecamatan: null, id_kelurahan: null }));
+        } else if (type === 'kecamatan') {
+            setProfile(prev => ({ ...prev, kecamatan: item.nama_kecamatan, kelurahan: '' }));
+            setSelectedIds(prev => ({ ...prev, id_kecamatan: item.id_kecamatan, id_kelurahan: null }));
+        } else if (type === 'kelurahan') {
+            setProfile(prev => ({ ...prev, kelurahan: item.nama_kelurahan }));
+            setSelectedIds(prev => ({ ...prev, id_kelurahan: item.id_kelurahan }));
+        }
+        setActiveDropdown(null);
+    };
+
+    const handleCreateNewWilayah = async (type, name) => {
+        if (!name.trim()) return;
+
+        setSaving(true);
+        try {
+            let payload = { nama: name };
+            let endpoint = '/api/wilayah/';
+
+            if (type === 'provinsi') {
+                endpoint += 'provinsi';
+            } else if (type === 'kabupaten') {
+                endpoint += 'kabupaten';
+                payload.id_provinsi = selectedIds.id_provinsi;
+            } else if (type === 'kecamatan') {
+                endpoint += 'kecamatan';
+                payload.id_kabupaten = selectedIds.id_kabupaten;
+            } else if (type === 'kelurahan') {
+                endpoint += 'kelurahan';
+                payload.id_kecamatan = selectedIds.id_kecamatan;
+            }
+
+            const response = await api.post(endpoint, payload);
+
+            if (response.status === 201 || response.data.status === 'success') {
+                const newItem = response.data.data;
+
+                if (type === 'provinsi') {
+                    setProfile(prev => ({ ...prev, provinsi: newItem.nama_provinsi, kabupaten: '', kecamatan: '', kelurahan: '' }));
+                    setSelectedIds({ id_provinsi: newItem.id_provinsi, id_kabupaten: null, id_kecamatan: null, id_kelurahan: null });
+                } else if (type === 'kabupaten') {
+                    setProfile(prev => ({ ...prev, kabupaten: newItem.nama_kabupaten, kecamatan: '', kelurahan: '' }));
+                    setSelectedIds(prev => ({ ...prev, id_kabupaten: newItem.id_kabupaten, id_kecamatan: null, id_kelurahan: null }));
+                } else if (type === 'kecamatan') {
+                    setProfile(prev => ({ ...prev, kecamatan: newItem.nama_kecamatan, kelurahan: '' }));
+                    setSelectedIds(prev => ({ ...prev, id_kecamatan: newItem.id_kecamatan, id_kelurahan: null }));
+                } else if (type === 'kelurahan') {
+                    setProfile(prev => ({ ...prev, kelurahan: newItem.nama_kelurahan }));
+                    setSelectedIds(prev => ({ ...prev, id_kelurahan: newItem.id_kelurahan }));
+                }
+
+                setActiveDropdown(null);
+                showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} baru berhasil ditambahkan!`, 'success');
+            }
+        } catch (error) {
+            console.error(`Gagal menambahkan ${type} baru:`, error);
+            showToast(error.response?.data?.message || `Sistem gagal mendaftarkan data ${type} baru.`, 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -202,6 +352,12 @@ export default function ProfilePage() {
             return;
         }
 
+        // Pastikan ID Kelurahan sudah terkunci dari relasi valid database sebelum submit
+        if (!selectedIds.id_kelurahan) {
+            showToast('Silakan pilih atau tambah Desa/Kelurahan resmi yang tersedia dari daftar dropdown', 'error');
+            return;
+        }
+
         setSaving(true);
 
         try {
@@ -210,7 +366,6 @@ export default function ProfilePage() {
                 nik: profile.nik,
                 no_hp: profile.telepon,
                 alamat_lengkap: profile.alamat,
-                desa: profile.desa,
                 kelurahan: profile.kelurahan,
                 kecamatan: profile.kecamatan,
                 kabupaten: profile.kabupaten,
@@ -227,6 +382,19 @@ export default function ProfilePage() {
                 sesi.avatar = updatedUser.avatar;
                 sessionStorage.setItem('user', JSON.stringify(sesi));
             }
+
+            localStorage.setItem(`profile_${updatedUser.email}`, JSON.stringify({
+                nama: updatedUser.nama_lengkap,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+                nik: updatedUser.nik,
+                telepon: updatedUser.no_hp,
+                alamat: updatedUser.alamat_lengkap,
+                kelurahan: updatedUser.kelurahan?.nama_kelurahan || '',
+                kecamatan: updatedUser.kelurahan?.kecamatan?.nama_kecamatan || '',
+                kabupaten: updatedUser.kelurahan?.kecamatan?.kabupaten?.nama_kabupaten || '',
+                provinsi: updatedUser.kelurahan?.kecamatan?.kabupaten?.provinsi?.nama_provinsi || ''
+            }));
 
             // Kirim event untuk memberitahu Navbar
             window.dispatchEvent(new Event('profileUpdated'));
@@ -288,6 +456,9 @@ export default function ProfilePage() {
             setSaving(false);
         }
     };
+
+
+
 
     if (loading) {
         return (
@@ -558,59 +729,215 @@ export default function ProfilePage() {
                                             ></textarea>
                                         </div>
 
-                                        {/* Grid Kelengkapan Alamat Kependudukan */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {/* Desa / Kelurahan */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-desa">Desa / Kelurahan</label>
-                                                <input
-                                                    id="p-desa"
-                                                    type="text"
-                                                    value={profile.desa || ''}
-                                                    onChange={(e) => setProfile({ ...profile, desa: e.target.value, kelurahan: e.target.value })}
-                                                    placeholder="Nama Desa atau Kelurahan"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                        {/* Grid Kelengkapan Alamat Kependudukan – Cascading Regional */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                            {/* ── Provinsi ── */}
+                                            <div className="space-y-2 relative">
+                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Provinsi
+                                                </label>
+                                                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="text"
+                                                        id="p-provinsi"
+                                                        value={profile.provinsi || ''}
+                                                        onChange={(e) => handleManualSearch('provinsi', e.target.value)}
+                                                        onFocus={() => setActiveDropdown('provinsi')}
+                                                        placeholder="Cari atau ketik nama provinsi..."
+                                                        autoComplete="off"
+                                                        className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none pr-10
+                                                            ${selectedIds.id_provinsi ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 focus:border-blue-500'}`}
+                                                    />
+                                                    {selectedIds.id_provinsi && (
+                                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-lg">check_circle</span>
+                                                    )}
+                                                </div>
+                                                {activeDropdown === 'provinsi' && (suggestions.provinsi?.length > 0 || profile.provinsi?.trim().length >= 2) && (
+                                                    <div
+                                                        className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {suggestions.provinsi?.map((item, idx) => (
+                                                            <button
+                                                                key={item.id_provinsi ?? idx}
+                                                                type="button"
+                                                                onClick={() => handleSelectManual('provinsi', item)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                            >
+                                                                {item.nama_provinsi}
+                                                            </button>
+                                                        ))}
+                                                        {profile.provinsi?.trim().length >= 2 && !selectedIds.id_provinsi && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCreateNewWilayah('provinsi', profile.provinsi)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 border-t border-slate-100 flex items-center gap-2"
+                                                            >
+                                                                <span className="material-symbols-outlined text-base">add_circle</span>
+                                                                Tambah &ldquo;{profile.provinsi}&rdquo; sebagai provinsi baru
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Kecamatan */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-kecamatan">Kecamatan</label>
-                                                <input
-                                                    id="p-kecamatan"
-                                                    type="text"
-                                                    value={profile.kecamatan || ''}
-                                                    onChange={(e) => setProfile({ ...profile, kecamatan: e.target.value })}
-                                                    placeholder="Nama Kecamatan"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                            {/* ── Kabupaten / Kota ── */}
+                                            <div className="space-y-2 relative">
+                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Kabupaten / Kota
+                                                </label>
+                                                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="text"
+                                                        id="p-kabupaten"
+                                                        value={profile.kabupaten || ''}
+                                                        onChange={(e) => handleManualSearch('kabupaten', e.target.value)}
+                                                        onFocus={() => { if (selectedIds.id_provinsi) setActiveDropdown('kabupaten'); }}
+                                                        disabled={!selectedIds.id_provinsi}
+                                                        placeholder={selectedIds.id_provinsi ? 'Cari atau ketik nama kabupaten...' : 'Pilih provinsi terlebih dahulu'}
+                                                        autoComplete="off"
+                                                        className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none pr-10
+                                                            ${!selectedIds.id_provinsi ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}
+                                                            ${selectedIds.id_kabupaten ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 focus:border-blue-500'}`}
+                                                    />
+                                                    {selectedIds.id_kabupaten && (
+                                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-lg">check_circle</span>
+                                                    )}
+                                                </div>
+                                                {activeDropdown === 'kabupaten' && (suggestions.kabupaten?.length > 0 || profile.kabupaten?.trim().length >= 2) && (
+                                                    <div
+                                                        className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {suggestions.kabupaten?.map((item, idx) => (
+                                                            <button
+                                                                key={item.id_kabupaten ?? idx}
+                                                                type="button"
+                                                                onClick={() => handleSelectManual('kabupaten', item)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                            >
+                                                                {item.nama_kabupaten}
+                                                            </button>
+                                                        ))}
+                                                        {profile.kabupaten?.trim().length >= 2 && !selectedIds.id_kabupaten && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCreateNewWilayah('kabupaten', profile.kabupaten)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 border-t border-slate-100 flex items-center gap-2"
+                                                            >
+                                                                <span className="material-symbols-outlined text-base">add_circle</span>
+                                                                Tambah &ldquo;{profile.kabupaten}&rdquo; sebagai kabupaten baru
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Kabupaten */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-kabupaten">Kabupaten / Kota</label>
-                                                <input
-                                                    id="p-kabupaten"
-                                                    type="text"
-                                                    value={profile.kabupaten || ''}
-                                                    onChange={(e) => setProfile({ ...profile, kabupaten: e.target.value })}
-                                                    placeholder="Nama Kabupaten/Kota"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                            {/* ── Kecamatan ── */}
+                                            <div className="space-y-2 relative">
+                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Kecamatan
+                                                </label>
+                                                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="text"
+                                                        id="p-kecamatan"
+                                                        value={profile.kecamatan || ''}
+                                                        onChange={(e) => handleManualSearch('kecamatan', e.target.value)}
+                                                        onFocus={() => { if (selectedIds.id_kabupaten) setActiveDropdown('kecamatan'); }}
+                                                        disabled={!selectedIds.id_kabupaten}
+                                                        placeholder={selectedIds.id_kabupaten ? 'Cari atau ketik nama kecamatan...' : 'Pilih kabupaten terlebih dahulu'}
+                                                        autoComplete="off"
+                                                        className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none pr-10
+                                                            ${!selectedIds.id_kabupaten ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}
+                                                            ${selectedIds.id_kecamatan ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 focus:border-blue-500'}`}
+                                                    />
+                                                    {selectedIds.id_kecamatan && (
+                                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-lg">check_circle</span>
+                                                    )}
+                                                </div>
+                                                {activeDropdown === 'kecamatan' && (suggestions.kecamatan?.length > 0 || profile.kecamatan?.trim().length >= 2) && (
+                                                    <div
+                                                        className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {suggestions.kecamatan?.map((item, idx) => (
+                                                            <button
+                                                                key={item.id_kecamatan ?? idx}
+                                                                type="button"
+                                                                onClick={() => handleSelectManual('kecamatan', item)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                            >
+                                                                {item.nama_kecamatan}
+                                                            </button>
+                                                        ))}
+                                                        {profile.kecamatan?.trim().length >= 2 && !selectedIds.id_kecamatan && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCreateNewWilayah('kecamatan', profile.kecamatan)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 border-t border-slate-100 flex items-center gap-2"
+                                                            >
+                                                                <span className="material-symbols-outlined text-base">add_circle</span>
+                                                                Tambah &ldquo;{profile.kecamatan}&rdquo; sebagai kecamatan baru
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Provinsi */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-provinsi">Provinsi</label>
-                                                <input
-                                                    id="p-provinsi"
-                                                    type="text"
-                                                    value={profile.provinsi || ''}
-                                                    onChange={(e) => setProfile({ ...profile, provinsi: e.target.value })}
-                                                    placeholder="Nama Provinsi"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                            {/* ── Kelurahan / Desa ── */}
+                                            <div className="space-y-2 relative">
+                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Desa / Kelurahan
+                                                </label>
+                                                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="text"
+                                                        id="p-kelurahan"
+                                                        value={profile.kelurahan || ''}
+                                                        onChange={(e) => handleManualSearch('kelurahan', e.target.value)}
+                                                        onFocus={() => { if (selectedIds.id_kecamatan) setActiveDropdown('kelurahan'); }}
+                                                        disabled={!selectedIds.id_kecamatan}
+                                                        placeholder={selectedIds.id_kecamatan ? 'Cari atau ketik nama desa/kelurahan...' : 'Pilih kecamatan terlebih dahulu'}
+                                                        autoComplete="off"
+                                                        className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none pr-10
+                                                            ${!selectedIds.id_kecamatan ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}
+                                                            ${selectedIds.id_kelurahan ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 focus:border-blue-500'}`}
+                                                    />
+                                                    {selectedIds.id_kelurahan && (
+                                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-lg">check_circle</span>
+                                                    )}
+                                                </div>
+                                                {activeDropdown === 'kelurahan' && (suggestions.kelurahan?.length > 0 || profile.kelurahan?.trim().length >= 2) && (
+                                                    <div
+                                                        className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {suggestions.kelurahan?.map((item, idx) => (
+                                                            <button
+                                                                key={item.id_kelurahan ?? idx}
+                                                                type="button"
+                                                                onClick={() => handleSelectManual('kelurahan', item)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                            >
+                                                                {item.nama_kelurahan}
+                                                            </button>
+                                                        ))}
+                                                        {profile.kelurahan?.trim().length >= 2 && !selectedIds.id_kelurahan && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCreateNewWilayah('kelurahan', profile.kelurahan)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 border-t border-slate-100 flex items-center gap-2"
+                                                            >
+                                                                <span className="material-symbols-outlined text-base">add_circle</span>
+                                                                Tambah &ldquo;{profile.kelurahan}&rdquo; sebagai desa/kelurahan baru
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
+
                                         </div>
 
                                         {/* Action buttons */}
@@ -653,40 +980,73 @@ export default function ProfilePage() {
                                             {/* Current Password */}
                                             <div className="space-y-2">
                                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-oldpass">Kata Sandi Saat Ini</label>
-                                                <input
-                                                    id="p-oldpass"
-                                                    type="password"
-                                                    value={passwordData.passwordLama}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, passwordLama: e.target.value })}
-                                                    placeholder="••••••••"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        id="p-oldpass"
+                                                        type={showOldPass ? "text" : "password"}
+                                                        value={passwordData.passwordLama}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, passwordLama: e.target.value })}
+                                                        placeholder="••••••••"
+                                                        className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowOldPass(!showOldPass)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl select-none">
+                                                            {showOldPass ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* New Password */}
                                             <div className="space-y-2">
                                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-newpass">Kata Sandi Baru</label>
-                                                <input
-                                                    id="p-newpass"
-                                                    type="password"
-                                                    value={passwordData.passwordBaru}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, passwordBaru: e.target.value })}
-                                                    placeholder="Minimal 6 karakter"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        id="p-newpass"
+                                                        type={showNewPass ? "text" : "password"}
+                                                        value={passwordData.passwordBaru}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, passwordBaru: e.target.value })}
+                                                        placeholder="Minimal 6 karakter"
+                                                        className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowNewPass(!showNewPass)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl select-none">
+                                                            {showNewPass ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Confirm New Password */}
                                             <div className="space-y-2">
                                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-confpass">Ulangi Kata Sandi Baru</label>
-                                                <input
-                                                    id="p-confpass"
-                                                    type="password"
-                                                    value={passwordData.konfirmasiPassword}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, konfirmasiPassword: e.target.value })}
-                                                    placeholder="Ulangi Sandi Baru"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        id="p-confpass"
+                                                        type={showConfPass ? "text" : "password"}
+                                                        value={passwordData.konfirmasiPassword}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, konfirmasiPassword: e.target.value })}
+                                                        placeholder="Ulangi Sandi Baru"
+                                                        className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfPass(!showConfPass)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl select-none">
+                                                            {showConfPass ? 'visibility_off' : 'visibility'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 

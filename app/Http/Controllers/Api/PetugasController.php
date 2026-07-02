@@ -173,6 +173,7 @@ class PetugasController extends Controller
             ->first();
 
         if ($petugas && Hash::check($request->password, $petugas->password)) {
+            auth()->login($petugas);
             $dinas = Dinas::find($petugas->id_dinas);
             $jabatan = Jabatan::find($petugas->id_jabatan);
 
@@ -182,6 +183,7 @@ class PetugasController extends Controller
                     'id' => 'PTG-' . str_pad($petugas->id_user, 3, '0', STR_PAD_LEFT),
                     'original_id' => $petugas->id_user,
                     'nama' => $petugas->nama_lengkap,
+                    'nip' => $petugas->nip,
                     'dinas' => $dinas ? $dinas->nama_dinas : 'Tidak ada dinas',
                     'original_dinas_id' => $petugas->id_dinas,
                     'jabatan' => $jabatan ? $jabatan->nama_jabatan : 'Staf',
@@ -260,6 +262,7 @@ class PetugasController extends Controller
                 'id' => 'PTG-' . str_pad($petugas->id_user, 3, '0', STR_PAD_LEFT),
                 'original_id' => $petugas->id_user,
                 'nama' => $petugas->nama_lengkap,
+                'nip' => $petugas->nip,
                 'dinas' => $dinas ? $dinas->nama_dinas : 'Tidak ada dinas',
                 'jabatan' => $jabatan ? $jabatan->nama_jabatan : 'Staf',
                 'username' => $petugas->email,

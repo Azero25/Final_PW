@@ -294,8 +294,12 @@ export default function LacakPage() {
                         {/* Info Petugas */}
                         <div className="px-6 pb-6">
                             <div className="bg-blue-50 rounded-xl p-4 flex items-center gap-4 border border-blue-100">
-                                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shrink-0">
-                                    <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
+                                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                                    {hasilLacak.petugas_avatar ? (
+                                        <img src={getImageUrl(hasilLacak.petugas_avatar)} alt="Foto Petugas" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="text-xs text-blue-500 font-medium uppercase tracking-wide mb-0.5">Petugas yang Ditugaskan</p>

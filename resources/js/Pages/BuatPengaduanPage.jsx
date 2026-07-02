@@ -201,16 +201,22 @@ export default function BuatPengaduanPage() {
                 if (!serverUser.alamat_lengkap || !serverUser.alamat_lengkap.trim()) {
                     missing.push('Alamat Tinggal Lengkap');
                 }
-                if (!serverUser.desa || !serverUser.desa.trim()) {
+                
+                const kelurahanNama = serverUser.kelurahan?.nama_kelurahan;
+                const kecamatanNama = serverUser.kelurahan?.kecamatan?.nama_kecamatan;
+                const kabupatenNama = serverUser.kelurahan?.kecamatan?.kabupaten?.nama_kabupaten;
+                const provinsiNama = serverUser.kelurahan?.kecamatan?.kabupaten?.provinsi?.nama_provinsi;
+
+                if (!kelurahanNama || !kelurahanNama.trim()) {
                     missing.push('Desa / Kelurahan');
                 }
-                if (!serverUser.kecamatan || !serverUser.kecamatan.trim()) {
+                if (!kecamatanNama || !kecamatanNama.trim()) {
                     missing.push('Kecamatan');
                 }
-                if (!serverUser.kabupaten || !serverUser.kabupaten.trim()) {
+                if (!kabupatenNama || !kabupatenNama.trim()) {
                     missing.push('Kabupaten / Kota');
                 }
-                if (!serverUser.provinsi || !serverUser.provinsi.trim()) {
+                if (!provinsiNama || !provinsiNama.trim()) {
                     missing.push('Provinsi');
                 }
 

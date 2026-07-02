@@ -63,7 +63,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'user' => Auth::user(),
+                'user' => Auth::user()->load('kelurahan.kecamatan.kabupaten.provinsi'),
             ], 200);
         }
 
@@ -87,7 +87,7 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             return response()->json([
-                'user' => Auth::user()
+                'user' => Auth::user()->load('kelurahan.kecamatan.kabupaten.provinsi')
             ], 200);
         }
 
