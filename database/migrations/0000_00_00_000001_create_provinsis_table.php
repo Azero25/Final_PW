@@ -7,7 +7,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('provinsis', function (Blueprint $table) {
             $table->id('id_provinsi');
-            $table->string('nama_provinsi');
+            $table->string('nama_provinsi')->unique();
             $table->timestamps();
         });
     }

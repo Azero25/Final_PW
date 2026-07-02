@@ -13,6 +13,7 @@ export default function StatistikPage() {
     });
     const [chartKategori, setChartKategori] = useState([]);
     const [chartBulanan, setChartBulanan] = useState([]);
+    const [mapData, setMapData] = useState({ topLokasi: 'Belum Ada Data', topCount: 0, markers: [] });
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -78,6 +79,42 @@ export default function StatistikPage() {
                     active: month === monthNames[currentMonth]
                 }));
                 setChartBulanan(bulananArr);
+
+                // Hitung Data Peta
+                const lokasiCounts = {};
+                const markers = [];
+                const markerColors = ['bg-red-500', 'bg-primary', 'bg-tertiary', 'bg-secondary'];
+                
+                data.forEach((item, idx) => {
+                    const loc = item.lokasi || 'Tidak Diketahui';
+                    lokasiCounts[loc] = (lokasiCounts[loc] || 0) + 1;
+                    
+                    let hash = 0;
+                    for (let i = 0; i < loc.length; i++) {
+                        hash = loc.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const top = 25 + Math.abs((hash + idx * 17) % 50);
+                    const left = 25 + Math.abs(((hash >> 3) + idx * 23) % 50);
+                    
+                    markers.push({
+                        id: item.id || idx,
+                        top: `${top}%`,
+                        left: `${left}%`,
+                        color: markerColors[idx % markerColors.length],
+                        delay: `${(idx % 10) * 0.2}s`
+                    });
+                });
+
+                let topLokasi = "Belum Ada Data";
+                let topCount = 0;
+                Object.keys(lokasiCounts).forEach(loc => {
+                    if (lokasiCounts[loc] > topCount) {
+                        topCount = lokasiCounts[loc];
+                        topLokasi = loc;
+                    }
+                });
+
+                setMapData({ topLokasi, topCount, markers });
 
             } catch (error) {
                 console.error("Failed to fetch stats", error);
@@ -165,18 +202,23 @@ export default function StatistikPage() {
                             <div className="absolute inset-0 p-8 flex flex-col justify-end pointer-events-none">
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-lg w-fit shadow-lg border border-white/20 pointer-events-auto">
                                     <p className="text-xs font-label-caps text-slate-500 mb-2">WILAYAH TERPADAT</p>
-                                    <p className="font-label-bold text-primary">Kecamatan Umbulharjo</p>
-                                    <p className="text-sm">152 Laporan Aktif</p>
+                                    <p className="font-label-bold text-primary">{mapData.topLokasi}</p>
+                                    <p className="text-sm">{mapData.topCount} Laporan Aktif</p>
                                 </div>
                             </div>
 
-                            {/* Titik-titik laporan (Mock Markers) */}
-                            <div className="absolute top-[35%] left-[45%] w-4 h-4 bg-red-500 rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none"></div>
-                            <div className="absolute top-[42%] left-[52%] w-4 h-4 bg-primary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.2s' }}></div>
-                            <div className="absolute top-[55%] left-[48%] w-4 h-4 bg-tertiary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.5s' }}></div>
-                            <div className="absolute top-[60%] left-[58%] w-4 h-4 bg-primary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '0.8s' }}></div>
-                            <div className="absolute top-[48%] left-[62%] w-4 h-4 bg-secondary rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none" style={{ animationDelay: '1.1s' }}></div>
-
+                            {/* Titik-titik laporan Dinamis */}
+                            {mapData.markers.map(marker => (
+                                <div 
+                                    key={marker.id}
+                                    className={`absolute w-4 h-4 rounded-full animate-pulse border-2 border-white shadow-lg pointer-events-none ${marker.color}`}
+                                    style={{ 
+                                        top: marker.top, 
+                                        left: marker.left, 
+                                        animationDelay: marker.delay 
+                                    }}
+                                ></div>
+                            ))}
                         </div>
                     </div>
                     {/* Categories Card */}

@@ -10,13 +10,14 @@ use App\Models\Kelurahan;
 use App\Models\Laporan;
 use Carbon\Carbon;
 use App\Models\Provinsi;
+use App\Models\Kabupaten;
 use App\Models\Kecamatan;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all();
+        $users = User::whereIn('role', ['warga', 'admin'])->get();
 
         $laporanCounts = Laporan::selectRaw('id_user, count(*) as count')
             ->groupBy('id_user')
@@ -38,7 +39,7 @@ class UserController extends Controller
                 'nama' => $user->nama_lengkap,
                 'email' => $user->email,
                 'telp' => $user->no_hp ?? '-',
-                'kecamatan' => $kelurahanName,
+                'kelurahan' => $kelurahanName,
                 'totalLaporan' => $totalLaporan,
                 'status' => $user->status ?? 'Aktif',
                 'bergabung' => $user->tanggal_bergabung ? Carbon::parse($user->tanggal_bergabung)->format('d M Y') : '-',
@@ -60,24 +61,32 @@ class UserController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'telp' => 'nullable|string|max:20',
-            'kecamatan' => 'nullable|string|max:255',
+            'kelurahan' => 'nullable|string|max:255',
             'status' => 'nullable|string',
             'role' => 'required|string|in:warga,admin',
             'password' => 'required|string|min:8',
         ]);
 
         $kelurahanId = null;
-        if ($request->kecamatan) {
-            $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
-            $kecamatanDb = Kecamatan::firstOrCreate(
-                ['nama_kecamatan' => 'Kecamatan Default'],
-                ['id_provinsi' => $provinsi->id_provinsi]
-            );
-            $kelurahan = Kelurahan::firstOrCreate(
-                ['nama_kelurahan' => $request->kecamatan],
-                ['id_kecamatan' => $kecamatanDb->id_kecamatan]
-            );
+        if($request->filled('kelurahan')) {
+            $provinsi = Provinsi::firstOrCreate([
+                'nama_provinsi' => 'D.I. Yogyakarta'
+            ]);
+            $kabupaten = Kabupaten::firstOrCreate([
+                'nama_kabupaten' => 'Sleman',
+                'id_provinsi' => $provinsi->id_provinsi
+            ]);
+            $kecamatan = Kecamatan::firstOrCreate([
+                'nama_kecamatan' => 'Sleman',
+                'id_kabupaten' => $kabupaten->id_kabupaten
+            ]);
+            $kelurahan = Kelurahan::firstOrCreate([
+                'nama_kelurahan' => $request->kelurahan,
+                'id_kecamatan' => $kecamatan->id_kecamatan
+            ]);
             $kelurahanId = $kelurahan->id_kelurahan;
+        } else {
+            $kelurahanId = null;
         }
 
         $user = User::create([
@@ -105,31 +114,52 @@ class UserController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id_user . ',id_user',
             'telp' => 'nullable|string|max:20',
-            'kecamatan' => 'nullable|string|max:255',
+            'kelurahan' => 'nullable|string|max:255',
+            'role' => 'required|string|in:warga,admin',
             'status' => 'nullable|string',
+            'password' => 'nullable|string|min:8|confirmed',
         ]);
 
-        $kelurahanId = null;
-        if ($request->kecamatan) {
-            $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
-            $kecamatanDb = Kecamatan::firstOrCreate(
-                ['nama_kecamatan' => 'Kecamatan Default'],
-                ['id_provinsi' => $provinsi->id_provinsi]
-            );
-            $kelurahan = Kelurahan::firstOrCreate(
-                ['nama_kelurahan' => $request->kecamatan],
-                ['id_kecamatan' => $kecamatanDb->id_kecamatan]
-            );
+        $kelurahanId = $user->id_kelurahan;
+        if($request->filled('kelurahan')) {
+            if ($user->kelurahan && $user->kelurahan->kecamatan) {
+                $kecamatanDb = $user->kelurahan->kecamatan;
+            } else {
+                $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'D.I. Yogyakarta']);
+                $kabupaten = Kabupaten::firstOrCreate(
+                    ['nama_kabupaten' => 'Sleman'],
+                    ['id_provinsi' => $provinsi->id_provinsi]
+                );
+                $kecamatanDb = Kecamatan::firstOrCreate(
+                    ['nama_kecamatan' => 'Sleman'],
+                    ['id_kabupaten' => $kabupaten->id_kabupaten]
+                );
+            }
+
+            $kelurahan = Kelurahan::firstOrCreate([
+                'nama_kelurahan' => $request->kelurahan,
+                'id_kecamatan'   => $kecamatanDb->id_kecamatan
+            ]);
+
             $kelurahanId = $kelurahan->id_kelurahan;
+        } else if($request->exists('kelurahan') && empty($request->kelurahan)){
+            $kelurahanId = null;
         }
 
-        $user->update([
+        $updatedData = [
             'nama_lengkap' => $request->nama,
             'email' => $request->email,
             'no_hp' => $request->telp,
             'id_kelurahan' => $kelurahanId,
+            'role' => $request->role,
             'status' => $request->status ?? $user->status,
-        ]);
+        ];
+
+        if($request->filled('password')) {
+            $updatedData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updatedData);
 
         return response()->json([
             'status' => 'success',

@@ -22,4 +22,24 @@ class User extends Authenticatable {
             'password' => 'hashed',
         ];
     }
+
+    public function dinas() {
+        return $this->belongsTo(Dinas::class, 'id_dinas', 'id_dinas');
+    }
+
+    public function jabatan() {
+        return $this->belongsTo(Jabatan::class, 'id_jabatan', 'id_jabatan');
+    }
+
+    public function kelurahan() {
+        return $this->belongsTo(Kelurahan::class, 'id_kelurahan', 'id_kelurahan');
+    }
+
+    public function laporans() {
+        return $this->hasMany(Laporan::class, 'id_user', 'id_user');
+    }
+
+    public function tugas() {
+        return $this->hasMany(Laporan::class, 'id_petugas', 'id_user');
+    }
 }

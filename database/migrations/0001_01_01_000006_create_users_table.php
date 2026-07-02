@@ -8,16 +8,30 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->id('id_user');
             $table->string('nama_lengkap');
+            $table->string('nik', 16)->nullable();
+            $table->string('nip')->nullable()->unique();
+            $table->longText('avatar')->nullable();
             $table->string('email')->unique();
             $table->string('password');
             $table->string('no_hp')->nullable();
             $table->string('alamat_lengkap')->nullable();
-            $table->foreignId('id_kelurahan')->nullable()->constrained('kelurahans', 'id_kelurahan')->nullOnDelete();
+
+            $table->unsignedBigInteger('id_dinas')->nullable();
+            $table->unsignedBigInteger('id_jabatan')->nullable();
+            $table->unsignedBigInteger('id_kelurahan')->nullable();
+
             $table->integer('count_laporan')->default(0);
             $table->dateTime('tanggal_bergabung')->useCurrent();
-            $table->string('role')->default('warga'); // 'admin' atau 'warga'
+
+            $table->enum('role', ['admin', 'warga', 'petugas'])->default('warga');
+            $table->enum('status', ['Aktif', 'Nonaktif'])->default('Aktif');
+
             $table->rememberToken();
             $table->timestamps();
+
+            $table->foreign('id_dinas')->references('id_dinas')->on('dinas')->nullOnDelete();
+            $table->foreign('id_jabatan')->references('id_jabatan')->on('jabatans')->nullOnDelete();
+            $table->foreign('id_kelurahan')->references('id_kelurahan')->on('kelurahans')->nullOnDelete();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

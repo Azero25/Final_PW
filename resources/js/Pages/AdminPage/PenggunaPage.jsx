@@ -15,7 +15,6 @@ const StatusBadge = ({ status }) => {
     const config = {
         'Aktif':    'bg-green-100 text-green-700 border border-green-200',
         'Nonaktif': 'bg-slate-100 text-slate-500 border border-slate-200',
-        'Diblokir': 'bg-red-100 text-red-600 border border-red-200',
     };
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config[status] || 'bg-slate-100 text-slate-500'}`}>
@@ -41,7 +40,7 @@ export default function PenggunaPage() {
     const [bulkTargetStatus, setBulkTargetStatus] = useState('Aktif');
     const [showTambahPass, setShowTambahPass] = useState(false);
 
-    const statusList = ['Semua', 'Aktif', 'Nonaktif', 'Diblokir'];
+    const statusList = ['Semua', 'Aktif', 'Nonaktif'];
 
     // Load users from backend API
     const fetchUsers = async () => {
@@ -83,7 +82,7 @@ export default function PenggunaPage() {
         setModalUser({});
         setModalMode('tambah');
         setShowTambahPass(false);
-        setEditData({ nama: '', email: '', telp: '', kecamatan: '', status: 'Aktif', role: 'warga', password: '' });
+        setEditData({ nama: '', email: '', telp: '', kelurahan: '', status: 'Aktif', role: 'warga', password: '' });
     };
 
     const openBulkStatusModal = () => {
@@ -105,7 +104,7 @@ export default function PenggunaPage() {
                     nama: editData.nama,
                     email: editData.email,
                     telp: editData.telp,
-                    kecamatan: editData.kecamatan,
+                    kelurahan: editData.kelurahan,
                     status: editData.status || 'Aktif',
                     role: editData.role || 'warga',
                     password: editData.password
@@ -120,8 +119,10 @@ export default function PenggunaPage() {
                     nama: editData.nama,
                     email: editData.email,
                     telp: editData.telp,
-                    kecamatan: editData.kecamatan,
-                    status: editData.status
+                    kelurahan: editData.kelurahan,
+                    role: editData.role || 'warga',
+                    status: editData.status,
+                    password: editData.password
                 });
                 if (response.data && response.data.status === 'success') {
                     await fetchUsers();
@@ -209,7 +210,6 @@ export default function PenggunaPage() {
         { label: 'Total Pengguna',  value: penggunaList.length, color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-100',  icon: 'group' },
         { label: 'Aktif',           value: penggunaList.filter(u => u.status === 'Aktif').length,    color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', icon: 'check_circle' },
         { label: 'Nonaktif',        value: penggunaList.filter(u => u.status === 'Nonaktif').length, color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200', icon: 'person_off' },
-        { label: 'Diblokir',        value: penggunaList.filter(u => u.status === 'Diblokir').length, color: 'text-red-600',   bg: 'bg-red-50',   border: 'border-red-100',   icon: 'block' },
     ];
 
     return (
@@ -295,7 +295,7 @@ export default function PenggunaPage() {
                                 </th>
                                 <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pengguna</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kontak</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kecamatan</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kelurahan</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Total Laporan</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Bergabung</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
@@ -348,7 +348,7 @@ export default function PenggunaPage() {
                                         <p className="text-slate-700 text-xs">{u.email}</p>
                                         <p className="text-slate-400 text-xs mt-0.5">{u.telp}</p>
                                     </td>
-                                    <td className="px-4 py-3 text-slate-600 text-xs">{u.kecamatan}</td>
+                                    <td className="px-4 py-3 text-slate-600 text-xs">{u.kelurahan}</td>
                                     {/* Total Laporan */}
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-2">
@@ -463,18 +463,17 @@ export default function PenggunaPage() {
                                     <div>
                                         <label className="text-xs text-slate-500 font-semibold block mb-2">Pilih Status Baru</label>
                                         <div className="grid grid-cols-3 gap-2">
-                                            {['Aktif', 'Nonaktif', 'Diblokir'].map((s) => (
+                                            {['Aktif', 'Nonaktif'].map((s) => (
                                                 <button
                                                     key={s}
                                                     onClick={() => setBulkTargetStatus(s)}
                                                     className={`py-3 rounded-xl text-xs font-semibold border-2 transition-all flex flex-col items-center justify-center gap-1.5
                                                         ${bulkTargetStatus === s
                                                             ? s === 'Aktif' ? 'border-green-500 bg-green-50/50 text-green-700'
-                                                              : s === 'Nonaktif' ? 'border-slate-500 bg-slate-50 text-slate-700'
-                                                              : 'border-red-500 bg-red-50/50 text-red-700'
+                                                              : 'border-slate-500 bg-slate-50 text-slate-700'
                                                             : 'border-slate-100 text-slate-500 hover:border-blue-300 hover:bg-slate-50'}`}
                                                 >
-                                                    <span className={`w-2.5 h-2.5 rounded-full ${s === 'Aktif' ? 'bg-green-500' : s === 'Nonaktif' ? 'bg-slate-400' : 'bg-red-500'}`}></span>
+                                                    <span className={`w-2.5 h-2.5 rounded-full ${s === 'Aktif' ? 'bg-green-500' : 'bg-slate-400'}`}></span>
                                                     {s}
                                                 </button>
                                             ))}
@@ -516,7 +515,7 @@ export default function PenggunaPage() {
                                     )}
 
                                     {/* Form fields */}
-                                    {['nama', 'email', 'telp', 'kecamatan'].map((field) => (
+                                    {['nama', 'email', 'telp', 'kelurahan'].map((field) => (
                                         <div key={field}>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5 capitalize">{field === 'telp' ? 'No. Telepon' : field.charAt(0).toUpperCase() + field.slice(1)}</label>
                                             {modalMode === 'detail' ? (
@@ -532,7 +531,7 @@ export default function PenggunaPage() {
                                         </div>
                                     ))}
 
-                                    {/* Role (khusus tambah) */}
+                                    {/* Role */}
                                     {modalMode === 'tambah' && (
                                         <div>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5">Pilih Peran (Role)</label>
@@ -547,8 +546,46 @@ export default function PenggunaPage() {
                                         </div>
                                     )}
 
-                                    {/* Password (khusus tambah) */}
+                                    {modalMode === 'edit' && (
+                                        <div>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5">Pilih Peran (Role)</label>
+                                            <select
+                                                value={editData.role || 'warga'}
+                                                onChange={(e) => setEditData({ ...editData, role: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors bg-white font-medium text-slate-850"
+                                            >
+                                                <option value="warga">Warga (Citizen)</option>
+                                                <option value="admin">Admin (Administrator)</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {/* Password */}
                                     {modalMode === 'tambah' && (
+                                        <div>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5">Kata Sandi (Password)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showTambahPass ? "text" : "password"}
+                                                    value={editData.password || ''}
+                                                    onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                                                    placeholder="Minimal 8 karakter"
+                                                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors font-medium text-slate-800"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowTambahPass(!showTambahPass)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg select-none">
+                                                        {showTambahPass ? 'visibility_off' : 'visibility'}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {modalMode === 'edit' && (
                                         <div>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5">Kata Sandi (Password)</label>
                                             <div className="relative">
@@ -576,8 +613,8 @@ export default function PenggunaPage() {
                                     {modalMode === 'edit' && (
                                         <div>
                                             <label className="text-xs text-slate-500 font-semibold block mb-1.5">Status Akun</label>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {['Aktif', 'Nonaktif', 'Diblokir'].map((s) => (
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['Aktif', 'Nonaktif'].map((s) => (
                                                     <button
                                                         key={s}
                                                         onClick={() => setEditData({ ...editData, status: s })}

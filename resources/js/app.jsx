@@ -15,7 +15,6 @@ import PenggunaPage from "./Pages/AdminPage/PenggunaPage";
 import PetugasDinasPage from "./Pages/AdminPage/PetugasDinasPage";
 import KategoriPage from "./Pages/AdminPage/KategoriPage";
 import NotifikasiPage from "./Pages/AdminPage/NotifikasiPage";
-import PengaturanPage from "./Pages/AdminPage/PengaturanPage";
 import ProfilePage from "./Pages/ProfilePage";
 import RiwayatLaporanPage from "./Pages/RiwayatLaporanPage";
 import LoginPetugasPage from "./Pages/PetugasPage/LoginPetugasPage";
@@ -52,7 +51,6 @@ ReactDOM.createRoot(document.getElementById("app")).render(
                 <Route path="/admin/petugas" element={<PetugasDinasPage />} />
                 <Route path="/admin/kategori" element={<KategoriPage />} />
                 <Route path="/admin/notifikasi" element={<NotifikasiPage />} />
-                <Route path="/admin/pengaturan" element={<PengaturanPage />} />
             </Route>
 
             {/* Fallback 404 - Redirect ke Home */}

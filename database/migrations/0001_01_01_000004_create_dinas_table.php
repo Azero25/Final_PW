@@ -9,6 +9,7 @@ return new class extends Migration {
             $table->id('id_dinas');
             $table->string('nama_dinas');
             $table->string('singkatan')->nullable();
+            $table->string('warna_dinas')->default('bg-slate-600');
             $table->timestamps();
         });
     }

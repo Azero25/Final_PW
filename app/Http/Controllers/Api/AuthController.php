@@ -6,9 +6,15 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Notification;
 use App\Models\User;
+use App\Models\Provinsi;
+use App\Models\Kabupaten;
+use App\Models\Kecamatan;
+use App\Models\Kelurahan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
+use Intervention\Image\Encoders\WebpEncoder;
 
 class AuthController extends Controller
 {
@@ -42,7 +48,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'user' => $user,
-        ]);
+        ], 200);
     }
 
     public function login(Request $request)
@@ -58,7 +64,7 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'success',
                 'user' => Auth::user(),
-            ]);
+            ], 200);
         }
 
         return response()->json([
@@ -74,7 +80,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json(['status' => 'success']);
+        return response()->json(['status' => 'success'], 200);
     }
 
     public function me(Request $request)
@@ -82,7 +88,7 @@ class AuthController extends Controller
         if (Auth::check()) {
             return response()->json([
                 'user' => Auth::user()
-            ]);
+            ], 200);
         }
 
         return response()->json([
@@ -97,74 +103,94 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
+        $userId = $user->id_user;
         $request->validate([
-            'nama_lengkap' => 'required|string|max:255',
-            'nik' => 'nullable|string|size:16',
-            'no_hp' => 'nullable|string|min:10|max:20',
+            'nama_lengkap'   => 'required|string|max:255',
+            'nik'            => 'nullable|string|digits:16|unique:users,nik,' . $userId . ',id_user',
+            'no_hp'          => 'nullable|string|min:10|max:20|unique:users,no_hp,' . $userId . ',id_user',
             'alamat_lengkap' => 'nullable|string',
-            'desa' => 'nullable|string|max:255',
-            'kelurahan' => 'nullable|string|max:255',
-            'kecamatan' => 'nullable|string|max:255',
-            'kabupaten' => 'nullable|string|max:255',
-            'provinsi' => 'nullable|string|max:255',
-            'avatar' => 'nullable|string',
+            'avatar'         => 'nullable|string',
+
+            'provinsi'       => 'required|string|max:255',
+            'kabupaten'      => 'required|string|max:255',
+            'kecamatan'      => 'required|string|max:255',
+            'kelurahan'      => 'required|string|max:255',
         ]);
 
-        $avatarPath = $request->avatar;
+        // Pembuatan / pencarian wilayah data
+        $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => trim($request->provinsi)]);
 
-        if ($request->avatar && preg_match('/^data:image\/(\w+);base64,/', $request->avatar, $type)) {
-            $data = substr($request->avatar, strpos($request->avatar, ',') + 1);
-            $data = base64_decode($data);
-            if ($data !== false) {
-                $folder = $user->role === 'admin' ? 'admin' : 'warga';
-                $extension = strtolower($type[1]) ?: 'webp';
-                $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.' . $extension;
+        $kabupaten = Kabupaten::firstOrCreate(
+            ['nama_kabupaten' => trim($request->kabupaten), 'id_provinsi' => $provinsi->id_provinsi],
+            ['id_provinsi' => $provinsi->id_provinsi]
+        );
 
-                Storage::disk('public')->put('avatars/' . $folder . '/' . $fileName, $data);
+        $kecamatan = Kecamatan::firstOrCreate(
+            ['nama_kecamatan' => trim($request->kecamatan), 'id_kabupaten' => $kabupaten->id_kabupaten],
+            ['id_kabupaten' => $kabupaten->id_kabupaten]
+        );
 
+        $kelurahan = Kelurahan::firstOrCreate(
+            ['nama_kelurahan' => trim($request->kelurahan), 'id_kecamatan' => $kecamatan->id_kecamatan],
+            ['id_kecamatan' => $kecamatan->id_kecamatan]
+        );
+
+        // Default: gunakan avatar yang sudah ada saat ini di database
+        $avatarPath = $user->avatar;
+
+        // Cek 1: Jika user mengirimkan data Base64 baru
+        if ($request->filled('avatar') && str_starts_with($request->avatar, 'data:image')) {
+            try {
+                // Proses gambar baru terlebih dahulu
+                $encodedImage = Image::decode($request->avatar)->encode(new WebpEncoder(quality: 80));
+                $fileName = 'avatar_' . time() . '_' . mt_rand(1000, 9999) . '.webp';
+                $folderPath = "avatars/{$user->role}/{$fileName}";
+                
+                Storage::disk('public')->put($folderPath, $encodedImage->toString());
+
+                // Hapus file lama HANYA KETIKA file baru berhasil disimpan ke storage
                 if ($user->avatar && str_starts_with($user->avatar, '/storage/')) {
-                    $oldPath = substr($user->avatar, 9);
-                    if (Storage::disk('public')->exists($oldPath)) {
-                        Storage::disk('public')->delete($oldPath);
-                    }
+                    $oldFilePath = substr($user->avatar, 9); // memotong '/storage/'
+                    Storage::disk('public')->delete($oldFilePath);
                 }
 
-                $avatarPath = '/storage/avatars/' . $folder . '/' . $fileName;
+                $avatarPath = '/storage/' . $folderPath;
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal memproses dan menyimpan avatar baru'
+                ], 500);
             }
-        } elseif ($request->avatar === null) {
+        } 
+        // Cek 2: Jika user secara eksplisit menghapus fotonya (mengirimkan string kosong atau null)
+        else if ($request->has('avatar') && empty($request->avatar)) {
             if ($user->avatar && str_starts_with($user->avatar, '/storage/')) {
-                $oldPath = substr($user->avatar, 9);
-                if (Storage::disk('public')->exists($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
-                }
+                $oldFilePath = substr($user->avatar, 9);
+                Storage::disk('public')->delete($oldFilePath);
             }
             $avatarPath = null;
         }
 
+        // Eksekusi update data ke database
         $user->update([
-            'nama_lengkap' => $request->nama_lengkap,
-            'nik' => $request->nik,
-            'no_hp' => $request->no_hp,
+            'nama_lengkap'   => $request->nama_lengkap,
+            'nik'            => $request->nik,
+            'no_hp'          => $request->no_hp,
             'alamat_lengkap' => $request->alamat_lengkap,
-            'desa' => $request->desa,
-            'kelurahan' => $request->kelurahan,
-            'kecamatan' => $request->kecamatan,
-            'kabupaten' => $request->kabupaten,
-            'provinsi' => $request->provinsi,
-            'avatar' => $avatarPath,
+            'id_kelurahan'   => $kelurahan->id_kelurahan,
+            'avatar'         => $avatarPath,
         ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Profil berhasil diperbarui',
-            'user' => $user
-        ]);
+            'user'    => $user->load('kelurahan.kecamatan.kabupaten.provinsi')
+        ], 200);
     }
 
     public function updatePassword(Request $request)
     {
-        $user = Auth
-::user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -188,6 +214,6 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Kata sandi berhasil diubah.'
-        ]);
+        ], 200);
     }
 }

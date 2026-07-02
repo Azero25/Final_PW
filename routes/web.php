@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\PengaduanController;
 use App\Http\Controllers\Api\DinasController;
 use App\Http\Controllers\Api\PetugasController;
 use App\Http\Controllers\Api\KategoriController;
+use App\Http\Controllers\Api\WilayahController;
+use App\Http\Controllers\Api\JabatanController;
 
 Route::prefix('api')->group(function () {
     // Auth Routes
@@ -44,6 +46,12 @@ Route::prefix('api')->group(function () {
     Route::put('/kategoris/{id}', [KategoriController::class, 'update']);
     Route::delete('/kategoris/{id}', [KategoriController::class, 'destroy']);
 
+    // Jabatan Routes
+    Route::get('/jabatans', [JabatanController::class, 'index']);
+    Route::post('/jabatans', [JabatanController::class, 'store']);
+    Route::put('/jabatans/{id}', [JabatanController::class, 'update']);
+    Route::delete('/jabatans/{id}', [JabatanController::class, 'destroy']);
+
     // Petugas Routes
     Route::get('/petugas', [PetugasController::class, 'index']);
     Route::post('/petugas', [PetugasController::class, 'store']);
@@ -53,6 +61,14 @@ Route::prefix('api')->group(function () {
     Route::put('/petugas/profile/{id}', [PetugasController::class, 'updateProfile']);
     Route::put('/petugas/profile/{id}/password', [PetugasController::class, 'updatePassword']);
 
+    // Get Wilayah Routes
+    Route::prefix('wilayah')->group(function () {
+        Route::get('/search-cascading', [WilayahController::class, 'searchWilayah']);
+        Route::post('/provinsi', [WilayahController::class, 'storeProvinsi']);
+        Route::post('/kabupaten', [WilayahController::class, 'storeKabupaten']);
+        Route::post('/kecamatan', [WilayahController::class, 'storeKecamatan']);
+        Route::post('/kelurahan', [WilayahController::class, 'storeKelurahan']);
+    });
 
     // Notification Routes
     Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
