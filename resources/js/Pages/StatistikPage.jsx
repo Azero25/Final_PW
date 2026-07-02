@@ -14,6 +14,18 @@ export default function StatistikPage() {
     const [chartKategori, setChartKategori] = useState([]);
     const [chartBulanan, setChartBulanan] = useState([]);
     const [mapData, setMapData] = useState({ topLokasi: 'Belum Ada Data', topCount: 0, markers: [] });
+    const [recentSelesai, setRecentSelesai] = useState([]);
+
+    // Helper: waktu relatif sederhana
+    const timeAgo = (dateStr) => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 60) return `${mins} menit lalu`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours} jam lalu`;
+        const days = Math.floor(hours / 24);
+        return `${days} hari lalu`;
+    };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -115,6 +127,13 @@ export default function StatistikPage() {
                 });
 
                 setMapData({ topLokasi, topCount, markers });
+
+                // 3 laporan selesai terbaru
+                const selesaiList = data
+                    .filter(i => i.status === 'Selesai')
+                    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+                    .slice(0, 3);
+                setRecentSelesai(selesaiList);
 
             } catch (error) {
                 console.error("Failed to fetch stats", error);
@@ -328,33 +347,27 @@ export default function StatistikPage() {
                 <section className="mt-12 bg-white rounded-xl card-shadow border border-slate-100 p-8">
                     <h3 className="font-h3 text-h3 mb-8">Laporan Terkini yang Diselesaikan</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Case 1 */}
-                        <div className="border border-slate-100 rounded-xl p-4 hover:border-blue-200 transition-all cursor-default group">
-                            <div className="h-40 bg-slate-100 rounded-lg mb-4 overflow-hidden">
-                                <img alt="Perbaikan Jalan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="/img/perbaikan-jalan.jpg" />
-                            </div>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded-full font-label-bold uppercase">Selesai - 2 Jam Lalu</span>
-                            <h4 className="font-label-bold text-md mt-2">Perbaikan Jalan Berlubang</h4>
-                            <p className="text-xs text-slate-500 mt-1">Jl. Antasari No. 12, Kebayoran Baru</p>
-                        </div>
-                        {/* Case 2 */}
-                        <div className="border border-slate-100 rounded-xl p-4 hover:border-blue-200 transition-all cursor-default group">
-                            <div className="h-40 bg-slate-100 rounded-lg mb-4 overflow-hidden">
-                                <img alt="Penerangan Jalan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="/img/penerangan-jalan.jpg" />
-                            </div>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded-full font-label-bold uppercase">Selesai - 5 Jam Lalu</span>
-                            <h4 className="font-label-bold text-md mt-2">Lampu Jalan Padam</h4>
-                            <p className="text-xs text-slate-500 mt-1">Area Taman Mataram, Selong</p>
-                        </div>
-                        {/* Case 3 */}
-                        <div className="border border-slate-100 rounded-xl p-4 hover:border-blue-200 transition-all cursor-default group">
-                            <div className="h-40 bg-slate-100 rounded-lg mb-4 overflow-hidden">
-                                <img alt="Kebersihan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="/img/kebersihan.jpg" />
-                            </div>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded-full font-label-bold uppercase">Selesai - 8 Jam Lalu</span>
-                            <h4 className="font-label-bold text-md mt-2">Penumpukan Sampah Liar</h4>
-                            <p className="text-xs text-slate-500 mt-1">Pasar Santa, Petogogan</p>
-                        </div>
+                        {recentSelesai.length === 0 ? (
+                            <p className="text-sm text-slate-400 italic col-span-3">Belum ada laporan yang diselesaikan.</p>
+                        ) : (
+                            recentSelesai.map(item => {
+                                const gambar = item.gambar && item.gambar.length > 0 ? item.gambar[0] : null;
+                                return (
+                                    <div key={item.id} className="border border-slate-100 rounded-xl p-4 hover:border-blue-200 transition-all cursor-default group">
+                                        <div className="h-40 bg-slate-100 rounded-lg mb-4 overflow-hidden flex items-center justify-center">
+                                            {gambar ? (
+                                                <img alt={item.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={gambar} />
+                                            ) : (
+                                                <span className="material-symbols-outlined text-5xl text-slate-300">image</span>
+                                            )}
+                                        </div>
+                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded-full font-label-bold uppercase">Selesai - {timeAgo(item.updated_at)}</span>
+                                        <h4 className="font-label-bold text-md mt-2">{item.judul}</h4>
+                                        <p className="text-xs text-slate-500 mt-1">{item.lokasi}</p>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </section>
             </main>

@@ -461,7 +461,6 @@ class PengaduanController extends Controller
         $laporan->id_petugas = $petugas->id_user;
         $laporan->status_laporan = 'Sedang Diproses';
 
-<<<<<<< Updated upstream
         // Catat mutasi tugas baru ke riwayat timeline
         LaporanTimeline::create([
             'no_ticket'  => $laporan->no_ticket,
@@ -470,17 +469,6 @@ class PengaduanController extends Controller
             'icon'       => 'engineering',
             'color'      => 'text-yellow-500',
         ]);
-=======
-        $log = $laporan->timeline_log ?? [];
-        $log[] = [
-            'tanggal'   => now()->format('d M Y, H:i'),
-            'status'    => 'Sedang Diproses',
-            'keterangan' => 'Laporan sedang ditangani oleh Petugas ' . $petugas->nama_petugas . ' di lapangan.',
-            'icon'      => 'engineering',
-            'color'     => 'text-yellow-500',
-        ];
-        $laporan->timeline_log = $log;
->>>>>>> Stashed changes
 
         $laporan->save();
         $nomorTiket = $laporan->no_ticket;
