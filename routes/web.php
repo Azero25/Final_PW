@@ -76,6 +76,25 @@ Route::prefix('api')->group(function () {
     Route::put('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
     Route::delete('/notifications/delete-read', [\App\Http\Controllers\Api\NotificationController::class, 'destroyRead']);
     Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'destroy']);
+
+    // Wilayah Routes
+    Route::get('/provinsis', function () {
+        return response()->json(\App\Models\Provinsi::orderBy('nama_provinsi', 'asc')->get());
+    });
+    Route::get('/kecamatans', function (\Illuminate\Http\Request $request) {
+        $query = \App\Models\Kecamatan::query();
+        if ($request->has('id_provinsi')) {
+            $query->where('id_provinsi', $request->id_provinsi);
+        }
+        return response()->json($query->orderBy('nama_kecamatan', 'asc')->get());
+    });
+    Route::get('/kelurahans', function (\Illuminate\Http\Request $request) {
+        $query = \App\Models\Kelurahan::query();
+        if ($request->has('id_kecamatan')) {
+            $query->where('id_kecamatan', $request->id_kecamatan);
+        }
+        return response()->json($query->orderBy('nama_kelurahan', 'asc')->get());
+    });
 });
 
 Route::get('/{any}', function () {

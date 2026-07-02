@@ -22,11 +22,24 @@ use Intervention\Image\Encoders\WebpEncoder;
 
 class PengaduanController extends Controller
 {
-    private function buildLogEntry(string $status): array
+    private function buildLogEntry(string $status, $laporan = null): array
     {
+        $petugasName = null;
+        if ($laporan && $laporan->id_petugas) {
+            $petugas = \App\Models\User::find($laporan->id_petugas);
+            if ($petugas) {
+                $petugasName = $petugas->nama_lengkap;
+            }
+        }
+
         $meta = [
             'Laporan Diterima' => ['keterangan' => 'Laporan Anda telah berhasil diterima and sedang menunggu verifikasi.', 'icon' => 'check_circle', 'color' => 'text-green-500'],
             'Verifikasi'       => ['keterangan' => 'Laporan sedang diverifikasi oleh admin.', 'icon' => 'verified', 'color' => 'text-blue-500'],
+            'Sedang Diproses'  => [
+                'keterangan' => $petugasName ? "Laporan sedang ditangani oleh Petugas {$petugasName} di lapangan." : 'Laporan sedang ditangani oleh petugas di lapangan.',
+                'icon' => 'engineering',
+                'color' => 'text-yellow-500'
+            ],
             'Selesai'          => ['keterangan' => 'Laporan telah selesai ditangani.', 'icon' => 'task_alt', 'color' => 'text-green-500'],
             'Ditolak'          => ['keterangan' => 'Laporan ditolak. Tidak memenuhi kriteria pengaduan.', 'icon' => 'cancel', 'color' => 'text-red-500'],
         ];
@@ -37,7 +50,7 @@ class PengaduanController extends Controller
             'status'    => $statusKey,
             'keterangan' => $m['keterangan'],
             'icon'      => $m['icon'],
-            'color'     => $m['color'],
+            'color'      => $m['color'],
         ];
     }
 
@@ -47,11 +60,18 @@ class PengaduanController extends Controller
         $dbTimelines = $laporan->timelines;
 
         if ($dbTimelines && $dbTimelines->count() > 0) {
-            return $dbTimelines->map(function($t) {
+            $petugas = $laporan->id_petugas ? \App\Models\User::find($laporan->id_petugas) : null;
+            $petugasName = $petugas ? $petugas->nama_lengkap : null;
+
+            return $dbTimelines->map(function($t) use ($petugasName) {
+                $keterangan = $t->keterangan;
+                if (($t->status === 'Sedang Diproses' || $t->status === 'Diproses' || $t->status === 'Laporan sedang ditangani oleh petugas di lapangan.') && $petugasName) {
+                    $keterangan = "Laporan sedang ditangani oleh Petugas {$petugasName} di lapangan.";
+                }
                 return [
                     'tanggal'    => Carbon::parse($t->created_at)->format('d M Y, H:i'),
                     'status'     => $t->status,
-                    'keterangan' => $t->keterangan,
+                    'keterangan' => $keterangan,
                     'icon'       => $t->icon,
                     'color'      => $t->color,
                 ];
@@ -65,7 +85,7 @@ class PengaduanController extends Controller
                 'status'    => 'Laporan Diterima',
                 'keterangan'=> 'Laporan Anda telah berhasil diterima dan sedang menunggu verifikasi.',
                 'icon'      => 'check_circle',
-                'color'     => 'text-green-500'
+                'color'      => 'text-green-500'
             ]
         ];
     }
@@ -117,6 +137,9 @@ class PengaduanController extends Controller
             'nama_dinas' => $dinasName,
             'id_petugas' => $petugasId,
             'nama_petugas' => $petugasName,
+            'petugas' => $petugasName,
+            'petugas_avatar' => $petugas ? $petugas->avatar : null,
+            'dinas' => $dinasName,
             'urgensi' => strtolower($laporan->prioritas),
             'lokasi' => $kelurahanName,
             'deskripsi' => $laporan->isi_laporan,
@@ -201,6 +224,9 @@ class PengaduanController extends Controller
                 'nama_dinas' => $dinasName,
                 'id_petugas' => $petugasId,
                 'nama_petugas' => $petugasName,
+                'petugas' => $petugasName,
+                'petugas_avatar' => $petugas ? $petugas->avatar : null,
+                'dinas' => $dinasName,
                 'urgensi' => strtolower($laporan->prioritas),
                 'lokasi' => $kelurahanName,
                 'deskripsi' => $laporan->isi_laporan,
@@ -346,7 +372,7 @@ class PengaduanController extends Controller
         $laporan->status_laporan = $newStatus;
 
         // Catat riwayat ke tabel pivot timelines secara permanen
-        $metaLog = $this->buildLogEntry($newStatus);
+        $metaLog = $this->buildLogEntry($newStatus, $laporan);
         LaporanTimeline::create([
             'no_ticket'  => $laporan->no_ticket,
             'status'     => $metaLog['status'],
@@ -435,6 +461,7 @@ class PengaduanController extends Controller
         $laporan->id_petugas = $petugas->id_user;
         $laporan->status_laporan = 'Sedang Diproses';
 
+<<<<<<< Updated upstream
         // Catat mutasi tugas baru ke riwayat timeline
         LaporanTimeline::create([
             'no_ticket'  => $laporan->no_ticket,
@@ -443,6 +470,17 @@ class PengaduanController extends Controller
             'icon'       => 'engineering',
             'color'      => 'text-yellow-500',
         ]);
+=======
+        $log = $laporan->timeline_log ?? [];
+        $log[] = [
+            'tanggal'   => now()->format('d M Y, H:i'),
+            'status'    => 'Sedang Diproses',
+            'keterangan' => 'Laporan sedang ditangani oleh Petugas ' . $petugas->nama_petugas . ' di lapangan.',
+            'icon'      => 'engineering',
+            'color'     => 'text-yellow-500',
+        ];
+        $laporan->timeline_log = $log;
+>>>>>>> Stashed changes
 
         $laporan->save();
         $nomorTiket = $laporan->no_ticket;

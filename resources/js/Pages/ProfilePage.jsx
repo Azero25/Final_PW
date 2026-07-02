@@ -1,8 +1,102 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import api from '../axios';
+
+function AutocompleteSelect({ label, placeholder, value, onChange, options, disabled }) {
+    const [search, setSearch] = useState(value || '');
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        setSearch(value || '');
+    }, [value]);
+
+    useEffect(() => {
+        const clickOutside = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', clickOutside);
+        return () => document.removeEventListener('mousedown', clickOutside);
+    }, []);
+
+    // Filter options based on search query
+    const filteredOptions = options.filter(opt =>
+        opt && opt.toLowerCase().includes((search || '').toLowerCase())
+    );
+
+    // Check if the exact typed value exists in the options
+    const exactMatchExists = options.some(opt =>
+        opt && opt.toLowerCase() === (search || '').trim().toLowerCase()
+    );
+
+    const handleSelect = (val) => {
+        onChange(val);
+        setSearch(val);
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="space-y-2 relative" ref={containerRef}>
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">{label}</label>
+            <div className="relative">
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        onChange(e.target.value);
+                        setIsOpen(true);
+                    }}
+                    onFocus={() => !disabled && setIsOpen(true)}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    search
+                </span>
+            </div>
+
+            {isOpen && !disabled && (
+                <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-1 font-body-md text-sm text-slate-700">
+                    {filteredOptions.length > 0 ? (
+                        filteredOptions.map((opt, i) => (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={() => handleSelect(opt)}
+                                className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+                            >
+                                {opt}
+                            </button>
+                        ))
+                    ) : null}
+
+                    {search && search.trim() !== '' && !exactMatchExists && (
+                        <button
+                            type="button"
+                            onClick={() => handleSelect(search.trim())}
+                            className="w-full text-left px-4 py-2 hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors font-bold border-t border-slate-100 flex items-center gap-1.5"
+                        >
+                            <span className="material-symbols-outlined text-base">add_circle</span>
+                            Gunakan / Tambah "{search.trim()}"
+                        </button>
+                    )}
+
+                    {filteredOptions.length === 0 && (!search || search.trim() === '') && (
+                        <div className="px-4 py-2 text-slate-400 text-xs text-center">
+                            Tidak ada pilihan
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function ProfilePage() {
     const navigate = useNavigate();
@@ -40,6 +134,31 @@ export default function ProfilePage() {
 
     // State notifikasi/toast
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+    // State wilayah
+    const [provinsis, setProvinsis] = useState([]);
+    const [kecamatans, setKecamatans] = useState([]);
+    const [kelurahans, setKelurahans] = useState([]);
+
+
+    const fetchWilayah = async () => {
+        try {
+            const [resP, resKc, resKl] = await Promise.all([
+                api.get('/api/provinsis'),
+                api.get('/api/kecamatans'),
+                api.get('/api/kelurahans')
+            ]);
+            setProvinsis(resP.data);
+            setKecamatans(resKc.data);
+            setKelurahans(resKl.data);
+        } catch (err) {
+            console.error('Gagal memuat data wilayah:', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchWilayah();
+    }, []);
 
     // Efek inisialisasi halaman
     useEffect(() => {
@@ -136,6 +255,20 @@ export default function ProfilePage() {
                     sessionStorage.setItem('user', JSON.stringify(sesi));
                 }
 
+                localStorage.setItem(`profile_${updatedUser.email}`, JSON.stringify({
+                    nama: updatedUser.nama_lengkap,
+                    email: updatedUser.email,
+                    avatar: updatedUser.avatar,
+                    nik: updatedUser.nik,
+                    telepon: updatedUser.no_hp,
+                    alamat: updatedUser.alamat_lengkap,
+                    desa: updatedUser.desa,
+                    kelurahan: updatedUser.kelurahan,
+                    kecamatan: updatedUser.kecamatan,
+                    kabupaten: updatedUser.kabupaten,
+                    provinsi: updatedUser.provinsi
+                }));
+
                 // Kirim event agar Navbar tahu foto profil diperbarui
                 window.dispatchEvent(new Event('profileUpdated'));
                 showToast('Foto profil berhasil diunggah!', 'success');
@@ -172,6 +305,20 @@ export default function ProfilePage() {
                 sesi.avatar = updatedUser.avatar;
                 sessionStorage.setItem('user', JSON.stringify(sesi));
             }
+
+            localStorage.setItem(`profile_${updatedUser.email}`, JSON.stringify({
+                nama: updatedUser.nama_lengkap,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+                nik: updatedUser.nik,
+                telepon: updatedUser.no_hp,
+                alamat: updatedUser.alamat_lengkap,
+                desa: updatedUser.desa,
+                kelurahan: updatedUser.kelurahan,
+                kecamatan: updatedUser.kecamatan,
+                kabupaten: updatedUser.kabupaten,
+                provinsi: updatedUser.provinsi
+            }));
 
             window.dispatchEvent(new Event('profileUpdated'));
             showToast('Foto profil telah dihapus.', 'success');
@@ -227,6 +374,23 @@ export default function ProfilePage() {
                 sesi.avatar = updatedUser.avatar;
                 sessionStorage.setItem('user', JSON.stringify(sesi));
             }
+
+            localStorage.setItem(`profile_${updatedUser.email}`, JSON.stringify({
+                nama: updatedUser.nama_lengkap,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+                nik: updatedUser.nik,
+                telepon: updatedUser.no_hp,
+                alamat: updatedUser.alamat_lengkap,
+                desa: updatedUser.desa,
+                kelurahan: updatedUser.kelurahan,
+                kecamatan: updatedUser.kecamatan,
+                kabupaten: updatedUser.kabupaten,
+                provinsi: updatedUser.provinsi
+            }));
+
+            // Refresh region list
+            await fetchWilayah();
 
             // Kirim event untuk memberitahu Navbar
             window.dispatchEvent(new Event('profileUpdated'));
@@ -288,6 +452,18 @@ export default function ProfilePage() {
             setSaving(false);
         }
     };
+
+
+
+    const selectedProvObj = provinsis.find(p => p.nama_provinsi.toLowerCase() === (profile.provinsi || '').toLowerCase());
+    const filteredKecamatans = selectedProvObj 
+        ? kecamatans.filter(k => k.id_provinsi === selectedProvObj.id_provinsi)
+        : kecamatans;
+
+    const selectedKecObj = kecamatans.find(k => k.nama_kecamatan.toLowerCase() === (profile.kecamatan || '').toLowerCase());
+    const filteredKelurahans = selectedKecObj
+        ? kelurahans.filter(kl => kl.id_kecamatan === selectedKecObj.id_kecamatan)
+        : kelurahans;
 
     if (loading) {
         return (
@@ -560,31 +736,55 @@ export default function ProfilePage() {
 
                                         {/* Grid Kelengkapan Alamat Kependudukan */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {/* Desa / Kelurahan */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-desa">Desa / Kelurahan</label>
-                                                <input
-                                                    id="p-desa"
-                                                    type="text"
-                                                    value={profile.desa || ''}
-                                                    onChange={(e) => setProfile({ ...profile, desa: e.target.value, kelurahan: e.target.value })}
-                                                    placeholder="Nama Desa atau Kelurahan"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
-                                            </div>
+                                            {/* Provinsi */}
+                                            <AutocompleteSelect
+                                                label="Provinsi"
+                                                placeholder="Pilih atau cari Provinsi..."
+                                                value={profile.provinsi}
+                                                onChange={(val) => {
+                                                    setProfile(prev => ({
+                                                        ...prev,
+                                                        provinsi: val,
+                                                        kecamatan: '',
+                                                        desa: '',
+                                                        kelurahan: ''
+                                                    }));
+                                                }}
+                                                options={provinsis.map(p => p.nama_provinsi)}
+                                            />
 
                                             {/* Kecamatan */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-kecamatan">Kecamatan</label>
-                                                <input
-                                                    id="p-kecamatan"
-                                                    type="text"
-                                                    value={profile.kecamatan || ''}
-                                                    onChange={(e) => setProfile({ ...profile, kecamatan: e.target.value })}
-                                                    placeholder="Nama Kecamatan"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
-                                            </div>
+                                            <AutocompleteSelect
+                                                label="Kecamatan"
+                                                placeholder="Pilih atau cari Kecamatan..."
+                                                value={profile.kecamatan}
+                                                onChange={(val) => {
+                                                    setProfile(prev => ({
+                                                        ...prev,
+                                                        kecamatan: val,
+                                                        desa: '',
+                                                        kelurahan: ''
+                                                    }));
+                                                }}
+                                                disabled={!profile.provinsi}
+                                                options={filteredKecamatans.map(k => k.nama_kecamatan)}
+                                            />
+
+                                            {/* Desa / Kelurahan */}
+                                            <AutocompleteSelect
+                                                label="Desa / Kelurahan"
+                                                placeholder="Pilih atau cari Desa/Kelurahan..."
+                                                value={profile.desa}
+                                                onChange={(val) => {
+                                                    setProfile(prev => ({
+                                                        ...prev,
+                                                        desa: val,
+                                                        kelurahan: val
+                                                    }));
+                                                }}
+                                                disabled={!profile.kecamatan}
+                                                options={filteredKelurahans.map(kl => kl.nama_kelurahan)}
+                                            />
 
                                             {/* Kabupaten */}
                                             <div className="space-y-2">
@@ -595,19 +795,6 @@ export default function ProfilePage() {
                                                     value={profile.kabupaten || ''}
                                                     onChange={(e) => setProfile({ ...profile, kabupaten: e.target.value })}
                                                     placeholder="Nama Kabupaten/Kota"
-                                                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
-                                                />
-                                            </div>
-
-                                            {/* Provinsi */}
-                                            <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider" htmlFor="p-provinsi">Provinsi</label>
-                                                <input
-                                                    id="p-provinsi"
-                                                    type="text"
-                                                    value={profile.provinsi || ''}
-                                                    onChange={(e) => setProfile({ ...profile, provinsi: e.target.value })}
-                                                    placeholder="Nama Provinsi"
                                                     className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-body-md text-slate-800 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none"
                                                 />
                                             </div>

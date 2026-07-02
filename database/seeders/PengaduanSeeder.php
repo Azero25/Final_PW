@@ -143,6 +143,7 @@ class PengaduanSeeder extends Seeder
                         'role'          => 'petugas',
                         'count_laporan' => 0,
                         'status'        => 'Aktif',
+                        'avatar'        => 'https://api.dicebear.com/7.x/avataaars/svg?seed=' . urlencode($petugasData[0]),
                     ]
                 );
             }
