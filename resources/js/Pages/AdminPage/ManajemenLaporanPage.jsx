@@ -50,7 +50,7 @@ export default function ManajemenLaporanPage() {
     const [modalMode, setModalMode] = useState('detail');
     const [editStatus, setEditStatus] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [lightboxImg, setLightboxImg] = useState(null); 
+    const [lightboxImg, setLightboxImg] = useState(null);
     const [eligiblePetugas, setEligiblePetugas] = useState([]);
     const [selectedPetugasId, setSelectedPetugasId] = useState('');
 
@@ -78,8 +78,8 @@ export default function ManajemenLaporanPage() {
 
             // Format data aman: Simpan primary key murni di properti 'id'
             const formattedData = data.map(item => ({
-                id: item.id, 
-                nomor_tiket: item.nomor_tiket, 
+                id: item.id,
+                nomor_tiket: item.nomor_tiket,
                 judul: item.judul,
                 kategori: item.kategori,
                 kecamatan: item.kecamatan || item.lokasi,
@@ -90,7 +90,7 @@ export default function ManajemenLaporanPage() {
                 bukti_foto: item.bukti_foto,
                 gambar: Array.isArray(item.gambar) ? item.gambar : (item.gambar ? [item.gambar] : []),
                 deskripsi: item.deskripsi || '',
-                id_petugas: item.id_petugas ? Number(item.id_petugas) : '', 
+                id_petugas: item.id_petugas ? Number(item.id_petugas) : '',
                 nama_petugas: item.nama_petugas,
                 id_dinas: item.id_dinas,
                 nama_dinas: item.nama_dinas
@@ -110,8 +110,8 @@ export default function ManajemenLaporanPage() {
     }, []);
 
     const filtered = laporan.filter((l) => {
-        const matchSearch   = l.judul.toLowerCase().includes(search.toLowerCase()) || 
-                              l.nomor_tiket.toLowerCase().includes(search.toLowerCase()) || 
+        const matchSearch   = l.judul.toLowerCase().includes(search.toLowerCase()) ||
+                              l.nomor_tiket.toLowerCase().includes(search.toLowerCase()) ||
                               l.pelapor.toLowerCase().includes(search.toLowerCase());
         const matchStatus   = filterStatus === 'Semua' || l.status === filterStatus;
         const matchKategori = filterKategori === 'Semua' || l.kategori === filterKategori;
@@ -125,10 +125,10 @@ export default function ManajemenLaporanPage() {
         setModalLaporan(laporanItem);
         setModalMode(mode);
         setEditStatus(laporanItem.status);
-        
+
         // Amankan tipe data string id petugas agar ter-select otomatis di dropdown form edit
         setSelectedPetugasId('');
-        
+
         if (mode === 'edit' || mode === 'detail') {
             try {
                 const response = await api.get(`/api/pengaduans/${laporanItem.id}/petugas-eligible`);
@@ -339,7 +339,7 @@ export default function ManajemenLaporanPage() {
                                     <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">No. Tiket</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Judul Laporan</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kategori</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kecamatan</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Lokasi Laporan</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Pelapor</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Tanggal</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Prioritas</th>
