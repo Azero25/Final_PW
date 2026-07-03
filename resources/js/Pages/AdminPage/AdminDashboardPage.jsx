@@ -59,7 +59,10 @@ export default function AdminDashboardPage() {
                 pelapor: item.anonim ? 'Anonim' : (item.nama || 'Warga'),
                 tanggal: new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
                 status: item.status,
-                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah')
+                prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah'),
+                deskripsi: item.deskripsi || '',
+                nama_petugas: item.nama_petugas,
+                nama_dinas: item.nama_dinas
             }));
             setLaporanTerbaru(formattedData);
             localStorage.setItem('laporwarga_cache_dashboard_laporan', JSON.stringify(formattedData));
@@ -204,6 +207,65 @@ export default function AdminDashboardPage() {
         }
     };
 
+    const handleExportCSV = () => {
+        if (filteredLaporan.length === 0) {
+            alert('Tidak ada data laporan untuk di-export.');
+            return;
+        }
+
+        const headers = [
+            'Nomor Tiket',
+            'Judul Laporan',
+            'Deskripsi',
+            'Kategori',
+            'Lokasi Laporan',
+            'Pelapor',
+            'Tanggal',
+            'Prioritas',
+            'Status',
+            'Petugas',
+            'Dinas'
+        ];
+
+        const csvRows = [
+            'sep=;',
+            headers.join(';'),
+            ...filteredLaporan.map(row => {
+                const values = [
+                    row.id, // nomor tiket
+                    row.judul,
+                    row.deskripsi,
+                    row.kategori,
+                    row.kecamatan,
+                    row.pelapor,
+                    row.tanggal,
+                    row.prioritas,
+                    row.status,
+                    row.nama_petugas || '-',
+                    row.nama_dinas || '-'
+                ];
+
+                return values.map(val => {
+                    const escaped = String(val === null || val === undefined ? '' : val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(';');
+            })
+        ];
+
+        const csvContent = "\ufeff" + csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `laporan_pengaduan_dashboard_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Helper badge status
     const StatusBadge = ({ status }) => {
         const config = {
@@ -331,9 +393,12 @@ export default function AdminDashboardPage() {
                                         className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 transition-colors"
                                     />
                                 </div>
-                                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                                <button 
+                                    onClick={handleExportCSV}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                                >
                                     <span className="material-symbols-outlined text-base">download</span>
-                                    Export
+                                    Export CSV
                                 </button>
                             </div>
                         </div>

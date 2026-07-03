@@ -228,6 +228,65 @@ export default function ManajemenLaporanPage() {
         }
     };
 
+    const handleExportCSV = () => {
+        if (filtered.length === 0) {
+            alert('Tidak ada data laporan untuk di-export.');
+            return;
+        }
+
+        const headers = [
+            'Nomor Tiket',
+            'Judul Laporan',
+            'Deskripsi',
+            'Kategori',
+            'Lokasi Laporan',
+            'Pelapor',
+            'Tanggal',
+            'Prioritas',
+            'Status',
+            'Petugas',
+            'Dinas'
+        ];
+
+        const csvRows = [
+            'sep=;',
+            headers.join(';'),
+            ...filtered.map(row => {
+                const values = [
+                    row.nomor_tiket,
+                    row.judul,
+                    row.deskripsi,
+                    row.kategori,
+                    row.kecamatan,
+                    row.pelapor,
+                    row.tanggal,
+                    row.prioritas,
+                    row.status,
+                    row.nama_petugas || '-',
+                    row.nama_dinas || '-'
+                ];
+
+                return values.map(val => {
+                    const escaped = String(val === null || val === undefined ? '' : val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(';');
+            })
+        ];
+
+        const csvContent = "\ufeff" + csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `laporan_pengaduan_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const ringkasan = [
         { label: 'Total Laporan', value: laporan.length, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: 'assignment' },
         { label: 'Menunggu / Verifikasi', value: laporan.filter(l => l.status === 'Laporan Diterima' || l.status === 'Verifikasi').length, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100', icon: 'pending_actions' },
@@ -286,7 +345,10 @@ export default function ManajemenLaporanPage() {
                             {kategoriList.map(k => <option key={k}>{k}</option>)}
                         </select>
 
-                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors ml-auto">
+                        <button 
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors ml-auto"
+                        >
                             <span className="material-symbols-outlined text-base">download</span>
                             Export CSV
                         </button>
