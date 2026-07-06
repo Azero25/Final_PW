@@ -42,6 +42,8 @@ export default function PetugasDinasPage() {
     const [search, setSearch] = useState('');
     const [filterDinas, setFilterDinas] = useState('Semua');
     const [filterStatus, setFilterStatus] = useState('Semua');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const [modal, setModal] = useState(null);
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'edit' | 'tambah'
@@ -108,6 +110,16 @@ export default function PetugasDinasPage() {
         const q = search.toLowerCase();
         return j.nama_jabatan?.toLowerCase().includes(q) || String(j.level_jabatan).includes(q);
     });
+
+    const getActiveFilteredList = () => {
+        if (tab === 'petugas') return filteredPetugas;
+        if (tab === 'dinas') return filteredDinas;
+        return filteredJabatan;
+    };
+
+    const activeList = getActiveFilteredList();
+    const totalPages = Math.ceil(activeList.length / itemsPerPage);
+    const activePage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
     const openModal = (item, mode = 'detail') => {
         setModal(item);
@@ -351,7 +363,7 @@ export default function PetugasDinasPage() {
                         {/* Tabs */}
                         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                             {[{ id: 'petugas', label: 'Data Petugas', icon: 'badge' }, { id: 'dinas', label: 'Data Dinas', icon: 'account_balance' }, {id: 'jabatan', label: 'Data Jabatan', icon: 'balance'}].map(t => (
-                                <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); setSelectedIds([]); }}
+                                <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); setSelectedIds([]); setCurrentPage(1); }}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t.id ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                     <span className="material-symbols-outlined text-base">{t.icon}</span>{t.label}
                                 </button>
@@ -361,16 +373,16 @@ export default function PetugasDinasPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                             <div className="relative">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
-                                <input type="text" placeholder="Cari..." value={search} onChange={e => setSearch(e.target.value)}
+                                <input type="text" placeholder="Cari..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
                                     className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 w-48 bg-white" />
                             </div>
                             {tab === 'petugas' && (
                                 <>
-                                    <select value={filterDinas} onChange={e => setFilterDinas(e.target.value)} className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white focus:outline-none focus:border-blue-400">
+                                    <select value={filterDinas} onChange={e => { setFilterDinas(e.target.value); setCurrentPage(1); }} className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white focus:outline-none focus:border-blue-400">
                                         <option value="Semua">Semua Dinas</option>
                                         {dinasList.map(d => <option key={d.id} value={d.id}>{d.singkatan}</option>)}
                                     </select>
-                                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white focus:outline-none focus:border-blue-400">
+                                    <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }} className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white focus:outline-none focus:border-blue-400">
                                         {['Semua', 'Aktif', 'Nonaktif'].map(s => <option key={s}>{s}</option>)}
                                     </select>
                                 </>
@@ -427,7 +439,7 @@ export default function PetugasDinasPage() {
                                     <tr><td colSpan={8} className="text-center py-16 text-slate-400">
                                         <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>Tidak ada petugas ditemukan
                                     </td></tr>
-                                ) : filteredPetugas.map(p => (
+                                ) : filteredPetugas.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage).map(p => (
                                     <tr key={p.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(p.original_id) ? 'bg-blue-50/50' : ''}`}>
                                         <td className="px-4 py-3">
                                             <input type="checkbox" checked={selectedIds.includes(p.original_id)} onChange={() => toggleOne(p.original_id)} className="rounded" />
@@ -508,7 +520,7 @@ export default function PetugasDinasPage() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {filteredDinas.map(d => {
+                                {filteredDinas.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage).map(d => {
                                     const hex = colorHex[d.color] || '#475569';
                                     return (
                                     <div key={d.id} className="rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white border border-slate-100 relative group">
@@ -596,7 +608,7 @@ export default function PetugasDinasPage() {
                                     <tr><td colSpan={4} className="text-center py-16 text-slate-400">Memuat data jabatan...</td></tr>
                                 ) : filteredJabatan.length === 0 ? (
                                     <tr><td colSpan={4} className="text-center py-16 text-slate-400">Tidak ada jabatan ditemukan</td></tr>
-                                ) : filteredJabatan.map(j => (
+                                ) : filteredJabatan.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage).map(j => (
                                     <tr key={j.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-semibold text-slate-800">{j.nama_jabatan}</td>
                                         <td className="px-6 py-4">
@@ -618,16 +630,93 @@ export default function PetugasDinasPage() {
                 )}
 
                 {/* Pagination */}
-                {tab === 'petugas' && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                        <p className="text-xs text-slate-500">Menampilkan {filteredPetugas.length} dari {petugasList.length} petugas</p>
-                        <div className="flex gap-1">
-                            <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Sebelumnya</button>
-                            <button className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg">1</button>
-                            <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Berikutnya</button>
+                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-slate-100 gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-slate-500 font-medium">Tampilkan</span>
+                            <select
+                                value={itemsPerPage}
+                                onChange={(e) => {
+                                    setItemsPerPage(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-blue-400 text-slate-600 font-semibold"
+                            >
+                                <option value={10}>10</option>
+                                <option value={25}>25</option>
+                                <option value={50}>50</option>
+                            </select>
+                            <span className="text-xs text-slate-500 font-medium">data</span>
                         </div>
+                        <p className="text-xs text-slate-500">
+                            Menampilkan {activeList.length > 0 ? (activePage - 1) * itemsPerPage + 1 : 0} - {Math.min(activePage * itemsPerPage, activeList.length)} dari {activeList.length} {tab === 'petugas' ? 'petugas' : tab === 'dinas' ? 'dinas' : 'jabatan'}
+                        </p>
                     </div>
-                )}
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={activePage === 1}
+                            className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Sebelumnya
+                        </button>
+                        
+                        {(() => {
+                            if (totalPages <= 3) {
+                                return Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                            activePage === pageNum
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-slate-500 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                ));
+                            }
+
+                            const range = [1];
+                            if (activePage > 2) range.push('...');
+                            if (activePage > 1 && activePage < totalPages) range.push(activePage);
+                            if (activePage < totalPages - 1) range.push('...');
+                            range.push(totalPages);
+
+                            return range.map((item, idx) => {
+                                if (item === '...') {
+                                    return (
+                                        <span key={`dots-${idx}`} className="px-2 py-1.5 text-xs text-slate-400 select-none">
+                                            ...
+                                        </span>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        key={`page-${item}`}
+                                        onClick={() => setCurrentPage(item)}
+                                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                            activePage === item
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-slate-500 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {item}
+                                    </button>
+                                );
+                            });
+                        })()}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={activePage === totalPages || totalPages === 0}
+                            className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Berikutnya
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* ===== EDIT/DETAIL/ADD MODAL ===== */}

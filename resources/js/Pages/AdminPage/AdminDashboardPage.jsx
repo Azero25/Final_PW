@@ -477,19 +477,52 @@ export default function AdminDashboardPage() {
                                     Sebelumnya
                                 </button>
                                 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                                            currentPage === pageNum
-                                                ? 'bg-blue-600 text-white'
-                                                : 'text-slate-500 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                ))}
+                                {(() => {
+                                    if (totalPages <= 3) {
+                                        return Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                                    currentPage === pageNum
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-slate-500 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        ));
+                                    }
+
+                                    const range = [1];
+                                    if (currentPage > 2) range.push('...');
+                                    if (currentPage > 1 && currentPage < totalPages) range.push(currentPage);
+                                    if (currentPage < totalPages - 1) range.push('...');
+                                    range.push(totalPages);
+
+                                    return range.map((item, idx) => {
+                                        if (item === '...') {
+                                            return (
+                                                <span key={`dots-${idx}`} className="px-2 py-1.5 text-xs text-slate-400 select-none">
+                                                    ...
+                                                </span>
+                                            );
+                                        }
+                                        return (
+                                            <button
+                                                key={`page-${item}`}
+                                                onClick={() => setCurrentPage(item)}
+                                                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                                    currentPage === item
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-slate-500 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                {item}
+                                            </button>
+                                        );
+                                    });
+                                })()}
 
                                 <button 
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}

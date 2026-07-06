@@ -45,6 +45,8 @@ export default function ManajemenLaporanPage() {
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('Semua');
     const [filterKategori, setFilterKategori] = useState('Semua');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selectedIds, setSelectedIds] = useState([]);
     const [modalLaporan, setModalLaporan] = useState(null);
     const [modalMode, setModalMode] = useState('detail');
@@ -117,6 +119,9 @@ export default function ManajemenLaporanPage() {
         const matchKategori = filterKategori === 'Semua' || l.kategori === filterKategori;
         return matchSearch && matchStatus && matchKategori;
     });
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const activePage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
     const toggleAll = () => setSelectedIds(selectedIds.length === filtered.length && filtered.length > 0 ? [] : filtered.map(l => l.id));
     const toggleOne = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -324,14 +329,20 @@ export default function ManajemenLaporanPage() {
                                 type="text"
                                 placeholder="Cari ID, judul, atau pelapor..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors"
                             />
                         </div>
 
                         <select
                             value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
+                            onChange={(e) => {
+                                setFilterStatus(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 focus:outline-none focus:border-blue-400 bg-white"
                         >
                             {statusList.map(s => <option key={s}>{s}</option>)}
@@ -339,7 +350,10 @@ export default function ManajemenLaporanPage() {
 
                         <select
                             value={filterKategori}
-                            onChange={(e) => setFilterKategori(e.target.value)}
+                            onChange={(e) => {
+                                setFilterKategori(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-600 focus:outline-none focus:border-blue-400 bg-white"
                         >
                             {kategoriList.map(k => <option key={k}>{k}</option>)}
@@ -429,7 +443,7 @@ export default function ManajemenLaporanPage() {
                                             Tidak ada laporan ditemukan
                                         </td>
                                     </tr>
-                                ) : filtered.map((laporanItem) => (
+                                ) : filtered.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage).map((laporanItem) => (
                                     <tr key={laporanItem.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(laporanItem.id) ? 'bg-blue-50/50' : ''}`}>
                                         <td className="px-4 py-3">
                                             <input type="checkbox" checked={selectedIds.includes(laporanItem.id)} onChange={() => toggleOne(laporanItem.id)} className="rounded" />
@@ -466,12 +480,91 @@ export default function ManajemenLaporanPage() {
                     </div>
 
                     {/* Pagination */}
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                        <p className="text-xs text-slate-500">Menampilkan {filtered.length} dari {laporan.length} laporan</p>
+                    <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-slate-100 gap-4">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-slate-500 font-medium">Tampilkan</span>
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => {
+                                        setItemsPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-blue-400 text-slate-600 font-semibold"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                </select>
+                                <span className="text-xs text-slate-500 font-medium">data</span>
+                            </div>
+                            <p className="text-xs text-slate-500">
+                                Menampilkan {filtered.length > 0 ? (activePage - 1) * itemsPerPage + 1 : 0} - {Math.min(activePage * itemsPerPage, filtered.length)} dari {filtered.length} laporan
+                            </p>
+                        </div>
                         <div className="flex gap-1">
-                            <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Sebelumnya</button>
-                            <button className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white transition-colors">1</button>
-                            <button className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Berikutnya</button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={activePage === 1}
+                                className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Sebelumnya
+                            </button>
+                            
+                            {(() => {
+                                if (totalPages <= 3) {
+                                    return Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                                activePage === pageNum
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-slate-500 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    ));
+                                }
+
+                                const range = [1];
+                                if (activePage > 2) range.push('...');
+                                if (activePage > 1 && activePage < totalPages) range.push(activePage);
+                                if (activePage < totalPages - 1) range.push('...');
+                                range.push(totalPages);
+
+                                return range.map((item, idx) => {
+                                    if (item === '...') {
+                                        return (
+                                            <span key={`dots-${idx}`} className="px-2 py-1.5 text-xs text-slate-400 select-none">
+                                                ...
+                                            </span>
+                                        );
+                                    }
+                                    return (
+                                        <button
+                                            key={`page-${item}`}
+                                            onClick={() => setCurrentPage(item)}
+                                            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                                activePage === item
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-slate-500 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {item}
+                                        </button>
+                                    );
+                                });
+                            })()}
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={activePage === totalPages || totalPages === 0}
+                                className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Berikutnya
+                            </button>
                         </div>
                     </div>
                 </div>
