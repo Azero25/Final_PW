@@ -702,6 +702,31 @@ export default function ManajemenLaporanPage() {
                                             );
                                         })()}
 
+                                        {modalMode === 'detail' && modalLaporan.foto_selesai_list && modalLaporan.foto_selesai_list.length > 0 && (
+                                            <div className="pt-2">
+                                                <p className="text-xs text-emerald-800 mb-2 flex items-center gap-1.5 font-semibold uppercase tracking-wide">
+                                                    <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                                                    Bukti Foto Penyelesaian (Dari Petugas)
+                                                    <span className="ml-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{modalLaporan.foto_selesai_list.length} foto</span>
+                                                </p>
+                                                <div className={`grid gap-2 ${
+                                                    modalLaporan.foto_selesai_list.length === 1 ? 'grid-cols-1 max-w-xs' :
+                                                    modalLaporan.foto_selesai_list.length === 2 ? 'grid-cols-2' :
+                                                    'grid-cols-2 sm:grid-cols-3'
+                                                }`}>
+                                                    {modalLaporan.foto_selesai_list.map((src, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="relative group rounded-lg overflow-hidden border border-emerald-200 shadow-sm cursor-zoom-in aspect-square bg-emerald-50/10"
+                                                            onClick={() => setLightboxImg(getImageUrl(src))}
+                                                        >
+                                                            <img src={getImageUrl(src)} alt={`Bukti Penyelesaian ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {modalMode === 'edit' && (
                                             <div className="space-y-4">
                                                 <div>

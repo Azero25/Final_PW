@@ -43,6 +43,18 @@ export default function AdminDashboardPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 
+    const getImageUrl = (path) => {
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:image')) {
+            return path;
+        }
+        if (path.startsWith('/storage')) {
+            const baseUrl = window.location.origin.includes('5173') ? 'http://127.0.0.1:8000' : '';
+            return `${baseUrl}${path}`;
+        }
+        return path;
+    };
+
     const fetchData = async () => {
         const hasCache = !!localStorage.getItem('laporwarga_cache_dashboard_laporan');
         if (!hasCache) setIsLoading(true);
@@ -62,7 +74,9 @@ export default function AdminDashboardPage() {
                 prioritas: item.urgensi === 'tinggi' ? 'Tinggi' : (item.urgensi === 'sedang' ? 'Sedang' : 'Rendah'),
                 deskripsi: item.deskripsi || '',
                 nama_petugas: item.nama_petugas,
-                nama_dinas: item.nama_dinas
+                nama_dinas: item.nama_dinas,
+                foto_selesai: item.foto_selesai,
+                foto_selesai_list: item.foto_selesai_list || []
             }));
             setLaporanTerbaru(formattedData);
             localStorage.setItem('laporwarga_cache_dashboard_laporan', JSON.stringify(formattedData));
@@ -604,6 +618,38 @@ export default function AdminDashboardPage() {
                                             </Link>
                                         )}
                                     </div>
+
+                                    {/* Bukti Foto Penyelesaian */}
+                                    {modalMode === 'detail' && modalLaporan.foto_selesai_list && modalLaporan.foto_selesai_list.length > 0 && (
+                                        <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 space-y-2">
+                                            <p className="text-xs text-emerald-800 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                                                Bukti Foto Penyelesaian (Dari Petugas)
+                                                <span className="ml-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{modalLaporan.foto_selesai_list.length} foto</span>
+                                            </p>
+                                            <div className={`grid gap-2 ${
+                                                modalLaporan.foto_selesai_list.length === 1 ? 'grid-cols-1 max-w-xs' :
+                                                modalLaporan.foto_selesai_list.length === 2 ? 'grid-cols-2' :
+                                                'grid-cols-2 sm:grid-cols-3'
+                                            }`}>
+                                                {modalLaporan.foto_selesai_list.map((src, idx) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={getImageUrl(src)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group relative block aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200/80 hover:shadow-lg transition-all duration-300"
+                                                    >
+                                                        <img
+                                                            src={getImageUrl(src)}
+                                                            alt={`Bukti Selesai ${idx + 1}`}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Edit Mode: Ubah status */}
                                     {modalMode === 'edit' && (

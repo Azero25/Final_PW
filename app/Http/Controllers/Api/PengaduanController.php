@@ -114,7 +114,9 @@ class PengaduanController extends Controller
         $petugasName = $petugas ? $petugas->nama_lengkap : '-';
         $petugasId = $petugas ? $petugas->id_user : null;
 
-        $kelurahanName = Kelurahan::find($laporan->id_kelurahan)?->nama_kelurahan ?? 'Tidak Diketahui';
+        $kelurahan = Kelurahan::find($laporan->id_kelurahan);
+        $kelurahanName = $kelurahan?->nama_kelurahan ?? 'Tidak Diketahui';
+        $kecamatanName = $kelurahan?->kecamatan?->nama_kecamatan ?? 'Tidak Diketahui';
         $userObj = User::find($laporan->id_user);
         $userName = $userObj?->nama_lengkap ?? 'Anonim';
         $userHp = $userObj?->no_hp ?? '-';
@@ -122,6 +124,9 @@ class PengaduanController extends Controller
 
         $decodedGambar = is_string($laporan->bukti_foto) && str_starts_with($laporan->bukti_foto, '[') ? json_decode($laporan->bukti_foto, true) : null;
         $hasDecoded = is_array($decodedGambar);
+
+        $decodedSelesai = is_string($laporan->foto_selesai) && str_starts_with($laporan->foto_selesai, '[') ? json_decode($laporan->foto_selesai, true) : null;
+        $hasDecodedSelesai = is_array($decodedSelesai);
 
         return [
             'id' => $laporan->no_ticket,
@@ -143,9 +148,12 @@ class PengaduanController extends Controller
             'dinas' => $dinasName,
             'urgensi' => strtolower($laporan->prioritas),
             'lokasi' => $kelurahanName,
+            'kecamatan' => $kecamatanName,
             'deskripsi' => $laporan->isi_laporan,
             'bukti_foto' => $hasDecoded ? ($decodedGambar[0] ?? null) : $laporan->bukti_foto,
             'gambar' => $hasDecoded ? $decodedGambar : ($laporan->bukti_foto ? [$laporan->bukti_foto] : []),
+            'foto_selesai' => $hasDecodedSelesai ? ($decodedSelesai[0] ?? null) : $laporan->foto_selesai,
+            'foto_selesai_list' => $hasDecodedSelesai ? $decodedSelesai : ($laporan->foto_selesai ? [$laporan->foto_selesai] : []),
             'status' => $laporan->status_laporan === 'Diterima' ? 'Laporan Diterima' : $laporan->status_laporan,
             'timeline' => $this->generateTimeline($laporan),
             'created_at' => $laporan->created_at,
@@ -179,7 +187,7 @@ class PengaduanController extends Controller
         $petugasList = User::whereIn('id_user', $petugasIds)->get()->keyBy('id_user');
 
         $kelurahanIds = $laporans->pluck('id_kelurahan')->filter()->unique();
-        $kelurahans = Kelurahan::whereIn('id_kelurahan', $kelurahanIds)->get()->keyBy('id_kelurahan');
+        $kelurhans = Kelurahan::with('kecamatan')->whereIn('id_kelurahan', $kelurahanIds)->get()->keyBy('id_kelurahan');
 
         $userIds = $laporans->pluck('id_user')->filter()->unique();
         $users = User::whereIn('id_user', $userIds)->get()->keyBy('id_user');
@@ -187,7 +195,7 @@ class PengaduanController extends Controller
         $laporanTikets = $laporans->pluck('no_ticket')->unique();
         $allTimelines = LaporanTimeline::whereIn('no_ticket', $laporanTikets)->get()->groupBy('no_ticket');
 
-        $mapped = $laporans->map(function ($laporan) use ($kategoris, $petugasList, $kelurahans, $users, $allTimelines) {
+        $mapped = $laporans->map(function ($laporan) use ($kategoris, $petugasList, $kelurhans, $users, $allTimelines) {
             $kategoriObj = $kategoris->get($laporan->id_kategori);
             $kategoriName = $kategoriObj ? $kategoriObj->nama_kategori : 'Lainnya';
 
@@ -198,7 +206,9 @@ class PengaduanController extends Controller
             $petugasName = $petugas ? $petugas->nama_lengkap : '-';
             $petugasId = $petugas ? $petugas->id_user : null;
 
-            $kelurahanName = $kelurahanName = $kelurahans->get($laporan->id_kelurahan)?->nama_kelurahan ?? 'Tidak Diketahui';
+            $kelurahanObj = $kelurhans->get($laporan->id_kelurahan);
+            $kelurahanName = $kelurahanObj?->nama_kelurahan ?? 'Tidak Diketahui';
+            $kecamatanName = $kelurahanObj?->kecamatan?->nama_kecamatan ?? 'Tidak Diketahui';
 
             $userObj = $users->get($laporan->id_user);
             $userName = $userObj?->nama_lengkap ?? 'Anonim';
@@ -210,6 +220,9 @@ class PengaduanController extends Controller
 
             $decodedGambar = is_string($laporan->bukti_foto) && str_starts_with($laporan->bukti_foto, '[') ? json_decode($laporan->bukti_foto, true) : null;
             $hasDecoded = is_array($decodedGambar);
+
+            $decodedSelesai = is_string($laporan->foto_selesai) && str_starts_with($laporan->foto_selesai, '[') ? json_decode($laporan->foto_selesai, true) : null;
+            $hasDecodedSelesai = is_array($decodedSelesai);
 
             return [
                 'id' => $laporan->no_ticket,
@@ -231,9 +244,12 @@ class PengaduanController extends Controller
                 'dinas' => $dinasName,
                 'urgensi' => strtolower($laporan->prioritas),
                 'lokasi' => $kelurahanName,
+                'kecamatan' => $kecamatanName,
                 'deskripsi' => $laporan->isi_laporan,
                 'bukti_foto' => $hasDecoded ? ($decodedGambar[0] ?? null) : $laporan->bukti_foto,
                 'gambar' => $hasDecoded ? $decodedGambar : ($laporan->bukti_foto ? [$laporan->bukti_foto] : []),
+                'foto_selesai' => $hasDecodedSelesai ? ($decodedSelesai[0] ?? null) : $laporan->foto_selesai,
+                'foto_selesai_list' => $hasDecodedSelesai ? $decodedSelesai : ($laporan->foto_selesai ? [$laporan->foto_selesai] : []),
                 'status' => $laporan->status_laporan === 'Diterima' ? 'Laporan Diterima' : $laporan->status_laporan,
                 'timeline' => $this->generateTimeline($laporan),
                 'created_at' => $laporan->created_at,
@@ -387,7 +403,10 @@ class PengaduanController extends Controller
             return response()->json(['message' => 'Pengaduan tidak ditemukan'], 404);
         }
 
-        $request->validate(['status' => 'required|string']);
+        $request->validate([
+            'status' => 'required|string',
+            'foto_selesai' => 'nullable',
+        ]);
 
         $statusToEnum = [
             'Laporan Diterima' => 'Diterima',
@@ -407,6 +426,33 @@ class PengaduanController extends Controller
         }
 
         $laporan->status_laporan = $newStatus;
+
+        // Proses upload foto selesai jika status diubah menjadi Selesai dan ada input foto_selesai
+        if ($newStatus === 'Selesai' && $request->foto_selesai) {
+            $fotoInput = $request->foto_selesai;
+            $fotoList = is_array($fotoInput) ? $fotoInput : [$fotoInput];
+            $savedSelesaiImages = [];
+
+            foreach ($fotoList as $base64Img) {
+                if (preg_match('/^data:image\/(\w+);base64,/', $base64Img)) {
+                    try {
+                        $fileName = 'selesai_' . time() . '_' . mt_rand(1000, 9999) . '.webp';
+                        $path = 'uploads/bukti/' . $fileName;
+
+                        $imageStream = Image::decode($base64Img)
+                            ->encode(new WebpEncoder(quality: 80));
+
+                        Storage::disk('public')->put($path, (string) $imageStream);
+                        $savedSelesaiImages[] = '/storage/' . $path;
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Gagal memproses foto selesai: ' . $e->getMessage());
+                    }
+                }
+            }
+            if (count($savedSelesaiImages) > 0) {
+                $laporan->foto_selesai = count($savedSelesaiImages) === 1 ? $savedSelesaiImages[0] : json_encode($savedSelesaiImages);
+            }
+        }
 
         // Catat riwayat ke tabel pivot timelines secara permanen jika belum ada duplikat status berturut-turut
         $metaLog = $this->buildLogEntry($newStatus, $laporan);

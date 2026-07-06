@@ -74,7 +74,9 @@ const formatLaporanToTugas = (laporan) => {
         status: mapStatusToPetugas(laporan.status),
         pelapor: laporan.nama || 'Warga',
         deskripsi: laporan.deskripsi,
-        gambar: laporan.gambar || []
+        gambar: laporan.gambar || [],
+        foto_selesai: laporan.foto_selesai,
+        foto_selesai_list: laporan.foto_selesai_list || []
     };
 };
 
@@ -96,6 +98,8 @@ export default function LaporanPetugasPage() {
     const [modalTugas, setModalTugas] = useState(null);
     const [modalMode, setModalMode] = useState('detail'); // 'detail' | 'updateStatus'
     const [editStatus, setEditStatus] = useState('');
+    const [fotoSelesaiList, setFotoSelesaiList] = useState([]);
+    const [isDragging, setIsDragging] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -143,6 +147,82 @@ export default function LaporanPetugasPage() {
         setModalTugas(tugas);
         setModalMode(mode);
         setEditStatus(tugas.status);
+        fotoSelesaiList.forEach(img => URL.revokeObjectURL(img.previewUrl));
+        setFotoSelesaiList([]);
+        setIsDragging(false);
+    };
+
+    const convertToWebP = (file) => {
+        return new Promise((resolve) => {
+            const img = new window.Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.naturalWidth;
+                let height = img.naturalHeight;
+                const maxDim = 1280;
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(
+                    (blob) => {
+                        URL.revokeObjectURL(url);
+                        resolve(blob);
+                    },
+                    'image/webp',
+                    0.80
+                );
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+            img.src = url;
+        });
+    };
+
+    const handleSelesaiFiles = async (files) => {
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const validFiles = Array.from(files).filter(f => validTypes.includes(f.type));
+
+        if (validFiles.length === 0) {
+            alert('Format file tidak didukung.');
+            return;
+        }
+
+        const remaining = 5 - fotoSelesaiList.length;
+        if (remaining <= 0) {
+            alert('Maksimal 5 gambar bukti penyelesaian.');
+            return;
+        }
+
+        const toProcess = validFiles.slice(0, remaining);
+        for (const file of toProcess) {
+            const blob = await convertToWebP(file);
+            if (blob) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64Str = reader.result;
+                    const previewUrl = URL.createObjectURL(blob);
+                    setFotoSelesaiList(prev => [...prev, { file, previewUrl, base64: base64Str }]);
+                };
+                reader.readAsDataURL(blob);
+            }
+        }
+    };
+
+    const removeSelesaiImage = (idx) => {
+        setFotoSelesaiList(prev => {
+            URL.revokeObjectURL(prev[idx].previewUrl);
+            return prev.filter((_, i) => i !== idx);
+        });
     };
 
     // Eksekusi pembaruan status laporan
@@ -151,11 +231,19 @@ export default function LaporanPetugasPage() {
             setModalTugas(null);
             return;
         }
+        if (editStatus === 'Selesai' && fotoSelesaiList.length === 0) {
+            alert("Harap unggah bukti foto penyelesaian untuk menutup laporan ini!");
+            return;
+        }
         setIsSaving(true);
 
         try {
             const backendStatus = mapStatusToBackend(editStatus);
-            await api.put(`/api/pengaduans/${modalTugas.id}`, { status: backendStatus });
+            const payload = { status: backendStatus };
+            if (editStatus === 'Selesai') {
+                payload.foto_selesai = fotoSelesaiList.map(img => img.base64);
+            }
+            await api.put(`/api/pengaduans/${modalTugas.id}`, payload);
 
             // Refetch data agar terupdate secara real-time
             await fetchLaporan();
@@ -165,10 +253,14 @@ export default function LaporanPetugasPage() {
             setTimeout(() => setShowToast(false), 3000);
         } catch (error) {
             console.error("Error updating status:", error);
-            alert("Gagal memperbarui status laporan ke server.");
+            const errMsg = error.response?.data?.message || error.message || "Gagal memperbarui status laporan ke server.";
+            alert("Gagal memperbarui status: " + errMsg);
         } finally {
             setIsSaving(false);
             setModalTugas(null);
+            fotoSelesaiList.forEach(img => URL.revokeObjectURL(img.previewUrl));
+            setFotoSelesaiList([]);
+            setIsDragging(false);
         }
     };
 
@@ -437,6 +529,41 @@ export default function LaporanPetugasPage() {
                                 </div>
                             )}
 
+                            {/* Bukti Foto Penyelesaian */}
+                            {modalTugas.foto_selesai_list && modalTugas.foto_selesai_list.length > 0 && (
+                                <div className="space-y-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                    <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                                        Bukti Foto Penyelesaian (Oleh Petugas)
+                                        <span className="ml-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{modalTugas.foto_selesai_list.length} foto</span>
+                                    </p>
+                                    <div className={`grid gap-2 ${
+                                        modalTugas.foto_selesai_list.length === 1 ? 'grid-cols-1 max-w-md' :
+                                        modalTugas.foto_selesai_list.length === 2 ? 'grid-cols-2' :
+                                        'grid-cols-2 sm:grid-cols-3'
+                                    }`}>
+                                        {modalTugas.foto_selesai_list.map((imgUrl, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={imgUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative block aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200/80 hover:shadow-lg transition-all duration-300"
+                                            >
+                                                <img
+                                                    src={imgUrl}
+                                                    alt={`Bukti Selesai ${idx + 1}`}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-white text-xl">open_in_new</span>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Status Saat Ini */}
                             <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between">
                                 <div>
@@ -447,23 +574,100 @@ export default function LaporanPetugasPage() {
 
                             {/* Form Pilihan Status */}
                             {modalMode === 'updateStatus' && (
-                                <div className="space-y-2">
-                                    <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Ubah Status Laporan Menjadi</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {['Menunggu', 'Diproses', 'Selesai'].map((s) => (
-                                            <button
-                                                key={s}
-                                                onClick={() => setEditStatus(s)}
-                                                className={`py-3 rounded-2xl text-sm font-bold border-2 transition-all
-                                                    ${editStatus === s
-                                                        ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                                                        : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200'
-                                                    }`}
-                                            >
-                                                {s}
-                                            </button>
-                                        ))}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Ubah Status Laporan Menjadi</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {['Menunggu', 'Diproses', 'Selesai'].map((s) => (
+                                                <button
+                                                    key={s}
+                                                    type="button"
+                                                    onClick={() => setEditStatus(s)}
+                                                    className={`py-3 rounded-2xl text-sm font-bold border-2 transition-all
+                                                        ${editStatus === s
+                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
+                                                            : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200'
+                                                        }`}
+                                                >
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
+
+                                    {editStatus === 'Selesai' && (
+                                        <div className="space-y-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <label className="text-xs text-blue-700 font-bold uppercase tracking-wider block">
+                                                Foto Bukti Penyelesaian <span className="text-red-500">*</span>
+                                            </label>
+
+                                            {/* Drop Area */}
+                                            <div
+                                                className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-pointer bg-white group
+                                                    ${isDragging
+                                                        ? 'border-blue-500 bg-blue-50 scale-[1.01]'
+                                                        : fotoSelesaiList.length >= 5
+                                                            ? 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
+                                                            : 'border-blue-200 hover:bg-blue-50/20 hover:border-blue-300'
+                                                    }`}
+                                                onClick={() => {
+                                                    if (fotoSelesaiList.length < 5) {
+                                                        document.getElementById('selesai-foto-input').click();
+                                                    }
+                                                }}
+                                                onDragOver={(e) => {
+                                                    e.preventDefault();
+                                                    if (fotoSelesaiList.length < 5) setIsDragging(true);
+                                                }}
+                                                onDragLeave={() => setIsDragging(false)}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    setIsDragging(false);
+                                                    if (fotoSelesaiList.length < 5) {
+                                                        handleSelesaiFiles(e.dataTransfer.files);
+                                                    }
+                                                }}
+                                            >
+                                                <span className="material-symbols-outlined text-3xl text-blue-400 group-hover:scale-110 transition-transform mb-1">cloud_upload</span>
+                                                <p className="text-xs font-bold text-slate-600">
+                                                    {fotoSelesaiList.length >= 5 ? 'Batas maksimal 5 gambar tercapai' : 'Klik atau seret foto ke sini'}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WEBP (Maks. 5MB) • Maks. 5 foto</p>
+                                                <p className="text-[10px] text-blue-600 font-bold mt-1">{fotoSelesaiList.length}/5 gambar dipilih</p>
+                                                
+                                                <input
+                                                    id="selesai-foto-input"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    className="hidden"
+                                                    onChange={(e) => handleSelesaiFiles(e.target.files)}
+                                                />
+                                            </div>
+
+                                            {/* Preview Grid */}
+                                            {fotoSelesaiList.length > 0 && (
+                                                <div className="grid grid-cols-5 gap-2 mt-2">
+                                                    {fotoSelesaiList.map((img, idx) => (
+                                                        <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shadow-inner group">
+                                                            <img src={img.previewUrl} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    removeSelesaiImage(idx);
+                                                                }}
+                                                                className="absolute top-1 right-1 p-0.5 bg-red-600/90 text-white rounded-full hover:bg-red-700 transition-colors shadow-md"
+                                                                title="Hapus foto"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[10px] block font-bold">close</span>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

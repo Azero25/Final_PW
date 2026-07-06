@@ -272,7 +272,6 @@ export default function LacakPage() {
                                     </div>
                                 );
                             })()}
-
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[
                                     { label: 'Kategori', value: hasilLacak.kategori, icon: 'category' },
@@ -335,6 +334,34 @@ export default function LacakPage() {
                                             <p className="text-xs text-slate-400">{item.tanggal}</p>
                                         </div>
                                         <p className="text-sm text-slate-500 leading-relaxed">{item.keterangan}</p>
+
+                                        {/* Tampilkan Bukti Penyelesaian di bawah status Selesai jika tersedia */}
+                                        {item.status === 'Selesai' && !item.pending && hasilLacak.foto_selesai_list && hasilLacak.foto_selesai_list.length > 0 && (
+                                            <div className="mt-3 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 max-w-xl">
+                                                <p className="text-[10px] text-emerald-800 font-bold uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+                                                    Bukti Penyelesaian ({hasilLacak.foto_selesai_list.length} foto)
+                                                </p>
+                                                <div className={`grid gap-2 ${
+                                                    hasilLacak.foto_selesai_list.length === 1 ? 'grid-cols-1 max-w-sm' :
+                                                    hasilLacak.foto_selesai_list.length === 2 ? 'grid-cols-2' :
+                                                    'grid-cols-2 sm:grid-cols-3'
+                                                }`}>
+                                                    {hasilLacak.foto_selesai_list.map((src, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="relative group rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in aspect-video bg-white"
+                                                            onClick={() => setLightboxImg(getImageUrl(src))}
+                                                        >
+                                                            <img src={getImageUrl(src)} alt={`Bukti Selesai ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                                                <span className="material-symbols-outlined text-white text-xl opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity">zoom_in</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
