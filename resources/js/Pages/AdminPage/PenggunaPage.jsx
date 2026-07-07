@@ -41,6 +41,7 @@ export default function PenggunaPage() {
     const [isSaving, setIsSaving]           = useState(false);
     const [bulkTargetStatus, setBulkTargetStatus] = useState('Aktif');
     const [showTambahPass, setShowTambahPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
 
     const statusList = ['Semua', 'Aktif', 'Nonaktif'];
 
@@ -127,7 +128,8 @@ export default function PenggunaPage() {
                     kelurahan: editData.kelurahan,
                     role: editData.role || 'warga',
                     status: editData.status,
-                    password: editData.password
+                    password: editData.password,
+                    password_confirmation: editData.password_confirmation
                 });
                 if (response.data && response.data.status === 'success') {
                     await fetchUsers();
@@ -419,7 +421,7 @@ export default function PenggunaPage() {
                         >
                             Sebelumnya
                         </button>
-                        
+
                         {(() => {
                             if (totalPages <= 3) {
                                 return Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
@@ -691,6 +693,25 @@ export default function PenggunaPage() {
                                                 >
                                                     <span className="material-symbols-outlined text-lg select-none">
                                                         {showTambahPass ? 'visibility_off' : 'visibility'}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                            <label className="text-xs text-slate-500 font-semibold block mb-1.5 mt-4">Konfirmasi Kata Sandi</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showConfirmPass ? "text" : "password"}
+                                                    value={editData.password_confirmation || ''}
+                                                    onChange={(e) => setEditData({ ...editData, password_confirmation: e.target.value })}
+                                                    placeholder="Ulangi kata sandi"
+                                                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-colors font-medium text-slate-800"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg select-none">
+                                                        {showConfirmPass ? 'visibility_off' : 'visibility'}
                                                     </span>
                                                 </button>
                                             </div>
