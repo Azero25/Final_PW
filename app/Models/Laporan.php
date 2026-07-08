@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Laporan extends Model {
     protected $table = 'laporans';
@@ -10,6 +11,8 @@ class Laporan extends Model {
     protected $guarded = [];
     protected $casts = [
         'timeline_log' => 'array',
+        'tanggal_laporan' => 'datetime',
+        'anonim' => 'boolean',
     ];
 
     public function kategori() {

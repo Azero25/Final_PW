@@ -15,8 +15,10 @@ use App\Models\Dinas;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Provinsi;
 use App\Models\Kecamatan;
+use App\Models\Kabupaten;
 use App\Models\LaporanTimeline;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Intervention\Image\Laravel\Facades\Image;
 use Intervention\Image\Encoders\WebpEncoder;
 
@@ -26,7 +28,7 @@ class PengaduanController extends Controller
     {
         $petugasName = null;
         if ($laporan && $laporan->id_petugas) {
-            $petugas = \App\Models\User::find($laporan->id_petugas);
+            $petugas = User::find($laporan->id_petugas);
             if ($petugas) {
                 $petugasName = $petugas->nama_lengkap;
             }
@@ -105,7 +107,7 @@ class PengaduanController extends Controller
 
         $kategoriObj = Kategori::find($laporan->id_kategori);
         $kategoriName = $kategoriObj?->nama_kategori ?? 'Umum';
-        
+
         // Ambil dinas dari pivot table kategori_dinas secara aman
         $dinasId = DB::table('kategori_dinas')->where('id_kategori', $laporan->id_kategori)->value('id_dinas');
         $dinasName = $dinasId ? (Dinas::find($dinasId)?->nama_dinas ?? '-') : '-';
@@ -177,7 +179,7 @@ class PengaduanController extends Controller
             $kategoriIds = DB::table('kategori_dinas')->where('id_dinas', $request->id_dinas)->pluck('id_kategori');
             $query->whereIn('id_kategori', $kategoriIds);
         }
-        
+
         $laporans = $query->get();
 
         $kategoriIds = $laporans->pluck('id_kategori')->filter()->unique();
@@ -273,9 +275,14 @@ class PengaduanController extends Controller
             'judul' => 'required|string|max:255',
             'kategori' => 'required|string',
             'urgensi' => 'required|string',
-            'lokasi' => 'required|string|max:255',
+            'lokasi' => 'required|string', // Menampung teks alamat lengkap/panjang
+            'id_kelurahan' => 'nullable|integer|exists:kelurahans,id_kelurahan', // Validasi input baru dari React
+            'map_provinsi' => 'nullable|string|max:255',
+            'map_kabupaten' => 'nullable|string|max:255',
+            'map_kecamatan' => 'nullable|string|max:255',
+            'map_kelurahan' => 'nullable|string|max:255',
             'deskripsi' => 'required|string',
-            'bukti_foto' => 'nullable|string', 
+            'bukti_foto' => 'nullable|string',
             'gambar' => 'nullable|array|max:5',
             'gambar.*' => 'file|max:10240',
         ]);
@@ -291,19 +298,80 @@ class PengaduanController extends Controller
             $kategori = Kategori::create(['nama_kategori' => ucfirst($kategoriInput)]);
         }
 
-        $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
-        $kabupaten = \App\Models\Kabupaten::firstOrCreate(
-            ['nama_kabupaten' => 'Kabupaten Default', 'id_provinsi' => $provinsi->id_provinsi],
-            ['id_provinsi' => $provinsi->id_provinsi]
-        );
-        $kecamatanDb = Kecamatan::firstOrCreate(
-            ['nama_kecamatan' => 'Kecamatan Default', 'id_kabupaten' => $kabupaten->id_kabupaten],
-            ['id_kabupaten' => $kabupaten->id_kabupaten]
-        );
-        $kelurahan = Kelurahan::firstOrCreate(
-            ['nama_kelurahan' => $request->lokasi, 'id_kecamatan' => $kecamatanDb->id_kecamatan],
-            ['id_kecamatan' => $kecamatanDb->id_kecamatan]
-        );
+        // --- LOGIKA PENENTUAN ID KELURAHAN YANG BARU ---
+        $finalKelurahanId = null;
+
+        if ($request->filled('id_kelurahan')) {
+            // Jika frontend berhasil mengunci ID Kelurahan (dari peta/dropdown), langsung gunakan ID tersebut
+            $finalKelurahanId = $request->id_kelurahan;
+        } elseif ($request->filled('map_kelurahan')) {
+            // Jika data wilayah kelurahan terdeteksi dari peta, buat/cari otomatis secara cascading
+            try {
+                DB::beginTransaction();
+
+                $provNama = $request->filled('map_provinsi') ? trim($request->map_provinsi) : 'Provinsi Kalimantan Selatan';
+                $provinsi = Provinsi::firstOrCreate([
+                    'nama_provinsi' => $provNama
+                ]);
+
+                $kabNama = $request->filled('map_kabupaten') ? trim($request->map_kabupaten) : 'Kabupaten Default';
+                $kabupaten = Kabupaten::firstOrCreate([
+                    'nama_kabupaten' => $kabNama,
+                    'id_provinsi' => $provinsi->id_provinsi
+                ]);
+
+                $kecNama = $request->filled('map_kecamatan') ? trim($request->map_kecamatan) : 'Kecamatan Default';
+                $kecamatanDb = Kecamatan::firstOrCreate([
+                    'nama_kecamatan' => $kecNama,
+                    'id_kabupaten' => $kabupaten->id_kabupaten
+                ]);
+
+                $kelurahan = Kelurahan::firstOrCreate([
+                    'nama_kelurahan' => trim($request->map_kelurahan),
+                    'id_kecamatan' => $kecamatanDb->id_kecamatan
+                ]);
+
+                DB::commit();
+                $finalKelurahanId = $kelurahan->id_kelurahan;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Gagal membuat wilayah otomatis dari peta: ' . $e->getMessage());
+            }
+        }
+
+        if (!$finalKelurahanId) {
+            // Coba cari nama kelurahan yang termuat di dalam teks alamat lokasi (smart match)
+            $lokasiText = strtolower($request->lokasi);
+            $matchedKelurahan = Kelurahan::all()->first(function ($kel) use ($lokasiText) {
+                $nama = strtolower($kel->nama_kelurahan);
+                // Hanya cocokkan nama kelurahan yang memiliki panjang >= 3 karakter agar tidak mencocokkan asal
+                return strlen($nama) >= 3 && str_contains($lokasiText, $nama);
+            });
+
+            if ($matchedKelurahan) {
+                $finalKelurahanId = $matchedKelurahan->id_kelurahan;
+            } else {
+                // Fallback: Jika koordinat peta tidak menghasilkan kelurahan DB atau input manual diketik bebas tanpa dropdown,
+                // buat entitas wilayah default agar sistem tidak crash.
+                $provinsi = Provinsi::firstOrCreate(['nama_provinsi' => 'Provinsi Kalimantan Selatan']);
+                $kabupaten = Kabupaten::firstOrCreate(
+                    ['nama_kabupaten' => 'Kabupaten Default', 'id_provinsi' => $provinsi->id_provinsi],
+                    ['id_provinsi' => $provinsi->id_provinsi]
+                );
+                $kecamatanDb = Kecamatan::firstOrCreate(
+                    ['nama_kecamatan' => 'Kecamatan Default', 'id_kabupaten' => $kabupaten->id_kabupaten],
+                    ['id_kabupaten' => $kabupaten->id_kabupaten]
+                );
+
+                // Membatasi panjang teks penciptaan kelurahan fallback agar tidak melebihi struktur database varchar
+                $namaKelurahanPotong = substr($request->lokasi, 0, 50);
+                $kelurahan = Kelurahan::firstOrCreate(
+                    ['nama_kelurahan' => $namaKelurahanPotong, 'id_kecamatan' => $kecamatanDb->id_kecamatan],
+                    ['id_kecamatan' => $kecamatanDb->id_kecamatan]
+                );
+                $finalKelurahanId = $kelurahan->id_kelurahan;
+            }
+        }
 
         $userId = Auth::check() ? Auth::id() : null;
 
@@ -323,7 +391,7 @@ class PengaduanController extends Controller
                     Storage::disk('public')->put($path, (string) $imageStream);
                     $savedImages[] = '/storage/' . $path;
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Gagal memproses file gambar: ' . $e->getMessage());
+                    Log::error('Gagal memproses file gambar: ' . $e->getMessage());
                 }
             }
         } elseif ($request->bukti_foto) {
@@ -338,26 +406,27 @@ class PengaduanController extends Controller
                     Storage::disk('public')->put($path, (string) $imageStream);
                     $savedImages[] = '/storage/' . $path;
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Gagal memproses gambar bukti: ' . $e->getMessage());
+                    Log::error('Gagal memproses gambar bukti: ' . $e->getMessage());
                 }
             }
         }
 
-        // 1. BUAT LAPORAN TERLEBIH DAHULU (Agar mendapatkan ID objek)
+        // 1. BUAT LAPORAN TERLEBIH DAHULU
         $laporan = Laporan::create([
-            'no_ticket'     => $nomorTiket,
+            'no_ticket'      => $nomorTiket,
             'judul_laporan' => $request->judul,
             'id_kategori'   => $kategori->id_kategori,
-            'id_kelurahan'  => $kelurahan->id_kelurahan,
+            'id_kelurahan'  => $finalKelurahanId, // Menggunakan ID kelurahan yang terdeteksi/fallback
+            'lokasi'        => $request->lokasi,       // Menyimpan string alamat lengkap dari peta (Kolom baru database)
             'id_user'       => $userId,
             'prioritas'     => $prioritas,
             'status_laporan'=> 'Diterima',
             'isi_laporan'   => $request->deskripsi,
-            'bukti_foto'    => count($savedImages) === 1 ? $savedImages[0] : json_encode($savedImages), 
+            'bukti_foto'    => count($savedImages) === 1 ? $savedImages[0] : json_encode($savedImages),
             'tanggal_laporan' => now(),
         ]);
 
-        // 2. SEKARANG AMBIL ID-NYA UNTUK MEMBUAT TIMELINE LOG PERTAMA
+        // 2. TIMELINE LOG PERTAMA
         $metaLog = $this->buildLogEntry('Laporan Diterima');
         LaporanTimeline::create([
             'no_ticket'  => $laporan->no_ticket,
@@ -445,7 +514,7 @@ class PengaduanController extends Controller
                         Storage::disk('public')->put($path, (string) $imageStream);
                         $savedSelesaiImages[] = '/storage/' . $path;
                     } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error('Gagal memproses foto selesai: ' . $e->getMessage());
+                        Log::error('Gagal memproses foto selesai: ' . $e->getMessage());
                     }
                 }
             }
@@ -499,8 +568,8 @@ class PengaduanController extends Controller
 
     public function getEligiblePetugas(string $idOrTiket)
     {
-        $laporan = is_numeric($idOrTiket) 
-            ? Laporan::find($idOrTiket) 
+        $laporan = is_numeric($idOrTiket)
+            ? Laporan::find($idOrTiket)
             : Laporan::where('no_ticket', $idOrTiket)->first();
 
         if (!$laporan) {

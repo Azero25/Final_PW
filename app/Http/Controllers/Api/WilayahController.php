@@ -33,20 +33,29 @@ class WilayahController extends Controller
                 break;
 
             case 'kabupaten':
-                $data = Kabupaten::where('id_provinsi', $parentId)
-                    ->where('nama_kabupaten', 'LIKE', "%{$search}%")
+                $query = Kabupaten::query();
+                if ($parentId !== null && $parentId !== '' && $parentId !== 'null' && $parentId !== 'undefined') {
+                    $query->where('id_provinsi', $parentId);
+                }
+                $data = $query->where('nama_kabupaten', 'LIKE', "%{$search}%")
                     ->limit(5)->get(['id_kabupaten', 'nama_kabupaten']);
                 break;
 
             case 'kecamatan':
-                $data = Kecamatan::where('id_kabupaten', $parentId)
-                    ->where('nama_kecamatan', 'LIKE', "%{$search}%")
+                $query = Kecamatan::query();
+                if ($parentId !== null && $parentId !== '' && $parentId !== 'null' && $parentId !== 'undefined') {
+                    $query->where('id_kabupaten', $parentId);
+                }
+                $data = $query->where('nama_kecamatan', 'LIKE', "%{$search}%")
                     ->limit(5)->get(['id_kecamatan', 'nama_kecamatan']);
                 break;
 
             case 'kelurahan':
-                $data = Kelurahan::where('id_kecamatan', $parentId)
-                    ->where('nama_kelurahan', 'LIKE', "%{$search}%")
+                $query = Kelurahan::query();
+                if ($parentId !== null && $parentId !== '' && $parentId !== 'null' && $parentId !== 'undefined') {
+                    $query->where('id_kecamatan', $parentId);
+                }
+                $data = $query->where('nama_kelurahan', 'LIKE', "%{$search}%")
                     ->limit(5)->get(['id_kelurahan', 'nama_kelurahan']);
                 break;
 
