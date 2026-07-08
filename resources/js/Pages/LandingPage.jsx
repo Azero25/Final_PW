@@ -157,7 +157,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex-1 w-full relative">
                         <div className="absolute inset-0 bg-primary-container/5 rounded-3xl blur-3xl"></div>
-                        <img alt="Modern city landmark illustration" className="w-full h-auto object-cover rounded-2xl sm:rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.15)] relative z-10" src="/img/modern-city.jpg" />
+                        <img alt="Modern city landmark illustration" className="w-full h-auto object-cover rounded-2xl sm:rounded-3xl shadow-[0px_20px_50px_rgba(30,41,59,0.15)] relative z-10" src="/img/modern-city.webp" />
                     </div>
                 </section>
 

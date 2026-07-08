@@ -162,18 +162,20 @@ class PengaduanSeeder extends Seeder
         // --- Demo Laporan 1: Jalan Berlubang (Sedang Diproses) ---
         $kec1 = Kecamatan::firstOrCreate(['nama_kecamatan' => 'Gedongtengen', 'id_kabupaten' => $kabupaten->id_kabupaten]);
         $kel1 = Kelurahan::firstOrCreate(['nama_kelurahan' => 'Gedongtengen', 'id_kecamatan' => $kec1->id_kecamatan]);
-        $pet1 = User::where('email', 'ahmadwijaya@petugas.go.id')->first();
+        $pet1 = User::where('email', 'ahmadwijaya@gmail.com')->first();
 
         $laporan1 = Laporan::create([
             'no_ticket'       => 'LPW-2024-001234',
             'judul_laporan'   => 'Jalan Berlubang di Jl. Malioboro Km. 3',
             'id_kategori'     => $katInfras->id_kategori,
             'id_kelurahan'    => $kel1->id_kelurahan,
+            'lokasi'          => 'Jl. Malioboro Km. 3, Gedongtengen, Kota Yogyakarta',
             'id_user'         => $user1->id_user,
             'id_petugas'      => $pet1?->id_user,
             'prioritas'       => 'Tinggi',
             'status_laporan'  => 'Sedang Diproses',
             'isi_laporan'     => 'Terdapat lubang besar di badan jalan yang membahayakan pengendara, khususnya sepeda motor. Lubang berdiameter sekitar 50cm dengan kedalaman 15cm.',
+            'bukti_foto'      => '/img/perbaikan-jalan.webp',
             'tanggal_laporan' => '2024-05-10 09:30:00',
         ]);
 
@@ -187,18 +189,21 @@ class PengaduanSeeder extends Seeder
         $kec2 = Kecamatan::firstOrCreate(['nama_kecamatan' => 'Depok', 'id_kabupaten' => $kabupaten->id_kabupaten]);
         $kel2 = Kelurahan::firstOrCreate(['nama_kelurahan' => 'Depok', 'id_kecamatan' => $kec2->id_kecamatan]);
         // Perbaikan typo query bawaan: bersihkan parameter 'where' gaib
-        $pet2 = User::where('email', 'rudihermawan@petugas.go.id')->first() ?? User::where('id_dinas', $dinasPerhubungan->id_dinas)->first();
+        $pet2 = User::where('email', 'rudihermawan@gmail.com')->first() ?? User::where('id_dinas', $dinasPerhubungan->id_dinas)->first();
 
         $laporan2 = Laporan::create([
             'no_ticket'       => 'LPW-2024-005678',
             'judul_laporan'   => 'Lampu PJU Mati di Jl. Kaliurang',
             'id_kategori'     => $katTransportasi->id_kategori,
             'id_kelurahan'    => $kel2->id_kelurahan,
+            'lokasi'          => 'Jl. Kaliurang No. 45, Depok, Kota Yogyakarta',
             'id_user'         => $user1->id_user,
             'id_petugas'      => $pet2?->id_user,
             'prioritas'       => 'Sedang',
             'status_laporan'  => 'Selesai',
             'isi_laporan'     => 'Lampu penerangan jalan umum di depan nomor 45 Jl. Kaliurang tidak menyala selama 3 hari terakhir, sehingga kawasan tersebut gelap pada malam hari.',
+            'bukti_foto'      => '/img/penerangan-jalan.webp',
+            'foto_selesai'    => '/img/modern-city.webp',
             'tanggal_laporan' => '2024-05-05 10:15:00',
         ]);
 
@@ -230,15 +235,27 @@ class PengaduanSeeder extends Seeder
             $backDays = rand(2, 40);
             $tanggalLaporan = now()->subDays($backDays)->subHours(rand(1, 12));
 
+            // Petakan bukti_foto berdasarkan kategori
+            $buktiFotoMap = [
+                'Infrastruktur' => '/img/perbaikan-jalan.webp',
+                'Kebersihan'    => '/img/kebersihan.webp',
+                'Transportasi'  => '/img/penerangan-jalan.webp',
+            ];
+            $buktiFoto = $buktiFotoMap[$kat->nama_kategori] ?? '/img/modern-city.webp';
+            $fotoSelesai = $statVal === 'Selesai' ? '/img/modern-city.webp' : null;
+
             $laporanAcak = Laporan::create([
                 'no_ticket'       => 'LPW-2024-' . str_pad($i + 1000, 6, '0', STR_PAD_LEFT),
                 'judul_laporan'   => 'Keluhan Laporan Demo #' . ($i + 1),
                 'id_kategori'     => $kat->id_kategori,
                 'id_kelurahan'    => $kel->id_kelurahan,
+                'lokasi'          => "Jl. Raya {$kecName} No. " . rand(1, 100) . ", {$kel->nama_kelurahan}, Kota Yogyakarta",
                 'id_user'         => $user1->id_user,
                 'prioritas'       => $priVal,
                 'status_laporan'  => $statVal,
                 'isi_laporan'     => 'Ini adalah isi laporan contoh untuk kategori ' . $kat->nama_kategori . ' di wilayah ' . $kecName . '.',
+                'bukti_foto'      => $buktiFoto,
+                'foto_selesai'    => $fotoSelesai,
                 'tanggal_laporan' => $tanggalLaporan,
             ]);
 
